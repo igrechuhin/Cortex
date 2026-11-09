@@ -61,6 +61,65 @@ _SPM_UNEXPECTED_SIGNAL_RE = re.compile(
 )
 
 
+# XCTest summary line: ``Executed N tests, with M failures``.
+_XCTEST_SUMMARY_RE = re.compile(
+    r"Executed\s+(?P<total>\d+)\s+tests?,\s+with\s+(?P<failed>\d+)\s+failures?",
+    re.IGNORECASE,
+)
+
+# Swift Testing grand total: ``Test run with N test(s) ... passed``. This line
+# is the authoritative count for mixed XCTest + Swift Testing suites.
+_SWIFT_TESTING_SUMMARY_RE = re.compile(
+    r"Test run with\s+(?P<total>\d+)\s+tests?\b.*?passed",
+    re.IGNORECASE | re.DOTALL,
+)
+
+
+def extract_swift_test_counts(output: str) -> tuple[int, int]:
+    """Extract passed/failed counts from swift test output.
+
+    For mixed XCTest + Swift Testing suites, Swift Testing emits the
+    authoritative grand total: ``Test run with N tests ... passed``.
+    When that line is present it is used directly and XCTest per-suite
+    failure counts are summed separately (they are not included in the
+    Swift Testing summary line).
+
+    For XCTest-only suites the last ``Executed N tests, with M failures``
+    line is the grand-total aggregate.  When the run crashes before the
+    aggregate line is written we fall back to the last seen per-bundle
+    total, which is the best available partial count.
+
+    When no summary line was parsed the counts are honestly zero — no
+    rollup proves any test executed (REV-2026-10-02-33 removed the
+    keyword heuristic that fabricated a one-run pseudo-test).
+    """
+    # Prefer Swift Testing grand total when present (mixed suites).
+    swift_testing_match = _SWIFT_TESTING_SUMMARY_RE.search(output)
+    if swift_testing_match:
+        total = int(swift_testing_match.group("total"))
+        # XCTest failure lines still report individual bundle failures;
+        # sum them to get the overall failed count.
+        failed = sum(
+            int(m.group("failed")) for m in _XCTEST_SUMMARY_RE.finditer(output)
+        )
+        return max(total - failed, 0), failed
+
+    # XCTest-only: use the last summary line (grand-total aggregate).
+    last_total: int = 0
+    last_failed: int = 0
+    found_summary = False
+    for m in _XCTEST_SUMMARY_RE.finditer(output):
+        last_total, last_failed = int(m.group("total")), int(m.group("failed"))
+        found_summary = True
+
+    if found_summary:
+        passed = last_total - last_failed
+        return max(passed, 0), last_failed
+
+    # Fallback: no rollup was parsed — zero tests provably ran.
+    return 0, 0
+
+
 class SwiftTestStatus(StrEnum):
     """Authoritative classification of a ``swift test`` run."""
 

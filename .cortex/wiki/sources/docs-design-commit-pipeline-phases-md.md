@@ -171,7 +171,7 @@ during Phase B (documentation updates, new files, code changes):
 | Sub-step | Check | Tool call / orchestration |
 |----------|-------|---------------------------|
 | 12.0 | Markdown re-validation | `fix_markdown_lint(include_untracked_markdown=True)` |
-| 12.1–12.7 | Format through tests with coverage | `pipeline_handoff(write, checks, {"force_fresh": true, "test_timeout": 600})` then `run_quality_gate()` (zero-arg Phase A re-run with cache cleared). Individual checks run inside that gate; when MCP is unavailable, use the commit prompt’s shell/script fallbacks per sub-step (Black for 12.1; no test fallback for 12.7). |
+| 12.1–12.7 | Format through tests with coverage | `pipeline_handoff(write_task, checks, {"force_fresh": true})` then `run_quality_gate()` (zero-arg Phase A re-run with cache cleared, inheriting the project's timeout or the 900-second global default). Explicit selected-test runs carry their filter and do not certify full-suite coverage. Individual checks run inside that gate; when MCP is unavailable, use the commit prompt's shell/script fallbacks per sub-step (Black for 12.1; no test fallback for 12.7). |
 | 12.5 | Markdown lint (within Step 12) | `fix_markdown_lint(include_untracked_markdown=True)` (may run inside or adjacent to the gate per prompt) |
 
 **Step 12.1 fallback (CI parity)**: If MCP is unavailable, Step 12.1 fallback

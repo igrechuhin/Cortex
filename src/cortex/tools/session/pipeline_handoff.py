@@ -36,6 +36,7 @@ from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.mcp_annotations import safe_write_annotations
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
 from cortex.core.models import OperationStatus
+from cortex.core.quality_gate_config import configure_quality_gate
 from cortex.core.usage_context import get_or_resolve_project_root
 from cortex.server import mcp
 from cortex.tools.logging.instrumentation import emit_pipeline_handoff_log
@@ -77,6 +78,7 @@ class PipelineHandoffOperation(StrEnum):
     """Supported pipeline_handoff operations (canonical + legacy aliases)."""
 
     INIT = "init"
+    CONFIGURE_QUALITY_GATE = "configure_quality_gate"
     WRITE = "write"
     READ = "read"
     VERIFY_RESULT = "verify_result"
@@ -173,7 +175,7 @@ def _unknown_op_error(operation: str) -> str:
             "status": OperationStatus.ERROR.value,
             "error": (
                 f"Unknown operation '{operation}'. "
-                "Use: init, write, read, verify_result, replay_result, read_log, "
+                "Use: init, configure_quality_gate, write, read, verify_result, replay_result, read_log, "
                 "status, mark_running, clear, "
                 "snapshot, rollback, resume, preference_pairs, repeated_failures, "
                 "fitness_by_task_type, write_failure_evals, record_rule_provenance, "
@@ -370,6 +372,8 @@ def _dispatch_query_operation(
     phase: str | None = None,
 ) -> str | None:
     """Try each non-phase-bound dispatcher in turn; None if none match."""
+    if operation == PipelineHandoffOperation.CONFIGURE_QUALITY_GATE.value:
+        return configure_quality_gate(project_root, data_str)
     for query_result in (
         _dispatch_analytics_operation(project_root, operation, data_str),
         _dispatch_rule_provenance_operation(project_root, operation, data_str),
@@ -515,6 +519,9 @@ async def pipeline_handoff(
     5. pipeline_handoff(operation="clear", pipeline="commit")
 
     EXAMPLES:
+    - pipeline_handoff(operation="configure_quality_gate",
+        data={"test_timeout":7200}) sets a persistent project timeout default.
+      Omit data to inspect it. Use {"test_timeout":null} to restore the global default.
     - pipeline_handoff(operation="init", pipeline="commit")
     - pipeline_handoff(operation="write", pipeline="commit", phase="checks",
         data='{"status":"passed","coverage":0.94}')
@@ -527,7 +534,7 @@ async def pipeline_handoff(
     RETURNS: JSON with {status, ...} for write ops; JSON file content for reads.
 
     Args:
-        operation: init | write | read | verify_result | replay_result
+        operation: init | configure_quality_gate | write | read | verify_result | replay_result
             | read_log | status | mark_running
             | clear | snapshot | rollback | resume | preference_pairs
             | repeated_failures | fitness_by_task_type | write_failure_evals

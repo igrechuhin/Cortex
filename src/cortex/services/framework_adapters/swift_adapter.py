@@ -44,27 +44,19 @@ from .swift_test_diagnostics import (
     SwiftTestOutcome,
     SwiftTestStatus,
     build_swift_test_harness_errors,
+    extract_swift_test_counts,
     interpret_swift_test_output,
     stderr_tail,
 )
 from .swift_test_logging import SwiftTestLogRecord, write_swift_test_log
 from .swift_xcodebuild_mixin import SwiftXcodebuildMixin
+from .test_selection import (
+    selected_swift_result,
+    swift_test_arguments,
+    validate_swift_test_filter,
+)
 
 logger = logging.getLogger(__name__)
-
-# Matches XCTest summary: "Executed N tests, with M failures"
-_XCTEST_SUMMARY_RE = re.compile(
-    r"Executed\s+(?P<total>\d+)\s+tests?,\s+with\s+(?P<failed>\d+)\s+failures?",
-    re.IGNORECASE,
-)
-
-# Matches Swift Testing grand-total: "Test run with N test(s) passed" (exit 0)
-# or "Test run with N test(s) ... passed" with optional middle text.
-# This line is the authoritative count for mixed XCTest + Swift Testing suites.
-_SWIFT_TESTING_SUMMARY_RE = re.compile(
-    r"Test run with\s+(?P<total>\d+)\s+tests?\b.*?passed",
-    re.IGNORECASE | re.DOTALL,
-)
 
 _SWIFT_ERROR_LINE_RE = re.compile(r"error:\s+.*|\.swift:\d+:\d+:\s+error:", re.I)
 
@@ -180,6 +172,7 @@ class SwiftAdapter(SwiftXcodebuildMixin, FrameworkAdapter):
         max_failures: int | None = None,
         progress_callback: ProgressCallback | None = None,
         include_slow_tests: bool = False,
+        test_filter: str | None = None,
     ) -> TestResult:
         """Run test suite via swift test (SPM) or xcodebuild test (Xcode).
 
@@ -191,6 +184,11 @@ class SwiftAdapter(SwiftXcodebuildMixin, FrameworkAdapter):
         transcript is written for every invocation so users can share the
         exact failure shape with the maintainers.
         """
+        if test_filter is not None:
+            validate_swift_test_filter(test_filter, self.has_package_swift())
+            return self._run_tests_with_logging(
+                timeout, coverage_threshold, test_filter
+            )
         if not self.has_package_swift():
             return self._run_xcodebuild_tests(timeout)
         return self._run_tests_with_logging(timeout, coverage_threshold)
@@ -199,11 +197,12 @@ class SwiftAdapter(SwiftXcodebuildMixin, FrameworkAdapter):
         self,
         timeout: int | None,
         coverage_threshold: float,
+        test_filter: str | None = None,
     ) -> TestResult:
         """Execute ``swift test`` and classify its outcome from the output."""
         extra_env = self._swift_test_env()
         # Serialize test cases, not the concurrent tasks created within each test.
-        args = ["test", "--enable-code-coverage", "--no-parallel"]
+        args = swift_test_arguments(test_filter)
         argv = ["swift", *args]
         start = time.monotonic()
         try:
@@ -224,6 +223,7 @@ class SwiftAdapter(SwiftXcodebuildMixin, FrameworkAdapter):
             start,
             timeout,
             coverage_threshold,
+            test_filter,
         )
 
     def _classify_and_finalize(  # noqa: PLR0913
@@ -234,6 +234,7 @@ class SwiftAdapter(SwiftXcodebuildMixin, FrameworkAdapter):
         start: float,
         timeout: int | None,
         coverage_threshold: float,
+        test_filter: str | None = None,
     ) -> TestResult:
         """Interpret ``swift test`` output, write the log, and finalize the gate result."""
         outcome = interpret_swift_test_output(
@@ -248,6 +249,11 @@ class SwiftAdapter(SwiftXcodebuildMixin, FrameworkAdapter):
             elapsed=time.monotonic() - start,
             outcome=outcome,
         )
+        if test_filter is not None:
+            output = result.stdout + result.stderr
+            return selected_swift_result(
+                output, outcome, self.extract_test_counts(output)
+            )
         return self._build_completed_process_test_result(
             result, outcome, timeout, coverage_threshold
         )
@@ -626,48 +632,8 @@ class SwiftAdapter(SwiftXcodebuildMixin, FrameworkAdapter):
         return cov_ok, frac, cov_warn, per_file
 
     def extract_test_counts(self, output: str) -> tuple[int, int]:
-        """Extract passed/failed counts from swift test output.
-
-        For mixed XCTest + Swift Testing suites, Swift Testing emits the
-        authoritative grand total: ``Test run with N tests ... passed``.
-        When that line is present it is used directly and XCTest per-suite
-        failure counts are summed separately (they are not included in the
-        Swift Testing summary line).
-
-        For XCTest-only suites the last ``Executed N tests, with M failures``
-        line is the grand-total aggregate.  When the run crashes before the
-        aggregate line is written we fall back to the last seen per-bundle
-        total, which is the best available partial count.
-
-        When no summary line was parsed the counts are honestly zero — no
-        rollup proves any test executed (REV-2026-10-02-33 removed the
-        keyword heuristic that fabricated a one-run pseudo-test).
-        """
-        # Prefer Swift Testing grand total when present (mixed suites).
-        swift_testing_match = _SWIFT_TESTING_SUMMARY_RE.search(output)
-        if swift_testing_match:
-            total = int(swift_testing_match.group("total"))
-            # XCTest failure lines still report individual bundle failures;
-            # sum them to get the overall failed count.
-            failed = sum(
-                int(m.group("failed")) for m in _XCTEST_SUMMARY_RE.finditer(output)
-            )
-            return max(total - failed, 0), failed
-
-        # XCTest-only: use the last summary line (grand-total aggregate).
-        last_total: int = 0
-        last_failed: int = 0
-        found_summary = False
-        for m in _XCTEST_SUMMARY_RE.finditer(output):
-            last_total, last_failed = int(m.group("total")), int(m.group("failed"))
-            found_summary = True
-
-        if found_summary:
-            passed = last_total - last_failed
-            return max(passed, 0), last_failed
-
-        # Fallback: no rollup was parsed — zero tests provably ran.
-        return 0, 0
+        """Count passed and failed tests from swift test summary output."""
+        return extract_swift_test_counts(output)
 
     def _timeout_test_result(self) -> TestResult:
         """Build test result for timeout."""

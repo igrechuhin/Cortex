@@ -14,13 +14,16 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from cortex.core.execution_env import LocalExecutionEnvironment
+from cortex.core.quality_gate_config import DEFAULT_TEST_TIMEOUT
 from cortex.tools.execution import pre_commit_zero_arg_tools as gate
 from cortex.tools.execution.pre_commit_detached import compute_args_hash
 from cortex.tools.execution.pre_commit_phase_dispatch import PHASE_A_CHECKS
 
 
 def _result_path(root: Path) -> Path:
-    job_id = compute_args_hash(list(PHASE_A_CHECKS), 600, 0.9, False, True)
+    job_id = compute_args_hash(
+        list(PHASE_A_CHECKS), DEFAULT_TEST_TIMEOUT, 0.9, False, True
+    )
     return root / ".cortex" / ".session" / f"pre_commit_result_{job_id}.json"
 
 
@@ -260,7 +263,9 @@ async def test_changed_configuration_reports_the_actual_live_worker(
     pending = await gate.run_quality_gate()
 
     with patch.object(
-        gate, "_read_quality_gate_config", return_value=(600, 0.95, True, {})
+        gate,
+        "_read_quality_gate_config",
+        return_value=(DEFAULT_TEST_TIMEOUT, 0.95, True, {}),
     ):
         result = await asyncio.wait_for(gate.run_quality_gate(), timeout=0.5)
 
@@ -343,7 +348,7 @@ async def test_shared_preflight_does_not_serialize_missing_worker_handle(
     ):
         result = await gate.run_detached_phase_a_checks(
             tmp_path,
-            test_timeout=600,
+            test_timeout=DEFAULT_TEST_TIMEOUT,
             coverage_threshold=0.9,
             strict_mode=False,
             force_fresh=True,
@@ -366,7 +371,7 @@ async def test_shared_preflight_waits_beyond_public_budget(
     task = asyncio.create_task(
         gate.run_detached_phase_a_checks(
             tmp_path,
-            test_timeout=600,
+            test_timeout=DEFAULT_TEST_TIMEOUT,
             coverage_threshold=0.9,
             strict_mode=False,
             force_fresh=True,
@@ -429,7 +434,7 @@ async def test_plain_retry_serves_delivered_envelope_as_cached(
     with patch.object(
         gate,
         "_read_quality_gate_config",
-        return_value=(600, 0.9, False, {"force_fresh": False}),
+        return_value=(DEFAULT_TEST_TIMEOUT, 0.9, False, {"force_fresh": False}),
     ):
         result = await asyncio.wait_for(gate.run_quality_gate(), timeout=0.5)
 
@@ -467,7 +472,7 @@ async def test_delivered_worker_error_envelope_is_labeled_cached(
     with patch.object(
         gate,
         "_read_quality_gate_config",
-        return_value=(600, 0.9, False, {"force_fresh": False}),
+        return_value=(DEFAULT_TEST_TIMEOUT, 0.9, False, {"force_fresh": False}),
     ):
         result = await asyncio.wait_for(gate.run_quality_gate(), timeout=0.5)
 

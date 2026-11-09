@@ -65,6 +65,7 @@ def build_worker_cmd(
     coverage_threshold: float,
     strict_mode: bool,
     include_markdown_lint: bool,
+    test_filter: str | None = None,
 ) -> list[str]:
     """Build argv for the detached worker subprocess."""
     cmd = [
@@ -80,13 +81,22 @@ def build_worker_cmd(
         "--coverage-threshold",
         str(coverage_threshold),
     ]
-    if checks:
-        cmd.extend(["--checks"] + checks)
-    if strict_mode:
-        cmd.append("--strict")
-    if include_markdown_lint:
-        cmd.append("--include-markdown-lint")
+    cmd.extend(_worker_check_arguments(checks, strict_mode, include_markdown_lint))
+    if test_filter is not None:
+        cmd.append(f"--test-filter={test_filter}")
     return cmd
+
+
+def _worker_check_arguments(
+    checks: list[str], strict_mode: bool, include_markdown_lint: bool
+) -> list[str]:
+    """Build check-selection flags independently of worker paths and budgets."""
+    arguments = ["--checks", *checks] if checks else []
+    if strict_mode:
+        arguments.append("--strict")
+    if include_markdown_lint:
+        arguments.append("--include-markdown-lint")
+    return arguments
 
 
 def build_fix_worker_cmd(
@@ -155,6 +165,7 @@ def spawn_detached_worker(
     args_hash: str,
     env: ExecutionEnvironment,
     quality_gate: bool = False,
+    test_filter: str | None = None,
 ) -> Path:
     """Spawn a detached worker subprocess. Returns result file path."""
     sd = session_dir(project_root)
@@ -168,6 +179,7 @@ def spawn_detached_worker(
         coverage_threshold,
         strict_mode,
         include_markdown_lint,
+        test_filter,
     )
     if quality_gate:
         cmd.append("--quality-gate")

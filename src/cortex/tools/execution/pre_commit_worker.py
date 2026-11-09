@@ -24,7 +24,7 @@ import time
 from pathlib import Path
 from typing import cast
 
-from cortex.core.models import OperationStatus
+from cortex.core.models import ModelDict, OperationStatus
 from cortex.core.path_resolver import (
     augmented_environ_with_project_venv_bins,
 )
@@ -48,6 +48,10 @@ from cortex.tools.execution.pre_commit_submodule_guard import (
     GITIGNORED_STAGED_REMEDIATION,
     check_staged_gitignored,
     precommit_block_response,
+)
+from cortex.tools.execution.pre_commit_test_scope import (
+    describe_test_scope,
+    validate_test_filter,
 )
 from cortex.tools.execution.pre_commit_tools_run_helpers import (
     build_pre_commit_response,
@@ -134,6 +138,7 @@ def _execute_checks_and_build_response(
     strict_mode: bool,
     timeout: int,
     coverage_threshold: float,
+    test_filter: str | None = None,
 ) -> dict[str, object]:
     """Run execute_all_checks and build_pre_commit_response; return result dict."""
     from cortex.tools.execution.pre_commit_tools_run_helpers import (
@@ -148,6 +153,7 @@ def _execute_checks_and_build_response(
         strict_mode,
         timeout,
         coverage_threshold,
+        test_filter=test_filter,
     )
     return _build_response_dict(results, stats, language_info.language)
 
@@ -159,6 +165,7 @@ def _run_checks_core(
     strict_mode: bool,
     timeout: int,
     coverage_threshold: float,
+    test_filter: str | None = None,
 ) -> dict[str, object]:
     """Execute checks and build response dict."""
     from cortex.tools.execution.pre_commit_helpers import (
@@ -173,6 +180,7 @@ def _run_checks_core(
         strict_mode,
         timeout,
         coverage_threshold,
+        **({"test_filter": test_filter} if test_filter is not None else {}),
     )
 
 
@@ -199,19 +207,15 @@ def _run_checks(
     timeout: int,
     coverage_threshold: float,
     strict_mode: bool,
+    test_filter: str | None = None,
 ) -> dict[str, object]:
     """Run pre-commit checks synchronously, return result dict.
 
     Checks whose inputs are unchanged since the persisted Phase A fingerprint
     are skipped individually; the rest still run.
     """
-    from cortex.tools.execution.pre_commit_dirty_state import (
-        partition_skippable_checks,
-    )
-
-    to_run, skipped = partition_skippable_checks(Path(project_root), checks)
-    if skipped:
-        logger.info("Skipping unchanged checks: %s", sorted(skipped))
+    test_filter = validate_test_filter(test_filter)
+    to_run, skipped = _checks_to_run(project_root, checks, test_filter)
     # AI: determine_checks_to_perform() expands an empty list to DEFAULT_CHECKS,
     # so an all-skipped run must short-circuit instead of falling through.
     if checks and not to_run:
@@ -221,14 +225,44 @@ def _run_checks(
         return resolved
     adapter, language_info = resolved
     result = _run_checks_core(
-        adapter, language_info, to_run, strict_mode, timeout, coverage_threshold
+        adapter,
+        language_info,
+        to_run,
+        strict_mode,
+        timeout,
+        coverage_threshold,
+        **({"test_filter": test_filter} if test_filter is not None else {}),
     )
+    describe_test_scope(cast(ModelDict, result), test_filter)
+    _describe_skipped_checks(result, skipped)
+    return result
+
+
+def _checks_to_run(
+    project_root: str, checks: list[str], test_filter: str | None
+) -> tuple[list[str], dict[str, str]]:
+    """Skip fingerprint-unchanged checks; a selection never reuses fingerprints."""
+    if test_filter is not None:
+        return checks, {}
+    from cortex.tools.execution.pre_commit_dirty_state import (
+        partition_skippable_checks,
+    )
+
+    to_run, skipped = partition_skippable_checks(Path(project_root), checks)
+    if skipped:
+        logger.info("Skipping unchanged checks: %s", sorted(skipped))
+    return to_run, skipped
+
+
+def _describe_skipped_checks(
+    result: dict[str, object], skipped: dict[str, str]
+) -> None:
+    """Preserve the reasons for fingerprint-based skips in worker receipts."""
     if skipped:
         result["skipped_checks"] = sorted(skipped)
         result["skip_details"] = [
             f"{name}: {reason}" for name, reason in sorted(skipped.items())
         ]
-    return result
 
 
 def collect_pre_commit_markdown_paths(
@@ -350,6 +384,7 @@ def _parse_worker_args() -> argparse.Namespace:
     _ = parser.add_argument("--phase", choices=["A", "B", "full"], default=None)
     _ = parser.add_argument("--timeout", type=int, default=300)
     _ = parser.add_argument("--coverage-threshold", type=float, default=0.9)
+    _ = parser.add_argument("--test-filter", default=None)
     _ = parser.add_argument("--strict", action="store_true")
     _ = parser.add_argument("--include-markdown-lint", action="store_true")
     _ = parser.add_argument("--quality-gate", action="store_true")
@@ -465,6 +500,11 @@ def _run_worker_once(
         args.timeout,
         args.coverage_threshold,
         args.strict,
+        **(
+            {"test_filter": args.test_filter}
+            if getattr(args, "test_filter", None) is not None
+            else {}
+        ),
     )
     markdown_result = (
         _run_markdown_lint(args.project_root) if args.include_markdown_lint else None

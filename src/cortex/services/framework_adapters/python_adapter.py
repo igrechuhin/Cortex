@@ -34,6 +34,11 @@ from .python_adapter_parsing import (
     parse_type_errors,
     should_report_progress,
 )
+from .test_selection import (
+    selected_pytest_command,
+    selected_pytest_result,
+    validate_test_filter,
+)
 
 _PROGRESS_REPORT_EVERY_N_TESTS = 50
 _PROGRESS_HEARTBEAT_SECONDS = 20
@@ -77,8 +82,17 @@ class PythonAdapter(FrameworkAdapter):
         max_failures: int | None = None,
         progress_callback: ProgressCallback | None = None,
         include_slow_tests: bool = False,
+        test_filter: str | None = None,
     ) -> TestResult:
         """Run pytest test suite."""
+        if test_filter is not None:
+            return self._run_selected_tests(
+                timeout,
+                max_failures,
+                include_slow_tests,
+                test_filter,
+                progress_callback,
+            )
         cmd = self._build_test_command(
             coverage_threshold, max_failures, include_slow_tests
         )
@@ -89,6 +103,37 @@ class PythonAdapter(FrameworkAdapter):
                     cmd, timeout, coverage_threshold, total, progress_callback
                 )
         return self._execute_test_command(cmd, timeout, coverage_threshold)
+
+    def _run_selected_tests(
+        self,
+        timeout: int | None,
+        max_failures: int | None,
+        include_slow_tests: bool,
+        test_filter: str,
+        progress_callback: ProgressCallback | None,
+    ) -> TestResult:
+        """Run an explicit pytest expression without asserting global coverage."""
+        validate_test_filter(test_filter)
+        cmd = self._build_test_command(
+            0.0, max_failures, include_slow_tests, test_filter
+        )
+        if progress_callback is not None:
+            total = self._collect_test_count(include_slow_tests, test_filter)
+            progress_callback(0, total or 0)
+        try:
+            completed = subprocess.run(
+                cmd,
+                cwd=self.project_root,
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+            )
+        except subprocess.TimeoutExpired:
+            return self._create_timeout_result()
+        except OSError as exc:
+            return self._create_error_result(str(exc))
+        output = completed.stdout + completed.stderr
+        return selected_pytest_result(output, completed.returncode)
 
     def _pytest_parallel_requested(self) -> bool:
         """Return True if parallel test runs are allowed."""
@@ -130,6 +175,7 @@ class PythonAdapter(FrameworkAdapter):
         coverage_threshold: float,
         max_failures: int | None,
         include_slow_tests: bool = False,
+        test_filter: str | None = None,
     ) -> list[str]:
         """Build pytest command with options."""
         python_exe = self._get_command("python")
@@ -144,15 +190,27 @@ class PythonAdapter(FrameworkAdapter):
             "--cov-report=term",
             f"--cov-fail-under={int(coverage_threshold * 100)}",
         ]
-        if self._pytest_parallel_requested() and self._has_pytest_xdist():
-            cmd.extend(["-n", "auto"])
+        if test_filter is not None:
+            cmd = selected_pytest_command(cmd, test_filter)
+        self._add_parallel_option(cmd, test_filter)
         if not include_slow_tests:
             cmd.extend(["-m", "not slow"])
         if max_failures:
             cmd.extend(["--maxfail", str(max_failures)])
         return cmd
 
-    def _collect_test_count(self, include_slow_tests: bool = False) -> int | None:
+    def _add_parallel_option(self, command: list[str], test_filter: str | None) -> None:
+        """Keep explicit selections local while preserving full-suite parallelism."""
+        if (
+            test_filter is None
+            and self._pytest_parallel_requested()
+            and self._has_pytest_xdist()
+        ):
+            command.extend(["-n", "auto"])
+
+    def _collect_test_count(
+        self, include_slow_tests: bool = False, test_filter: str | None = None
+    ) -> int | None:
         """Run pytest --collect-only -q and return total test count."""
         python_exe = self._get_command("python")
         collect_cmd = [
@@ -163,6 +221,9 @@ class PythonAdapter(FrameworkAdapter):
             "--collect-only",
             "-q",
         ]
+        if test_filter is not None:
+            validate_test_filter(test_filter)
+            collect_cmd.extend(["-k", test_filter])
         if not include_slow_tests:
             collect_cmd.extend(["-m", "not slow"])
         try:

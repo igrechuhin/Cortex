@@ -28,7 +28,9 @@ from cortex.tools.execution.session_paths import session_dir
 logger = logging.getLogger(__name__)
 
 
-def quality_gate_job_path(root: Path, timeout: int, coverage_threshold: float) -> Path:
+def quality_gate_job_path(
+    root: Path, timeout: int, coverage_threshold: float, test_filter: str | None = None
+) -> Path:
     """Resolve the same identity used by the detached Phase A worker."""
     job_id = compute_args_hash(
         list(phase_to_checks(PreCommitPhase.A)),
@@ -36,6 +38,7 @@ def quality_gate_job_path(root: Path, timeout: int, coverage_threshold: float) -
         coverage_threshold,
         False,
         True,
+        test_filter=test_filter,
     )
     return pre_commit_result_path(session_dir(root), job_id)
 
@@ -63,6 +66,7 @@ def _start_and_validate(
     force_fresh: bool,
     env: ExecutionEnvironment,
     result_path: Path,
+    test_filter: str | None = None,
 ) -> ModelDict | None:
     """Start a Phase A worker; return a short-circuit result, or None to poll."""
     from cortex.tools.execution import pre_commit_zero_arg_tools as tools
@@ -79,6 +83,7 @@ def _start_and_validate(
         force_fresh,
         env=env,
         quality_gate=True,
+        test_filter=test_filter,
     )
     if job.get("status") == "error":
         return job
@@ -96,6 +101,7 @@ async def _run_locked_job(
     ctx: MCPContext | None,
     env: ExecutionEnvironment,
     result_path: Path,
+    test_filter: str | None = None,
 ) -> ModelDict:
     from cortex.tools.execution import pre_commit_zero_arg_tools as tools
 
@@ -106,16 +112,33 @@ async def _run_locked_job(
         spawned = False
         if active is None and await _needs_new_job(result_path, force_fresh):
             short_circuit = _start_and_validate(
-                root, timeout, coverage_threshold, force_fresh, env, result_path
+                root,
+                timeout,
+                coverage_threshold,
+                force_fresh,
+                env,
+                result_path,
+                test_filter,
             )
             if short_circuit is not None:
                 return short_circuit
             spawned = True
-        if not spawned:
-            cached = await _cached_delivered_result(root, result_path, timeout, ctx)
-            if cached is not None:
-                return cached
-        return await _poll_and_deliver(root, result_path, timeout, ctx)
+        return await _deliver_result(root, result_path, timeout, ctx, spawned)
+
+
+async def _deliver_result(
+    root: Path,
+    result_path: Path,
+    timeout: int,
+    ctx: MCPContext | None,
+    spawned: bool,
+) -> ModelDict:
+    """Serve a cached terminal envelope, or poll the live worker to completion."""
+    if not spawned:
+        cached = await _cached_delivered_result(root, result_path, timeout, ctx)
+        if cached is not None:
+            return cached
+    return await _poll_and_deliver(root, result_path, timeout, ctx)
 
 
 async def _cached_delivered_result(
@@ -175,13 +198,21 @@ async def run_bounded_phase_a(
     ctx: MCPContext | None,
     env: ExecutionEnvironment,
     wait_seconds: float,
+    test_filter: str | None = None,
 ) -> ModelDict:
     """Bound lock acquisition and polling without cancelling the detached worker."""
-    result_path = quality_gate_job_path(root, timeout, coverage_threshold)
+    result_path = quality_gate_job_path(root, timeout, coverage_threshold, test_filter)
     try:
         async with asyncio.timeout(wait_seconds):
             return await _run_locked_job(
-                root, timeout, coverage_threshold, force_fresh, ctx, env, result_path
+                root,
+                timeout,
+                coverage_threshold,
+                force_fresh,
+                ctx,
+                env,
+                result_path,
+                test_filter,
             )
     except TimeoutError:
         return await _pending_result(root, result_path, timeout, ctx)

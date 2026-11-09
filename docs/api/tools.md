@@ -34,9 +34,46 @@ Contributor and agent workflows should use these **zero-argument** Cortex MCP to
 | Use case | Tool |
 |----------|------|
 | Phase A (format, lint, types, tests, coverage) | `run_quality_gate()` |
-| Step 12 final gate after Phase B/C edits | `pipeline_handoff(write, checks, {"force_fresh": true, "test_timeout": 600})` then `run_quality_gate()` |
+| Step 12 final gate after Phase B/C edits | `pipeline_handoff(write_task, checks, {"force_fresh": true})` then `run_quality_gate()` |
+| Persistent project test budget | `pipeline_handoff(operation="configure_quality_gate", data={"test_timeout": 7200})` |
 | Phase B docs / memory-bank / timestamps / roadmap sync | `run_docs_gate()` |
 | Auto-fix formatting, lint, types, markdown | `autofix()` |
+
+The project test budget is stored in `.cortex/config/quality-gate.json` and survives
+new sessions and pipeline clears. Each project sets its budget to match its tests.
+The global default is 900 seconds (15 minutes). An explicit session `test_timeout`
+takes precedence over the project setting. Omit `test_timeout` from routine session
+templates so they inherit the project budget rather than imposing a fixed value.
+Omit `data` from `configure_quality_gate` to inspect the policy, or pass
+`{"test_timeout": null}` to restore the global default. Values must be positive
+integers. Invalid persisted configuration blocks the gate rather than silently
+falling back to a short timeout. This setting does not change the bounded MCP
+wait, coverage threshold, test selection, or an already-running job.
+
+Use `operation="write_task"` for session gate options. `operation="write"` publishes
+a phase result and does not populate the task file read by the quality gate.
+
+### Explicit selected-test checks
+
+For an additive change, choose a test scope from the new functionality and any
+shared behavior it changes. Write a nonempty `test_filter` in the `commit` /
+`checks` task with `pipeline_handoff(operation="write_task", pipeline="commit",
+phase="checks", data={"test_filter": "test_project_quality_gate_config",
+"force_fresh": true})`, then call `run_quality_gate()` normally.
+
+Python uses a pytest `-k` expression. Swift Package Manager uses a `--filter`
+regular expression. Other frameworks and Xcode projects reject this mode. An
+empty selection is a failure, not a passing gate. The selection has its own job
+identity, survives detached execution, and cannot certify a full-suite cache.
+
+Selected-test receipts include `test_scope: selected_tests`,
+`coverage_scope: selected_tests_only`, and `full_suite_validated: false`.
+Project-wide coverage is not measured or asserted in this mode: `coverage` is
+null, not zero and not a full-suite 90% pass. All non-test validation categories
+remain required; selected mode runs formatter and linter checks without fixing
+files. `write_task` replaces the phase task, so carry the same `test_filter` when
+writing a fresh task for a final gate. Omit `test_filter` for the existing
+full-suite and coverage workflow.
 
 Source of truth for behavior and timeouts: `src/cortex/tools/execution/pre_commit_zero_arg_tools.py`.
 

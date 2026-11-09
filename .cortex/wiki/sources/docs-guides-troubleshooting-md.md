@@ -433,8 +433,8 @@ Sandboxed environments may block or limit subprocess execution, network, or long
 
 **Expected test execution time**:
 
-- **Typical duration**: 5–10 minutes for full test suite with coverage
-- **Maximum timeout**: 600 seconds (10 minutes) as configured in `test_timeout=600`
+- **Expected duration**: Measure the selected project's tests; full suites vary substantially.
+- **Default timeout**: 900 seconds (15 minutes), overridden by project configuration or an explicit session `test_timeout`. See [project test budgets and selected-test checks](../api/tools.md#commit-and-quality-pipeline-zero-arg-mcp-tools).
 - **Client-side timeout requirements**: A 30-second tool-call deadline accommodates the gate's 20-second bounded wait; the client need not hold one request open for the entire test run.
 
 **Connection health check before Step 12.7**:

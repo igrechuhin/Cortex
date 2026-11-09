@@ -269,7 +269,9 @@ _ROUTING_KEYS: frozenset[str] = frozenset({"operation", "phase", "pipeline"})
 # Keys that carry pipeline config/hints rather than phase result data.
 # When present in a write_result payload these are lifted to a top-level
 # "config" block so they do not pollute the phase result record.
-PHASE_CONFIG_KEYS: frozenset[str] = frozenset({"force_fresh", "test_timeout"})
+PHASE_CONFIG_KEYS: frozenset[str] = frozenset(
+    {"force_fresh", "test_timeout", "test_filter"}
+)
 
 
 def extract_routing_keys(

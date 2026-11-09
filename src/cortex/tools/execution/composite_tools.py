@@ -320,7 +320,7 @@ async def run_composite_workflow(
         the MCP bridge cannot pass arguments to individual tools (e.g. some tool bridges send
         empty {} — causes "Missing required parameters" errors on rules, load_context,
         run_quality_gate). fix_all runs fix_quality, type_check/quality/format/markdown
-        verification, tests (600s, 90% coverage), phase B docs validation, and
+        verification, tests (900s global default, 90% full-suite coverage), phase B docs validation, and
         timestamps+roadmap_sync validation — all with sensible hardcoded defaults.
     operation="fix_docs": Run Phase B docs/memory-bank sync validation (timestamps +
         roadmap_sync). Zero args; equivalent to calling run_docs_gate() directly.

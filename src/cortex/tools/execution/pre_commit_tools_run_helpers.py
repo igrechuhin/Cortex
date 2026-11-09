@@ -60,15 +60,11 @@ def execute_all_checks(
     coverage_threshold: float,
     progress_callback: Callable[[int, int], None] | None = None,
     phase_callback: Callable[[int, int], None] | None = None,
+    test_filter: str | None = None,
 ) -> tuple[dict[str, CheckResult | TestResult | QualityCheckResult], CheckStats]:
     """Execute all requested checks (sync, runs off event loop via to_thread)."""
     results: dict[str, CheckResult | TestResult | QualityCheckResult] = {}
-    stats = CheckStats(
-        total_errors=0,
-        total_warnings=0,
-        files_modified=[],
-        checks_performed=[],
-    )
+    stats = _empty_check_stats()
     run_checks_pipeline(
         adapter,
         language,
@@ -80,8 +76,16 @@ def execute_all_checks(
         results,
         stats,
         phase_callback=phase_callback,
+        test_filter=test_filter,
     )
     return results, stats
+
+
+def _empty_check_stats() -> CheckStats:
+    """Start a pipeline with independent empty counts and result collections."""
+    return CheckStats(
+        total_errors=0, total_warnings=0, files_modified=[], checks_performed=[]
+    )
 
 
 def build_pre_commit_response(

@@ -4,6 +4,8 @@
 ## 2026-11-09
 
 - <!-- memory_type: status -->
+- <!-- memory_type: status -->
+- **Quality-gate project budget and selected-test checks** - COMPLETE. Changeset ships persistent project test budgets (.cortex/config/quality-gate.json, DEFAULT_TEST_TIMEOUT 900s, fail-closed validation, configure_quality_gate pipeline_handoff operation) and explicit selected-test quality gates (test_filter task key with one-argv-element pytest -k / SwiftPM --filter execution, non-mutating selected_source_checks, scoped receipts carrying test_scope/coverage_scope/full_suite_validated=false, separate job identity per filter). /cortex/fix remediation brought the tree green: three over-length functions extracted, swift_adapter.py reduced below the 400-line cap via extract_swift_test_counts relocation to swift_test_diagnostics.py, two over-length tests refactored with patch-scaffolding helpers, PipelineDirtyTracker imported from its defining module. Full run_quality_gate green (0 errors, 8743 tests, coverage 0.9211 >= 0.90), docs gate green, parity Pass1/Pass2 green, Pass3 skipped (no DocC step in CI).
 **FPF practices in implementation review, scoped context, and shaping** - COMPLETE. Implementation review verifies the initiating request and plan against observed evidence. Scoped context distinguishes current project rules, the selected plan, history, and evidence. Shaping records preserve observable triggers for revisiting dependent decisions. Fresh Cortex quality gate and scoped MCP smoke passed.
 
 ## 2026-11-02

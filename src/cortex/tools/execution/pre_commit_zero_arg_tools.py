@@ -33,6 +33,7 @@ from cortex.core.mcp_stability import (
 )
 from cortex.core.models import JsonDict, ModelDict, OperationStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.quality_gate_config import DEFAULT_TEST_TIMEOUT, effective_test_timeout
 from cortex.core.usage_context import (
     get_current_project_root,
     get_or_resolve_project_root,
@@ -55,6 +56,9 @@ from cortex.tools.execution.pre_commit_phase_dispatch import (
     phase_to_checks,
 )
 from cortex.tools.execution.pre_commit_preflight_helpers import compute_preflight_passed
+from cortex.tools.execution.pre_commit_test_scope import (
+    validate_test_filter,
+)
 from cortex.tools.logging.instrumentation import (
     append_agent_log_to_autofix_result,
     append_agent_log_to_quality_result,
@@ -117,6 +121,7 @@ def start_phase_a_job(
     strict_mode: bool = False,
     env: ExecutionEnvironment,
     quality_gate: bool = False,
+    test_filter: str | None = None,
 ) -> ModelDict:
     """Start detached Phase A pre-commit job and return {job_id,status}."""
     from cortex.tools.execution.pre_commit_detached import start_pre_commit_job_impl
@@ -132,6 +137,7 @@ def start_phase_a_job(
         force_fresh=force_fresh,
         env=env,
         quality_gate=quality_gate,
+        test_filter=test_filter,
     )
     return cast(ModelDict, job)
 
@@ -252,6 +258,7 @@ async def _spawn_and_poll_phase_a(
     force_fresh: bool,
     ctx: MCPContext | None,
     env: ExecutionEnvironment,
+    test_filter: str | None = None,
 ) -> ModelDict:
     """Wait at most the MCP budget, preserving detached work for later calls."""
     from cortex.tools.execution.pre_commit_quality_gate_job import run_bounded_phase_a
@@ -264,12 +271,14 @@ async def _spawn_and_poll_phase_a(
         ctx,
         env,
         QUALITY_GATE_WAIT_SECONDS,
+        test_filter=test_filter,
     )
 
 
 _QUALITY_GATE_DEFAULTS: dict[str, object] = {
+    "test_filter": None,
     "coverage_threshold": 0.90,
-    "test_timeout": 600,
+    "test_timeout": DEFAULT_TEST_TIMEOUT,
     "force_fresh": True,
     "reflection": False,
     "force_reflection": False,
@@ -278,9 +287,11 @@ _QUALITY_GATE_DEFAULTS: dict[str, object] = {
 
 def _read_quality_gate_config(root: Path) -> tuple[int, float, bool, dict[str, object]]:
     """Read pipeline config and return (timeout, coverage_threshold, force_fresh, cfg)."""
-    cfg = read_pipeline_phase_config(root, "commit", "checks", _QUALITY_GATE_DEFAULTS)
+    project_timeout = effective_test_timeout(root)
+    defaults = {**_QUALITY_GATE_DEFAULTS, "test_timeout": project_timeout}
+    cfg = read_pipeline_phase_config(root, "commit", "checks", defaults)
     return (
-        as_int(cfg.get("test_timeout"), 600),
+        as_int(cfg.get("test_timeout"), project_timeout),
         as_float(cfg.get("coverage_threshold"), 0.90),
         as_bool(cfg.get("force_fresh"), True),
         cfg,
@@ -304,6 +315,10 @@ _PASS_TRIM_KEYS: frozenset[str] = frozenset(
         "skip_details",
         # AI: prediction grading notice is advisory but must survive the pass trim.
         "predictions",
+        "test_filter",
+        "test_scope",
+        "coverage_scope",
+        "full_suite_validated",
     }
 )
 
@@ -322,14 +337,12 @@ async def run_quality_gate_inner(
     """Resolve config and spawn Phase A quality gate."""
     root = get_current_project_root() or Path(await get_or_resolve_project_root(ctx))
     timeout, coverage_threshold, force_fresh, cfg = _read_quality_gate_config(root)
+    try:
+        test_filter = validate_test_filter(cfg.get("test_filter"))
+    except ValueError as exc:
+        return {"status": "error", "error": str(exc), "preflight_passed": False}
     scope = str(root.resolve())
-    logger.info(
-        "run_quality_gate: start scope=%s timeout=%ss coverage_threshold=%.2f force_fresh=%s",
-        scope,
-        timeout,
-        coverage_threshold,
-        force_fresh,
-    )
+    _log_quality_gate_start(scope, timeout, coverage_threshold, force_fresh)
     result = await _spawn_and_poll_phase_a(
         root,
         timeout=timeout,
@@ -337,6 +350,7 @@ async def run_quality_gate_inner(
         force_fresh=force_fresh,
         ctx=ctx,
         env=env,
+        **({"test_filter": test_filter} if test_filter is not None else {}),
     )
     if (
         result.get("status") in {"running", "timeout"}
@@ -346,6 +360,19 @@ async def run_quality_gate_inner(
     gate_passed = await _finalize_quality_gate_result(root, result, cfg, ctx)
     logger.info("run_quality_gate: done scope=%s passed=%s", scope, gate_passed)
     return result
+
+
+def _log_quality_gate_start(
+    scope: str, timeout: int, coverage_threshold: float, force_fresh: bool
+) -> None:
+    """Record resolved gate settings before detached execution."""
+    logger.info(
+        "run_quality_gate: start scope=%s timeout=%ss coverage_threshold=%.2f force_fresh=%s",
+        scope,
+        timeout,
+        coverage_threshold,
+        force_fresh,
+    )
 
 
 async def _finalize_quality_gate_result(
@@ -364,7 +391,10 @@ async def _finalize_quality_gate_result(
     _ = await record_gate_result(root, result)
     if gate_passed:
         _ = trim_passing_quality_gate_result(result)
-        PipelineDirtyTracker.get_instance().record_phase_a(root, True)
+        # AI: Selected tests cannot authorize a later full-suite fingerprint skip.
+        PipelineDirtyTracker.get_instance().record_phase_a(
+            root, result.get("full_suite_validated") is not False
+        )
     else:
         append_agent_log_to_quality_result(result)
     await append_log_entry_best_effort(
@@ -402,16 +432,23 @@ async def run_quality_gate(
     force_fresh=true for a fresh verdict. Lock contention without an
     existing job returns an error; retry rather than assuming the gate passed.
 
-    Config is read from the pipeline session file written by
-    pipeline_handoff(operation="write", pipeline="commit", phase="checks").
+    Session config is written by pipeline_handoff(operation="write_task",
+    pipeline="commit", phase="checks"). A persistent project timeout default is
+    configured with pipeline_handoff(operation="configure_quality_gate",
+    data={"test_timeout": 7200}); it survives new sessions. Explicit session
+    test_timeout overrides the project setting; omit it to inherit the project
+    setting or the global 900-second default.
     Supported keys: coverage_threshold (float), test_timeout (int), force_fresh (bool),
-    reflection (bool), force_reflection (bool). When reflection is enabled and primary
+    test_filter (nonempty string or null), reflection (bool), force_reflection (bool).
+    test_filter selects pytest -k or SwiftPM --filter; selected tests do not
+    certify full-suite coverage and use read-only source lint/format checks.
+    When reflection is enabled and primary
     checks pass, a heuristic reflection pass runs; error-level findings set
     preflight_passed to false.
 
     EXAMPLES:
     - run_quality_gate() before commit Phase A.
-    - pipeline_handoff(write, checks, {"force_fresh": true, "test_timeout": 600})
+    - pipeline_handoff(write_task, checks, {"force_fresh": true})
       then run_quality_gate() for Step 12 final gate.
     """
     return await run_quality_gate_with_env(ctx, LocalExecutionEnvironment())

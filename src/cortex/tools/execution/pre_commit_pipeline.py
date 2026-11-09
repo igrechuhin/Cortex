@@ -10,6 +10,7 @@ from cortex.services.framework_adapters.base import (
     FrameworkAdapter,
     TestResult,
 )
+from cortex.services.framework_adapters.selected_checks import selected_source_checks
 from cortex.tools.execution.pre_commit_helpers_models import (
     CheckStats,
     PreCommitCheck,
@@ -89,6 +90,7 @@ def _run_tests_step(
     stats: CheckStats,
     progress_callback: Callable[[int, int], None] | None,
     include_slow_tests: bool,
+    test_filter: str | None = None,
 ) -> None:
     process_tests_check(
         adapter,
@@ -99,11 +101,12 @@ def _run_tests_step(
         stats,
         progress_callback,
         include_slow_tests,
+        **({"test_filter": test_filter} if test_filter is not None else {}),
     )
 
 
 # fmt: off
-def run_checks_pipeline(adapter: FrameworkAdapter, language: str, checks_to_perform: list[PreCommitCheck], strict_mode: bool, timeout: int | None, coverage_threshold: float, progress_callback: Callable[[int, int], None] | None, results: dict[str, CheckResult | TestResult | QualityCheckResult], stats: CheckStats, include_slow_tests: bool = False, phase_callback: Callable[[int, int], None] | None = None) -> None:
+def run_checks_pipeline(adapter: FrameworkAdapter, language: str, checks_to_perform: list[PreCommitCheck], strict_mode: bool, timeout: int | None, coverage_threshold: float, progress_callback: Callable[[int, int], None] | None, results: dict[str, CheckResult | TestResult | QualityCheckResult], stats: CheckStats, include_slow_tests: bool = False, phase_callback: Callable[[int, int], None] | None = None, test_filter: str | None = None) -> None:
 # fmt: on
     """Run all check processors in order."""
     _run_non_test_phase(
@@ -114,6 +117,7 @@ def run_checks_pipeline(adapter: FrameworkAdapter, language: str, checks_to_perf
         results,
         stats,
         phase_callback,
+        **({"test_filter": test_filter} if test_filter is not None else {}),
     )
     _run_tests_phase(
         adapter,
@@ -124,6 +128,7 @@ def run_checks_pipeline(adapter: FrameworkAdapter, language: str, checks_to_perf
         stats,
         progress_callback,
         include_slow_tests,
+        **({"test_filter": test_filter} if test_filter is not None else {}),
     )
 
 
@@ -135,7 +140,12 @@ def _run_non_test_phase(
     results: dict[str, CheckResult | TestResult | QualityCheckResult],
     stats: CheckStats,
     phase_callback: Callable[[int, int], None] | None,
+    test_filter: str | None = None,
 ) -> None:
+    if test_filter is not None:
+        checks_to_perform = _run_selected_source_checks(
+            adapter, checks_to_perform, results, stats
+        )
     _ = _run_non_test_checks(
         adapter,
         language,
@@ -148,6 +158,25 @@ def _run_non_test_phase(
     )
 
 
+def _run_selected_source_checks(
+    adapter: FrameworkAdapter,
+    checks: list[PreCommitCheck],
+    results: dict[str, CheckResult | TestResult | QualityCheckResult],
+    stats: CheckStats,
+) -> list[PreCommitCheck]:
+    """Replace automatic source mutations with equivalent read-only validations."""
+    replacements = (PreCommitCheck.FIX_ERRORS, PreCommitCheck.FORMAT)
+    if any(check in checks for check in replacements):
+        lint, formatting = selected_source_checks(adapter)
+        for check, result in zip(replacements, (lint, formatting), strict=True):
+            if check in checks:
+                results[check.value] = result
+                stats.checks_performed.append(check.value)
+                stats.total_errors += len(result.errors)
+                stats.total_warnings += len(result.warnings)
+    return [check for check in checks if check not in replacements]
+
+
 def _run_tests_phase(
     adapter: FrameworkAdapter,
     checks_to_perform: list[PreCommitCheck],
@@ -157,6 +186,7 @@ def _run_tests_phase(
     stats: CheckStats,
     progress_callback: Callable[[int, int], None] | None,
     include_slow_tests: bool,
+    test_filter: str | None = None,
 ) -> None:
     _run_tests_step(
         adapter,
@@ -167,4 +197,5 @@ def _run_tests_phase(
         stats,
         progress_callback,
         include_slow_tests,
+        **({"test_filter": test_filter} if test_filter is not None else {}),
     )

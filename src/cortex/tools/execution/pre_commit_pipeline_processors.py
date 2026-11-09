@@ -11,6 +11,8 @@ from cortex.services.framework_adapters.base import (
     FrameworkAdapter,
     TestResult,
 )
+from cortex.services.framework_adapters.python_adapter import PythonAdapter
+from cortex.services.framework_adapters.swift_adapter import SwiftAdapter
 from cortex.tools.execution.pre_commit_helpers_models import (
     CheckStats,
     PreCommitCheck,
@@ -238,6 +240,7 @@ def process_tests_check(
     stats: CheckStats,
     progress_callback: Callable[[int, int], None] | None = None,
     include_slow_tests: bool = False,
+    test_filter: str | None = None,
 ) -> None:
     """Process tests check if requested."""
     if PreCommitCheck.TESTS in checks_to_perform:
@@ -247,6 +250,7 @@ def process_tests_check(
             coverage_threshold,
             progress_callback,
             include_slow_tests,
+            **({"test_filter": test_filter} if test_filter is not None else {}),
         )
         results[PreCommitCheck.TESTS.value] = test_result
         stats.checks_performed.append(PreCommitCheck.TESTS.value)
@@ -273,8 +277,20 @@ def _execute_tests(
     coverage_threshold: float,
     progress_callback: Callable[[int, int], None] | None = None,
     include_slow_tests: bool = False,
+    test_filter: str | None = None,
 ) -> TestResult:
     """Execute tests check. By default excludes slow tests for fast commit runs."""
+    if test_filter is not None:
+        if not isinstance(adapter, (PythonAdapter, SwiftAdapter)):
+            raise ValueError("test_filter supports only Python pytest and SwiftPM")
+        return adapter.run_tests(
+            timeout=timeout,
+            coverage_threshold=coverage_threshold,
+            max_failures=None,
+            progress_callback=progress_callback,
+            include_slow_tests=include_slow_tests,
+            test_filter=test_filter,
+        )
     return adapter.run_tests(
         timeout=timeout,
         coverage_threshold=coverage_threshold,

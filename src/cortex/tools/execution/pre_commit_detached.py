@@ -83,6 +83,7 @@ def compute_args_hash(
     coverage_threshold: float,
     strict_mode: bool,
     include_markdown: bool,
+    test_filter: str | None = None,
 ) -> str:
     """Deterministic hash of call arguments for result file naming."""
     key = json.dumps(
@@ -92,6 +93,7 @@ def compute_args_hash(
             "coverage": coverage_threshold,
             "strict": strict_mode,
             "markdown": include_markdown,
+            **({"test_filter": test_filter} if test_filter is not None else {}),
         },
         sort_keys=True,
     )
@@ -162,9 +164,15 @@ def _build_job_id(
     coverage_threshold: float,
     strict_mode: bool,
     include_markdown_lint: bool,
+    test_filter: str | None = None,
 ) -> str:
     return compute_args_hash(
-        checks, timeout, coverage_threshold, strict_mode, include_markdown_lint
+        checks,
+        timeout,
+        coverage_threshold,
+        strict_mode,
+        include_markdown_lint,
+        test_filter,
     )
 
 
@@ -204,6 +212,7 @@ def _spawn_new_job(
     args_hash: str,
     env: ExecutionEnvironment,
     quality_gate: bool = False,
+    test_filter: str | None = None,
 ) -> dict[str, object]:
     _ = spawn_detached_worker(
         project_root,
@@ -215,6 +224,7 @@ def _spawn_new_job(
         args_hash,
         env=env,
         quality_gate=quality_gate,
+        test_filter=test_filter,
     )
     return DetachedJobInfo(job_id=args_hash, status=DetachedJobStatus.STARTED).to_dict()
 
@@ -275,9 +285,15 @@ def _compute_job_hash(
     coverage_threshold: float,
     strict_mode: bool,
     include_markdown_lint: bool,
+    test_filter: str | None = None,
 ) -> str:
     return _build_job_id(
-        checks, timeout, coverage_threshold, strict_mode, include_markdown_lint
+        checks,
+        timeout,
+        coverage_threshold,
+        strict_mode,
+        include_markdown_lint,
+        test_filter,
     )
 
 
@@ -291,26 +307,22 @@ def start_pre_commit_job_impl(
     env: ExecutionEnvironment,
     force_fresh: bool = False,
     quality_gate: bool = False,
+    test_filter: str | None = None,
 ) -> dict[str, object]:
     """Start or reuse a detached pre-commit job; return lightweight status."""
-    args_hash = _compute_job_hash(
-        checks, timeout, coverage_threshold, strict_mode, include_markdown_lint
-    )
+    # AI: One spec tuple feeds identity and spawn so the two argument lists cannot drift.
+    spec = (checks, timeout, coverage_threshold, strict_mode, include_markdown_lint)
+    args_hash = _compute_job_hash(*spec, test_filter)
     existing_result = _existing_or_busy_job(project_root, args_hash, force_fresh)
     if existing_result is not None:
         return existing_result
-    if force_fresh:
-        _clear_cached_result(project_root, args_hash)
     return _spawn_new_job(
         project_root,
-        checks,
-        timeout,
-        coverage_threshold,
-        strict_mode,
-        include_markdown_lint,
+        *spec,
         args_hash,
         env=env,
         quality_gate=quality_gate,
+        test_filter=test_filter,
     )
 
 
@@ -329,6 +341,8 @@ def _existing_or_busy_job(
             "status": "error",
             "error": "Another Phase A configuration is still running.",
         }
+    if force_fresh:
+        _clear_cached_result(project_root, args_hash)
     return None
 
 
