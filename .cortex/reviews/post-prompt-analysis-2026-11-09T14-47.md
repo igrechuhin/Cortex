@@ -34,3 +34,9 @@ blank line at EOF). Fixed at the join with a regression test; verified byte-iden
 re-ingest; fresh full gate green (8671/8671, 92.06% coverage). One stale-cache gate replay
 observed and retried per `omp-xd-gate-force-fresh-cache-retry`; the bounded-wait and
 context-load tests remain load-sensitive (both pass solo and in the final full run).
+
+Verification precision: the live staged re-ingest of `docs/api/tools.md` hit the
+unchanged-content short-circuit (`stable_path_ingest.py` returns before the summary
+generator), so it proved only skip-path no-drift. Real regeneration was proven separately:
+replaying `upsert_wiki_ingest_summary_for_stable_source` with the ingest's exact payload
+derivation on a temporary wiki copy re-emitted the committed concepts page byte-identical.
