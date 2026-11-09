@@ -2,10 +2,21 @@
 
 from __future__ import annotations
 
+from enum import StrEnum
+
 from pydantic import BaseModel, ConfigDict
 
 from cortex.core.pydantic_extra import EXTRA_FORBID
 from cortex.tools.context.scoped_source_state import ScopedSourceState
+
+
+class ScopedSourceUse(StrEnum):
+    """How a selected input can contribute to the current work."""
+
+    EVIDENCE = "evidence"
+    HISTORY = "history"
+    TASK_PLAN = "task_plan"
+    PROJECT_RULE = "project_rule"
 
 
 class SourceRevision(BaseModel):
@@ -19,3 +30,4 @@ class SourceRevision(BaseModel):
     provenance: str
     revision: str | None = None
     state: ScopedSourceState = ScopedSourceState.PRESENT
+    use: ScopedSourceUse = ScopedSourceUse.EVIDENCE

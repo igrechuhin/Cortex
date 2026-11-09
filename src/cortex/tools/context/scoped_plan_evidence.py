@@ -18,7 +18,7 @@ from cortex.tools.context.scoped_evidence_state import ScopedEvidenceState
 from cortex.tools.context.scoped_readiness import ScopedReadiness
 from cortex.tools.context.scoped_snapshot import ScopedSnapshot
 from cortex.tools.context.scoped_source_state import ScopedSourceState
-from cortex.tools.context.source_revision import SourceRevision
+from cortex.tools.context.source_revision import ScopedSourceUse, SourceRevision
 
 
 def _membership(index: PlanIdentityIndex, slug: str) -> list[str]:
@@ -52,8 +52,18 @@ def _select_plan(
         snapshot.issue("unreadable", [key], f"Cannot decode selected plan: {slug}")
         return None
     snapshot.plans[slug] = text
+    use = _plan_use(row.archived, snapshot.scope == key)
+    snapshot.sources[key] = snapshot.sources[key].model_copy(update={"use": use})
     _metadata_issues(snapshot, slug, text)
     return text
+
+
+def _plan_use(archived: bool, selected: bool) -> ScopedSourceUse:
+    if archived:
+        return ScopedSourceUse.HISTORY
+    if selected:
+        return ScopedSourceUse.TASK_PLAN
+    return ScopedSourceUse.EVIDENCE
 
 
 def _metadata_issues(snapshot: ScopedSnapshot, slug: str, text: str) -> None:

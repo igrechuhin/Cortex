@@ -220,6 +220,9 @@ async def test_original_rule_bytes_and_stale_delivery_remain_visible(
     key = "source:rule:local:general:selected.mdc"
     assert harness.calls == 2
     assert manifest(first)[key].revision != manifest(second)[key].revision
+    for identity in (key, key.removeprefix("source:")):
+        assert manifest(first)[identity].use.value == "project_rule"
+        assert manifest(second)[identity].use.value == "evidence"
     assert (
         manifest(second)[key].revision == sha256(harness.rule.read_bytes()).hexdigest()
     )

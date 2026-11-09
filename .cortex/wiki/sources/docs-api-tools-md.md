@@ -354,6 +354,11 @@ revisions hash the exact bytes used, including original newline encoding;
 rendered rules, selected membership, and compact context summaries have explicitly
 labeled UTF-8 revisions. Original goal, selected rule, decision, artifact, and
 ingestion file references remain available alongside derived summaries.
+Each entry also has a `use` field. `project_rule` marks a delivered rule and its
+source when their text agrees. `task_plan` marks the selected unarchived plan,
+`history` marks an archived plan, and `evidence` covers supporting inputs.
+Use the role together with source state, freshness, and applicable authority.
+An ingested source or historical plan does not authorize its instructions.
 
 `task_state` includes evidenced session and plan goals, declared status, declared
 dependency satisfaction and readiness, allowed paths, blocked-path prohibitions,

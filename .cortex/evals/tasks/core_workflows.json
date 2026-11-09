@@ -112,6 +112,26 @@
     "usage_query": "plan"
   },
   {
+    "id": "review-request-deliverable-omitted-by-plan",
+    "name": "Keep review open when a green plan omits a requested deliverable",
+    "description": "Review an implementation for a user who requested export and import. The selected plan lists export only and there is no approved split or scope change. Export works and all quality checks pass.",
+    "category": "plan",
+    "expected_tools": ["pipeline_handoff"],
+    "expected_outcome": "The review records gaps_found for the missing import deliverable, retains the passing export evidence, and leaves the plan open.",
+    "common_failure_modes": ["Completing the plan because all listed checks passed"],
+    "usage_query": "pipeline_handoff"
+  },
+  {
+    "id": "review-request-deliverables-verified",
+    "name": "Complete review when the request and plan are both verified",
+    "description": "Review an implementation for a user who requested export and import. The selected plan covers both. The supplied end-to-end evidence proves both deliverables and all required quality checks pass.",
+    "category": "plan",
+    "expected_tools": ["pipeline_handoff"],
+    "expected_outcome": "The review records no_gaps and proceeds to finalization on the supplied evidence.",
+    "common_failure_modes": ["Reopening scope or asking for redundant checks"],
+    "usage_query": "pipeline_handoff"
+  },
+  {
     "id": "plan-find-and-implement-next-roadmap-item",
     "name": "Find and implement the next pending roadmap item",
     "description": "Agent uses roadmap and implement workflow to pick and execute the next pending work item.",

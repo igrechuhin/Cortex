@@ -15,6 +15,7 @@ from cortex.core.session_goal_models import SessionGoal
 from cortex.core.session_goal_store import session_goal_path
 from cortex.tools.context.scoped_snapshot import ScopedSnapshot
 from cortex.tools.context.scoped_source_state import ScopedSourceState
+from cortex.tools.context.source_revision import ScopedSourceUse
 
 
 def capture_goal_evidence(snapshot: ScopedSnapshot) -> None:
@@ -193,8 +194,9 @@ def _goal_derivation_issues(
 def _capture_rule_source(
     snapshot: ScopedSnapshot, key: str, path: Path, content: str
 ) -> None:
+    source_key = f"source:{key}"
     try:
-        original = snapshot.read(path, "rule-source", f"source:{key}")
+        original = snapshot.read(path, "rule-source", source_key)
     except (OSError, UnicodeError):
         snapshot.issue(
             "missing_rule_source", [key], "Original selected rule file is unavailable."
@@ -205,8 +207,13 @@ def _capture_rule_source(
     if content != normalized_source:
         snapshot.issue(
             "stale_rule_payload",
-            [key, f"source:{key}"],
+            [key, source_key],
             "Delivered rule text disagrees with original bytes; no implicit replacement.",
+        )
+        return
+    for identity in (key, source_key):
+        snapshot.sources[identity] = snapshot.sources[identity].model_copy(
+            update={"use": ScopedSourceUse.PROJECT_RULE}
         )
 
 

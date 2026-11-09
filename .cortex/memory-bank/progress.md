@@ -1,6 +1,11 @@
 <!-- memory_type: milestone -->
 # Progress Log
 
+## 2026-11-09
+
+- <!-- memory_type: status -->
+**FPF practices in implementation review, scoped context, and shaping** - COMPLETE. Implementation review verifies the initiating request and plan against observed evidence. Scoped context distinguishes current project rules, the selected plan, history, and evidence. Shaping records preserve observable triggers for revisiting dependent decisions. Fresh Cortex quality gate and scoped MCP smoke passed.
+
 ## 2026-11-02
 
 - <!-- memory_type: milestone -->

@@ -3,6 +3,11 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-11-09)
+
+- ✅ **FPF practices in implementation review, scoped context, and shaping** - COMPLETE (2026-11-09) - <!-- memory_type: status -->
+Implementation review verifies the initiating request and plan against observed evidence. Scoped context distinguishes current project rules, the selected plan, history, and evidence. Shaping records preserve observable triggers for revisiting dependent decisions. Fresh Cortex quality gate and scoped MCP smoke passed.
+
 ## Completed Work (2026-11-02)
 
 - ✅ **Session checkpoint feature and gate remediation shipped** - COMPLETE (2026-11-02) - <!-- memory_type: status -->

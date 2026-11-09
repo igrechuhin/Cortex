@@ -37,6 +37,7 @@ _SHAPE_RECORD = """# Shape: retrieval scoring
 ## Assumptions
 
 - Corpus stays under 10k documents
+  - Revisit scorer selection if the corpus reaches 10k documents.
 
 ## Explicitly Out of Scope
 
@@ -184,7 +185,9 @@ async def test_create_plan_with_shape_log_adds_shaping_constraints(
     )
     assert "## Shaping Constraints" in created
     assert "BM25 hybrid" in created
-    assert "Corpus stays under 10k documents" in created
+    assert (
+        "  - Revisit scorer selection if the corpus reaches 10k documents." in created
+    )
     assert "Re-ranking model training" in created
 
 
