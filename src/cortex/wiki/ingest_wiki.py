@@ -257,7 +257,7 @@ def _stable_upsert_markdown_body(
     bullets = _parse_revision_bullets(prior)
     if revision_note is not None:
         bullets.append(revision_note)
-    final_body = f"{body.rstrip()}{_revision_markdown_block(bullets)}\n"
+    final_body = f"{body.rstrip()}\n{_revision_markdown_block(bullets)}"
     return final_body, one_line
 
 
