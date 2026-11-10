@@ -124,8 +124,8 @@ async def validate_impl(
       and content
     - infrastructure: Validates project infrastructure consistency
       (CI vs commit prompt, code quality, docs, config)
-    - timestamps: Validates that all timestamps use YYYY-MM-DDTHH:MM format
-      (ISO 8601 date-time without seconds/timezone)
+    - timestamps: Validates canonical work-entry dates and calendar-valid provenance
+      timestamps in prose without losing precision or timezone
     - roadmap_sync: Validates that roadmap.md is synchronized with codebase
       (all production TODOs tracked, all references valid)
 
@@ -141,8 +141,8 @@ async def validate_impl(
             - "quality": Calculate quality scores and metrics
             - "roadmap_sync": Validate roadmap.md synchronization with codebase
             - "infrastructure": Validate project infrastructure consistency
-            - "timestamps": Validate timestamp format (YYYY-MM-DDTHH:MM,
-              ISO 8601 date-time without seconds/timezone)
+            - "timestamps": Validate canonical work-entry dates and calendar-valid
+              provenance timestamps in prose
         file_name: Specific file to validate (e.g., "projectBrief.md")
             - For schema: validates single file or all files if None
             - For duplications: always checks all files (parameter ignored)
@@ -196,8 +196,8 @@ async def validate_impl(
           and content quality (sufficient detail, clear writing)
         - Infrastructure validation checks project consistency
           (CI vs commit prompt, code quality, docs, config)
-        - Timestamp validation ensures all timestamps use YYYY-MM-DDTHH:MM
-          format (ISO 8601 date-time without seconds/timezone)
+        - Timestamp validation keeps work-entry dates canonical while
+          validating precise provenance timestamps in prose
         - Roadmap sync validation ensures all production TODOs are tracked
           in roadmap.md and all roadmap references are valid. When valid is
           false, the response includes missing_roadmap_entries,

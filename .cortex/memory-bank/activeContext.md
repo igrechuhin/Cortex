@@ -14,6 +14,9 @@ Preserved tracked submodule targets in commit-preflight checkpoints using a priv
 - ✅ **Selected Swift build timeout budget** - COMPLETE (2026-11-10) - <!-- memory_type: status -->
 Selected read-only Swift builds now use explicit BUILD_TIMEOUT, then the configured gate test_timeout, then the existing 300-second fallback. Invalid or nonpositive overrides fail closed; real timeouts remain failures. Ordinary adapter behavior and every quality stage remain unchanged. Scoped regression gate: 121 passed, no failures or skips.
 
+- ✅ **Precise provenance timestamp validation** - COMPLETE (2026-11-10) - <!-- memory_type: status -->
+Work-entry metadata remains canonical while prose citations retain calendar-valid seconds, fractions and timezone. Complete token validation rejects invalid calendar dates, times and offsets. Numeric triplets require calendar signals; explicit basis-point units identify quantity grids. Contract docs and synthetic regression coverage updated; scoped gate passed 106 tests.
+
 ## Completed Work (2026-11-09)
 
 - ✅ **FPF practices in implementation review, scoped context, and shaping** - COMPLETE (2026-11-09) - <!-- memory_type: status -->

@@ -6,6 +6,12 @@
 - <!-- memory_type: status -->
 - <!-- memory_type: status -->
 - <!-- memory_type: milestone -->
+- <!-- memory_type: milestone -->
+- <!-- memory_type: status -->
+- <!-- memory_type: status -->
+Expanded provenance validation passed 106 focused tests, including overnight UTC ranges, punctuation boundaries, malformed offsets and invalid endpoint times. Historical records remain unchanged.
+Validated explicit UTC provenance time ranges without reinterpreting malformed ISO offsets. Both endpoints must be calendar-valid and may span midnight; work-entry metadata remains strict. Expanded scoped regression gate passed all 66 tests with zero errors or warnings.
+Completed precise provenance timestamp validation with strict work-entry metadata, calendar-valid full-token checks, and unit-aware numeric grids. Updated public contract and synthetic regressions; scoped quality gate passed 57 tests with zero failures or skips. Historical project records were not rewritten.
 Completed selected Swift build timeout budget: BUILD_TIMEOUT overrides the configured gate budget, with a bounded 300-second fallback; invalid values and real timeouts fail closed. Ordinary adapter semantics remain unchanged. Scoped regression gate passed 121 tests, with CI parity green and Synapse unchanged at 43d1d387.
 **Tracked submodule checkpoint preservation** - COMPLETE. Checkpoints now capture tracked submodule targets while preserving separate staged and unstaged states and excluding submodule contents. Real MCP checkpoint verified unchanged index and worktree hashes. Selected quality gate passed 93 tests; full suite was not run. Updated Synapse to published 43d1d387 for JIT Metal resource packaging.
 **Project-selected Swift formatter** - COMPLETE. Unified formatter selection and exact SwiftFormat version enforcement across checks and autofix. Preserved default SwiftPM and Xcode formatter choices, removed silent missing-tool success, and retained explicit owned-file scope. Selected quality gate passed all 76 tests; full suite was not run.

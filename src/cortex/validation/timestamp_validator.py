@@ -1,9 +1,9 @@
 """Timestamp validation utilities for Memory Bank files.
 
 This module provides functions to validate timestamp formats in Memory Bank files.
-Valid timestamps use YYYY-MM-DDTHH:MM format (ISO 8601 date-time without
-seconds/timezone). Year must be within current year ± 1 to catch typos (e.g. 2025
-when 2026 was intended).
+Work timestamps use YYYY-MM-DD or YYYY-MM-DDTHH:MM; prose may preserve
+calendar-valid provenance precision and timezone. Work-entry years must be
+within current year ± 1 to catch typos.
 """
 
 import json
@@ -23,6 +23,7 @@ from cortex.validation.models import (
     TimestampScanResult,
     TimestampViolationModel,
 )
+from cortex.validation.timestamp_provenance import check_iso_timestamps
 
 # Valid format: YYYY-MM-DDTHH:MM (ISO 8601 without seconds/timezone)
 VALID_DATETIME_PATTERN = r"\b(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})\b"
@@ -57,127 +58,10 @@ def _is_work_timestamp(line: str, start: int, end: int) -> bool:
     return line[start - 1] == "(" and line[end : end + 1] == ")"
 
 
-def _check_valid_datetime_patterns(
-    line: str, line_num: int
-) -> tuple[int, list[TimestampViolationModel]]:
-    """Check for valid YYYY-MM-DDTHH:MM format timestamps.
-
-    Returns:
-        Tuple of (valid_count, violations)
-    """
-    valid_count = 0
-    violations: list[TimestampViolationModel] = []
-    datetime_matches = re.finditer(VALID_DATETIME_PATTERN, line)
-    for match in datetime_matches:
-        timestamp_str = match.group(1)
-        try:
-            _ = datetime.strptime(timestamp_str, "%Y-%m-%dT%H:%M")
-            valid_count += 1
-        except ValueError:
-            pass
-    return valid_count, violations
-
-
-def _check_valid_date_patterns(
-    line: str, line_num: int
-) -> tuple[int, list[TimestampViolationModel]]:
-    """Check for valid YYYY-MM-DD date-only format timestamps.
-
-    Date-only format is also valid for historical entries or when time is not needed.
-
-    Returns:
-        Tuple of (valid_count, violations)
-    """
-    valid_count = 0
-    violations: list[TimestampViolationModel] = []
-    date_matches = re.finditer(VALID_DATE_PATTERN, line)
-    for match in date_matches:
-        date_str = match.group(1)
-        # Skip if this is part of a datetime (YYYY-MM-DDTHH:MM)
-        if re.search(rf"{re.escape(date_str)}T\d", line):
-            continue
-        try:
-            _ = datetime.strptime(date_str, "%Y-%m-%d")
-            valid_count += 1
-        except ValueError:
-            pass
-    return valid_count, violations
-
-
-def _get_invalid_datetime_patterns() -> list[tuple[str, str]]:
-    """Get patterns for invalid datetime formats.
-
-    Invalid formats include:
-    - Timestamps with seconds (YYYY-MM-DDTHH:MM:SS)
-    - Timestamps with timezone (YYYY-MM-DDTHH:MMZ or YYYY-MM-DDTHH:MM+00:00)
-    - Space-separated date-time (YYYY-MM-DD HH:MM)
-
-    Returns:
-        List of (pattern, issue_message) tuples
-    """
-    return [
-        (
-            r"\b\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}\b",
-            "Invalid format: space-separated (should be YYYY-MM-DDTHH:MM)",
-        ),
-        (
-            r"\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\b",
-            "Invalid format: contains seconds (should be YYYY-MM-DDTHH:MM)",
-        ),
-        (
-            r"\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}[Z+-]",
-            "Invalid format: contains timezone (should be YYYY-MM-DDTHH:MM)",
-        ),
-    ]
-
-
-def _add_pattern_violations(
-    line: str,
-    line_num: int,
-    pattern: str,
-    issue_msg: str,
-    violations: list[TimestampViolationModel],
-) -> int:
-    """Add violations for a pattern match.
-
-    Returns:
-        Count of violations added
-    """
-    count = 0
-    for match in re.finditer(pattern, line):
-        count += 1
-        violations.append(
-            TimestampViolationModel(
-                line=line_num,
-                content=line.strip()[:80],
-                timestamp=match.group(0),
-                issue=issue_msg,
-            )
-        )
-    return count
-
-
-def _check_invalid_datetime_formats(
-    line: str, line_num: int
-) -> tuple[int, list[TimestampViolationModel]]:
-    """Check for invalid datetime formats (wrong separator, seconds, timezone, etc.).
-
-    Returns:
-        Tuple of (invalid_count, violations)
-    """
-    invalid_format_count = 0
-    violations: list[TimestampViolationModel] = []
-    patterns = _get_invalid_datetime_patterns()
-    for pattern, issue_msg in patterns:
-        count = _add_pattern_violations(line, line_num, pattern, issue_msg, violations)
-        invalid_format_count += count
-    return invalid_format_count, violations
-
-
 def _looks_like_date(date_str: str) -> bool:
     """Recognize date components without requiring a valid calendar date."""
     first, second, year = re.split(r"[/-]", date_str)
-    if len(first) >= 3 or len(year) >= 3:
+    if len(year) >= 3:
         return True
     left, right = int(first), int(second)
     # Keep malformed dates with a month-sized field or two day-sized fields.
@@ -204,6 +88,9 @@ def _check_other_date_formats(
     other_matches = re.finditer(other_pattern, line)
     for match in other_matches:
         date_str = match.group(1)
+        unit_suffix = line[match.end() :]
+        if re.match(r"(?:[ \t]+|-)(?:bps?|basis[- ]points?)\b", unit_suffix, re.I):
+            continue
         if not _looks_like_date(date_str):
             continue
         invalid_format_count += 1
@@ -226,21 +113,8 @@ def _process_line_timestamps(
     Returns:
         Tuple of (valid_count, invalid_count, violations)
     """
-    valid_count = invalid_format_count = 0
-    violations: list[TimestampViolationModel] = []
-
-    # Check for valid YYYY-MM-DDTHH:MM format (preferred)
-    v_count, _ = _check_valid_datetime_patterns(line, line_num)
-    valid_count += v_count
-
-    # Check for valid YYYY-MM-DD format (also acceptable)
-    v_count, _ = _check_valid_date_patterns(line, line_num)
-    valid_count += v_count
-
-    # Check for invalid formats
-    inv_count, inv_violations = _check_invalid_datetime_formats(line, line_num)
-    invalid_format_count += inv_count
-    violations.extend(inv_violations)
+    valid_count, violations = check_iso_timestamps(line, line_num, _is_work_timestamp)
+    invalid_format_count = len(violations)
 
     inv_count, o_violations = _check_other_date_formats(line, line_num)
     invalid_format_count += inv_count

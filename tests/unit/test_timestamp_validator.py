@@ -10,7 +10,9 @@ from cortex.validation.timestamp_validator import scan_timestamps
 class TestScanTimestamps:
     """Tests for scan_timestamps()."""
 
-    @pytest.mark.parametrize("counts", ("21/34/43", "22/33/41", "40-50-60"))
+    @pytest.mark.parametrize(
+        "counts", ("21/34/43", "22/33/41", "40-50-60", "109/90/19", "127/96/31")
+    )
     def test_inventory_counts_are_not_dates(self, counts: str) -> None:
         """Numeric triplets without calendar components are not date citations."""
         result = scan_timestamps(f"Graph inventory ({counts}) confirms selection.")
@@ -55,12 +57,12 @@ class TestScanTimestamps:
 
     def test_invalid_datetime_with_seconds_adds_violation(self) -> None:
         """A line with YYYY-MM-DDTHH:MM:SS is invalid (seconds not allowed)."""
-        result = scan_timestamps("Done 2026-01-15T10:00:00")
+        result = scan_timestamps("## 2026-01-15T10:00:00")
         assert len(result.violations) >= 1
 
     def test_invalid_datetime_with_timezone_adds_violation(self) -> None:
         """A line with timezone (Z or +00:00) is invalid."""
-        result = scan_timestamps("Done 2026-01-15T10:00Z")
+        result = scan_timestamps("## 2026-01-15T10:00Z")
         assert len(result.violations) >= 1
 
     def test_non_standard_date_format_adds_violation(self) -> None:
@@ -138,3 +140,189 @@ class TestScanTimestamps:
                 result = scan_timestamps(line)
                 assert result.invalid_year_count == 0, line
                 assert result.violations == [], line
+
+
+@pytest.mark.parametrize(
+    "token",
+    [
+        "2026-11-05T15:34:55.950972+00:00",
+        "2020-09-14T17:15Z",
+        "2026-09-24 18:45",
+        "2026-11-05 16:57:31 UTC",
+        "2026-10-03T07:08:47",
+    ],
+)
+def test_precise_provenance_is_preserved(token: str) -> None:
+    result = scan_timestamps(f"Evidence captured at {token}, unchanged.")
+    assert result.valid_count == 1
+    assert result.violations == []
+
+
+@pytest.mark.parametrize(
+    "token",
+    [
+        "2026-02-30T12:00",
+        "2026-11-05T25:00:01Z",
+        "2026-11-05T15:34:99Z",
+        "2026-11-05T15:34:55+00:99",
+        "2026-11-05T15:34:55+25:00",
+        "2026-11-05T15:34:55.1.2Z",
+    ],
+)
+def test_invalid_provenance_is_rejected(token: str) -> None:
+    result = scan_timestamps(f"Evidence captured at {token}, unchanged.")
+    assert result.invalid_format_count == 1
+
+
+@pytest.mark.parametrize(
+    "token",
+    [
+        "2026-11-05T15:34:55.950972+00:00",
+        "2026-11-05 16:57:31 UTC",
+        "2026-11-05T15:34Z",
+    ],
+)
+@pytest.mark.parametrize("template", ["## {}", "- ✅ **Event** - COMPLETE ({})"])
+def test_precise_metadata_remains_rejected(token: str, template: str) -> None:
+    assert scan_timestamps(template.format(token)).invalid_format_count == 1
+
+
+@pytest.mark.parametrize(
+    "quantity", ["0/5/10 bp", "1/4/12-bp", "2/6/18 bps", "3/7/20 basis points"]
+)
+def test_unit_qualified_quantity_is_not_a_date(quantity: str) -> None:
+    assert scan_timestamps(f"Costs use {quantity} per event.").violations == []
+
+
+@pytest.mark.parametrize("token", ["0/5/10", "31/12/24", "00/00/26"])
+def test_date_like_values_without_units_remain_checked(token: str) -> None:
+    assert scan_timestamps(f"Event date {token}.").invalid_format_count == 1
+
+
+@pytest.mark.parametrize(
+    "token",
+    [
+        "2026-09-29 15:40-15:59Z",
+        "2026-09-29 15:40-16:00Z",
+        "2026-09-29 08:00-09:30 UTC",
+    ],
+)
+def test_provenance_time_range_validates_both_endpoints(token: str) -> None:
+    assert scan_timestamps(f"Observed window {token}.").violations == []
+    assert scan_timestamps(f"## {token}").invalid_format_count == 1
+
+
+@pytest.mark.parametrize(
+    "token",
+    [
+        "2026-09-29 15:40-25:00Z",
+        "2026-02-30 15:40-16:00Z",
+        "2026-09-29T15:40-16:00Z",
+        "2026-09-29T15:40+00:00Z",
+        "2026-09-29T15:40+00:",
+    ],
+)
+def test_invalid_ranges_and_offsets_remain_errors(token: str) -> None:
+    assert scan_timestamps(f"Observed window {token}.").invalid_format_count == 1
+
+
+@pytest.mark.parametrize(
+    "token",
+    [
+        "2026-10-02 23:00Z-05:35Z:",
+        "2026-09-29 15:40-14:00Z",
+        "2026-10-02 23:00-05:35 UTC",
+        "2026-10-02T23:00:35Z:",
+    ],
+)
+def test_overnight_ranges_and_prose_colons(token: str) -> None:
+    assert scan_timestamps(f"Observed {token} evidence retained.").violations == []
+    assert scan_timestamps(f"## {token}").invalid_format_count == 1
+
+
+@pytest.mark.parametrize(
+    "token",
+    [
+        "2026-10-02 23:00Z-25:35Z:",
+        "2026-10-02 23:00Z-05:99Z:",
+        "2026-10-02T23:00+00:",
+        "2026-10-02T23:00+00:00Z:",
+    ],
+)
+def test_range_punctuation_does_not_hide_invalid_times(token: str) -> None:
+    assert (
+        scan_timestamps(f"Observed {token} evidence retained.").invalid_format_count
+        == 1
+    )
+
+
+@pytest.mark.parametrize(
+    "token",
+    [
+        "2026-11-05T15:34:55UTC",
+        "2026-11-05 15:34:55UTC",
+        "2026-11-05T12:3",
+        "2026-11-05 12:3",
+        "2026-11-05T12:",
+        "2026-11-05T",
+        "2026-11-05T12:34+",
+        "2026-11-05T12:34+00:",
+    ],
+)
+@pytest.mark.parametrize("template", ["## {}", "Observed {} in evidence."])
+def test_malformed_time_never_falls_back_to_date(token: str, template: str) -> None:
+    result = scan_timestamps(template.format(token))
+    assert result.invalid_format_count == 1
+    assert result.valid_count == 0
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "## 2026-11-05T15:34: checkpoint",
+        "## **2026-11-05T15:34**",
+        "Observed 2026-11-05T15:34:55Z: evidence.",
+        "Observed 2026-11-05T15:34:55+00:00. Next.",
+    ],
+)
+def test_complete_timestamp_allows_prose_punctuation(line: str) -> None:
+    assert scan_timestamps(line).violations == []
+
+
+@pytest.mark.parametrize(
+    "token", ["2026-09-30 06:00Z/06:45Z", "2026-09-24 17:30Z/18:45Z"]
+)
+def test_paired_utc_clocks_preserve_both_values(token: str) -> None:
+    assert scan_timestamps(f"Observed paired clocks {token}.").violations == []
+    assert scan_timestamps(f"## {token}").invalid_format_count == 1
+
+
+@pytest.mark.parametrize(
+    "token",
+    [
+        "2026-09-30 06:00Z/26:45Z",
+        "2026-09-24 17:30Z/18:99Z",
+        "2026-02-30 06:00Z/06:45Z",
+    ],
+)
+def test_invalid_paired_clocks_fail(token: str) -> None:
+    assert scan_timestamps(f"Observed paired clocks {token}.").invalid_format_count == 1
+
+
+@pytest.mark.parametrize(
+    "context", ["Analysis", "Pipeline", "Run", "Session", "Artifact"]
+)
+def test_filename_safe_run_identifier_is_not_timestamp(context: str) -> None:
+    assert scan_timestamps(f"{context} 2026-10-25T13-49 completed.").violations == []
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "Observed 2026-10-25T13-49.",
+        "## 2026-10-25T13-49",
+        "Analysis 2026-10-25T99-49 completed.",
+    ],
+)
+def test_identifier_context_does_not_hide_bad_dates(line: str) -> None:
+    assert scan_timestamps(line).invalid_format_count == 1

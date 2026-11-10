@@ -98,12 +98,24 @@ are up-to-date and internally consistent before committing.
 | 9 | Timestamp Validation | timestamp-validator | Verify YYYY-MM-DD timestamp format |
 | 10 | State Verification | (orchestration) | Verify roadmap = future work, activeContext = completed work |
 
-Timestamp validation accepts `YYYY-MM-DD` and `YYYY-MM-DDTHH:MM`; seconds,
-timezones, space-separated times, and non-standard date citations remain errors.
+Work-entry timestamps accept `YYYY-MM-DD` and `YYYY-MM-DDTHH:MM` only.
+Ordinary prose may preserve complete calendar-valid provenance timestamps with
+seconds, fractional seconds, UTC offsets, `Z`, or an explicit `UTC` suffix, using
+`T` or a space separator. Invalid calendar dates, times and offsets still fail.
+Prose UTC windows may use `YYYY-MM-DD HH:MM-HH:MMZ` (or a `UTC` suffix);
+both endpoints must be valid. A smaller end clock means the following UTC day.
+A `Z` suffix may mark both endpoints; a trailing colon after `Z` is prose
+punctuation. A `T`-separated
+timestamp with a malformed offset is not reinterpreted as a time range.
+Paired UTC clocks may use `YYYY-MM-DD HH:MMZ/HH:MMZ`; both must be valid.
+Filename-safe `YYYY-MM-DDTHH-MM` run identifiers are recognized only in explicit
+analysis, pipeline, run, session or artifact prose, never as work-entry metadata.
+Non-standard date citations remain errors.
 Slash/hyphen numeric triplets need a calendar signal: a three/four-digit year,
 a month-sized leading field, or two day-sized leading fields (including malformed
 dates). Inventory counts such as `21/34/43` lack that signal and are not dates.
-Identifier/path boundaries are preserved. The current-year ±1 typo check applies
+Explicit quantity units (`bp`, `bps`, or basis points) identify numeric grids,
+not dates. Identifier/path boundaries are preserved. The current-year ±1 typo check applies
 to work-entry timestamps, not historical dates cited in prose.
 
 ### Phase B — Inputs
