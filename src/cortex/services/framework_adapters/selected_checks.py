@@ -8,10 +8,13 @@ from cortex.core.path_resolver import get_venv_bin_path
 from .base import CheckResult, FrameworkAdapter
 from .python_adapter import PythonAdapter
 from .swift_adapter import SwiftAdapter
+from .swift_build_timeout import swift_build_timeout
 from .swift_formatting import run_swift_format
 
 
-def _check_command(root: Path, command: list[str], check_type: str) -> CheckResult:
+def _check_command(
+    root: Path, command: list[str], check_type: str, timeout: int = 300
+) -> CheckResult:
     """Capture command failures without applying source changes or skipping checks."""
     try:
         completed = subprocess.run(
@@ -19,7 +22,7 @@ def _check_command(root: Path, command: list[str], check_type: str) -> CheckResu
             cwd=root,
             capture_output=True,
             text=True,
-            timeout=300,
+            timeout=timeout,
         )
         output = completed.stdout + completed.stderr
         errors = [] if completed.returncode == 0 else [output or f"{check_type} failed"]
@@ -52,6 +55,7 @@ def _python_checks(root: Path) -> tuple[CheckResult, CheckResult]:
 
 def selected_source_checks(
     adapter: FrameworkAdapter,
+    timeout: int | None = None,
 ) -> tuple[CheckResult, CheckResult]:
     """Return read-only lint and format checks; never call mutating adapter methods."""
     root = adapter.project_root
@@ -60,7 +64,9 @@ def selected_source_checks(
     if isinstance(adapter, SwiftAdapter):
         if not adapter.has_package_swift():
             raise ValueError("Selected source checks require Swift Package Manager")
-        lint = _check_command(root, ["swift", "build"], "lint")
+        lint = _check_command(
+            root, ["swift", "build"], "lint", swift_build_timeout(timeout)
+        )
         formatting = run_swift_format(root, check=True)
         return lint, formatting
     raise ValueError("Selected source checks support only Python and SwiftPM adapters")

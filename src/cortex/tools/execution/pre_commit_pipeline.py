@@ -117,6 +117,7 @@ def run_checks_pipeline(adapter: FrameworkAdapter, language: str, checks_to_perf
         results,
         stats,
         phase_callback,
+        timeout=timeout,
         **({"test_filter": test_filter} if test_filter is not None else {}),
     )
     _run_tests_phase(
@@ -141,10 +142,11 @@ def _run_non_test_phase(
     stats: CheckStats,
     phase_callback: Callable[[int, int], None] | None,
     test_filter: str | None = None,
+    timeout: int | None = None,
 ) -> None:
     if test_filter is not None:
         checks_to_perform = _run_selected_source_checks(
-            adapter, checks_to_perform, results, stats
+            adapter, checks_to_perform, results, stats, timeout
         )
     _ = _run_non_test_checks(
         adapter,
@@ -163,11 +165,12 @@ def _run_selected_source_checks(
     checks: list[PreCommitCheck],
     results: dict[str, CheckResult | TestResult | QualityCheckResult],
     stats: CheckStats,
+    timeout: int | None = None,
 ) -> list[PreCommitCheck]:
     """Replace automatic source mutations with equivalent read-only validations."""
     replacements = (PreCommitCheck.FIX_ERRORS, PreCommitCheck.FORMAT)
     if any(check in checks for check in replacements):
-        lint, formatting = selected_source_checks(adapter)
+        lint, formatting = selected_source_checks(adapter, timeout=timeout)
         for check, result in zip(replacements, (lint, formatting), strict=True):
             if check in checks:
                 results[check.value] = result

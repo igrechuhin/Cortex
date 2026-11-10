@@ -5,6 +5,8 @@
 
 - <!-- memory_type: status -->
 - <!-- memory_type: status -->
+- <!-- memory_type: milestone -->
+Completed selected Swift build timeout budget: BUILD_TIMEOUT overrides the configured gate budget, with a bounded 300-second fallback; invalid values and real timeouts fail closed. Ordinary adapter semantics remain unchanged. Scoped regression gate passed 121 tests, with CI parity green and Synapse unchanged at 43d1d387.
 **Tracked submodule checkpoint preservation** - COMPLETE. Checkpoints now capture tracked submodule targets while preserving separate staged and unstaged states and excluding submodule contents. Real MCP checkpoint verified unchanged index and worktree hashes. Selected quality gate passed 93 tests; full suite was not run. Updated Synapse to published 43d1d387 for JIT Metal resource packaging.
 **Project-selected Swift formatter** - COMPLETE. Unified formatter selection and exact SwiftFormat version enforcement across checks and autofix. Preserved default SwiftPM and Xcode formatter choices, removed silent missing-tool success, and retained explicit owned-file scope. Selected quality gate passed all 76 tests; full suite was not run.
 

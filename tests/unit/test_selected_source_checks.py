@@ -128,3 +128,62 @@ def test_swift_selected_format_without_source_scope_fails(tmp_path: Path) -> Non
         _, formatting = selected_source_checks(adapter)
     assert not formatting.success
     assert run.call_count == 2
+
+
+@pytest.mark.parametrize(
+    "budget,override,expected",
+    [(None, None, 300), (1800, None, 1800), (1800, "2400", 2400)],
+)
+def test_swift_selected_build_budget(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    budget: int | None,
+    override: str | None,
+    expected: int,
+) -> None:
+    adapter = SwiftAdapter(str(tmp_path))
+    monkeypatch.delenv("BUILD_TIMEOUT", raising=False)
+    if override is not None:
+        monkeypatch.setenv("BUILD_TIMEOUT", override)
+    completed = subprocess.CompletedProcess(["swift"], 0, "", "")
+    with (
+        patch.object(adapter, "has_package_swift", return_value=True),
+        patch("subprocess.run", return_value=completed) as run,
+    ):
+        lint, _ = selected_source_checks(adapter, timeout=budget)
+    assert lint.success
+    assert run.call_args_list[0].kwargs["timeout"] == expected
+
+
+@pytest.mark.parametrize("override", ["0", "-1", "bad", "1.5", ""])
+def test_swift_selected_invalid_budget_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, override: str
+) -> None:
+    adapter = SwiftAdapter(str(tmp_path))
+    monkeypatch.setenv("BUILD_TIMEOUT", override)
+    with (
+        patch.object(adapter, "has_package_swift", return_value=True),
+        patch("subprocess.run") as run,
+    ):
+        with pytest.raises(ValueError):
+            _ = selected_source_checks(adapter, timeout=1800)
+    run.assert_not_called()
+
+
+def test_swift_selected_build_timeout_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    adapter = SwiftAdapter(str(tmp_path))
+    monkeypatch.delenv("BUILD_TIMEOUT", raising=False)
+    with (
+        patch.object(adapter, "has_package_swift", return_value=True),
+        patch(
+            "subprocess.run",
+            side_effect=subprocess.TimeoutExpired(["swift", "build"], 1800),
+        ) as run,
+    ):
+        lint, formatting = selected_source_checks(adapter, timeout=1800)
+    assert not lint.success
+    assert lint.errors and "1800" in lint.output
+    assert not formatting.success
+    assert run.call_args_list[0].kwargs["timeout"] == 1800

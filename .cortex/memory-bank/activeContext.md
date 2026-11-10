@@ -11,6 +11,9 @@ COMPLETE: Read-only source checks and autofix share one formatter selection. Pro
 - ✅ **Tracked submodule checkpoint preservation** - COMPLETE (2026-11-10) - <!-- memory_type: status -->
 Preserved tracked submodule targets in commit-preflight checkpoints using a private index and the existing HEAD/index parent contract, without capturing submodule contents or changing the original index or worktree. Five new disposable-repository cases cover staged and unstaged targets, mixed file changes, and excluded contents. Direct regression proof passed 77 tests; expanded selected quality gate passed 93 tests. Synapse advanced to published 43d1d387 for JIT Metal resource packaging and strict-check compatibility.
 
+- ✅ **Selected Swift build timeout budget** - COMPLETE (2026-11-10) - <!-- memory_type: status -->
+Selected read-only Swift builds now use explicit BUILD_TIMEOUT, then the configured gate test_timeout, then the existing 300-second fallback. Invalid or nonpositive overrides fail closed; real timeouts remain failures. Ordinary adapter behavior and every quality stage remain unchanged. Scoped regression gate: 121 passed, no failures or skips.
+
 ## Completed Work (2026-11-09)
 
 - ✅ **FPF practices in implementation review, scoped context, and shaping** - COMPLETE (2026-11-09) - <!-- memory_type: status -->

@@ -189,7 +189,7 @@ def test_selected_pipeline_keeps_non_test_checks_without_mutations(
             stats,
             test_filter="feature",
         )
-    readonly.assert_called_once_with(adapter)
+    readonly.assert_called_once_with(adapter, timeout=900)
     fix.assert_not_called()
     formatting.assert_not_called()
     assert all(mock.call_count == 1 for mock in remaining)
