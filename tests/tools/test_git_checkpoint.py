@@ -272,3 +272,76 @@ async def test_subprocess_timeout_is_error_with_bounded_argv_execution(
     assert "shell" not in execute.await_args.kwargs
     process.kill.assert_called_once()
     process.wait.assert_awaited_once()
+
+
+def _submodule_commits(root: Path) -> tuple[Path, list[str]]:
+    child = root / "module with spaces"
+    child.mkdir()
+    _ = _git(child, "init")
+    _ = _git(child, "config", "user.name", "Checkpoint Test")
+    _ = _git(child, "config", "user.email", "checkpoint@example.invalid")
+    commits: list[str] = []
+    for value in ("original", "staged", "unstaged"):
+        _ = (child / "child.txt").write_text(value)
+        _ = _git(child, "add", "child.txt")
+        _ = _git(child, "commit", "-m", value)
+        commits.append(_git(child, "rev-parse", "HEAD").strip())
+    _ = _git(child, "checkout", commits[0])
+    _ = _git(root, "add", "--", child.name)
+    _ = _git(root, "commit", "-m", "track gitlink")
+    return child, commits
+
+
+def _assert_gitlink_snapshot(
+    root: Path, result: GitCheckpointResult, index_target: str, worktree_target: str
+) -> None:
+    assert result.state == GitCheckpointState.CREATED
+    assert result.snapshot_ref is not None
+    target = f"{result.snapshot_ref}:module with spaces"
+    staged = f"{result.snapshot_ref}^2:module with spaces"
+    assert _git(root, "rev-parse", target).strip() == worktree_target
+    assert _git(root, "rev-parse", staged).strip() == index_target
+    assert _git(root, "rev-parse", f"{result.snapshot_ref}^1").strip() == result.head
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("staged", [True, False])
+@pytest.mark.parametrize("mixed", [True, False])
+async def test_gitlink_checkpoint_preserves_both_targets(
+    repository: Path, staged: bool, mixed: bool
+) -> None:
+    child, commits = _submodule_commits(repository)
+    if staged:
+        _ = _git(child, "checkout", commits[1])
+        _ = _git(repository, "add", "--", child.name)
+    _ = _git(child, "checkout", commits[2])
+    _ = (child / "child.txt").write_text("unsaved child contents")
+    if mixed:
+        _dirty(repository)
+    index = _index_bytes(repository)
+    staged_diff = _git(repository, "diff", "--cached", "--binary")
+    unstaged_diff = _git(repository, "diff", "--binary")
+    result = await create_git_checkpoint(repository)
+    _assert_gitlink_snapshot(
+        repository, result, commits[1 if staged else 0], commits[2]
+    )
+    assert _index_bytes(repository) == index
+    assert _git(repository, "diff", "--cached", "--binary") == staged_diff
+    assert _git(repository, "diff", "--binary") == unstaged_diff
+    assert _git(repository, "rev-parse", "HEAD").strip() == result.head
+    assert _git(repository, "for-each-ref", "refs/stash") == ""
+    assert (child / "child.txt").read_text() == "unsaved child contents"
+    if mixed:
+        _assert_snapshot_contents(repository, result)
+
+
+@pytest.mark.asyncio
+async def test_submodule_contents_only_are_not_captured(repository: Path) -> None:
+    child, _ = _submodule_commits(repository)
+    _ = (child / "child.txt").write_text("unsaved child contents")
+    index = _index_bytes(repository)
+    result = await create_git_checkpoint(repository)
+    assert result.state == GitCheckpointState.ERROR
+    assert result.snapshot_ref is None
+    assert _index_bytes(repository) == index
+    assert (child / "child.txt").read_text() == "unsaved child contents"

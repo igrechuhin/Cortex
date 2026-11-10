@@ -4,6 +4,8 @@
 ## 2026-11-10
 
 - <!-- memory_type: status -->
+- <!-- memory_type: status -->
+**Tracked submodule checkpoint preservation** - COMPLETE. Checkpoints now capture tracked submodule targets while preserving separate staged and unstaged states and excluding submodule contents. Real MCP checkpoint verified unchanged index and worktree hashes. Selected quality gate passed 93 tests; full suite was not run. Updated Synapse to published 43d1d387 for JIT Metal resource packaging.
 **Project-selected Swift formatter** - COMPLETE. Unified formatter selection and exact SwiftFormat version enforcement across checks and autofix. Preserved default SwiftPM and Xcode formatter choices, removed silent missing-tool success, and retained explicit owned-file scope. Selected quality gate passed all 76 tests; full suite was not run.
 
 ## 2026-11-09

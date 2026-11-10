@@ -8,6 +8,9 @@
 - ✅ **Project-selected Swift formatter** - COMPLETE (2026-11-10) - <!-- memory_type: status -->
 COMPLETE: Read-only source checks and autofix share one formatter selection. Project SwiftFormat configuration or version pin overrides build-system defaults; exact pins, missing tools and conflicting configurations fail closed. Both paths use bounded owned-source batches and exclude dependency checkouts. All 76 selected formatter, adapter and source-check tests passed with clean quality and type checks; full-suite coverage was not measured.
 
+- ✅ **Tracked submodule checkpoint preservation** - COMPLETE (2026-11-10) - <!-- memory_type: status -->
+Preserved tracked submodule targets in commit-preflight checkpoints using a private index and the existing HEAD/index parent contract, without capturing submodule contents or changing the original index or worktree. Five new disposable-repository cases cover staged and unstaged targets, mixed file changes, and excluded contents. Direct regression proof passed 77 tests; expanded selected quality gate passed 93 tests. Synapse advanced to published 43d1d387 for JIT Metal resource packaging and strict-check compatibility.
+
 ## Completed Work (2026-11-09)
 
 - ✅ **FPF practices in implementation review, scoped context, and shaping** - COMPLETE (2026-11-09) - <!-- memory_type: status -->

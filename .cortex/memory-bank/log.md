@@ -1,19 +1,5 @@
 # Cortex Operations Log
 
-## [2026-09-08T15:24] plan | Created plan: Demo Plan ·11
-
-## [2026-09-08T15:24] plan | Created plan: Mini ·8
-
-## [2026-09-08T15:24] plan | Created plan: Demo Plan ·12
-
-## [2026-09-08T15:25] plan | Created plan: Smoke Test Plan
-
-## [2026-09-08T15:29] fix | Autofix completed
-
-status=success; changed_files=None
-
-## [2026-09-08T15:31] plan | Created plan: Test Plan
-
 ## [2026-09-08T15:31] plan | Created plan: Demo Plan
 
 ## [2026-09-08T15:31] plan | Created plan: Demo Plan ·2
@@ -2155,3 +2141,19 @@ status=success; changed_files=None
 status=success; changed_files=None
 
 ## [2026-11-10T14:05] lint | Quality gate passed
+
+## [2026-11-10T14:36] lint | Quality gate failed
+
+## [2026-11-10T14:43] lint | Quality gate failed
+
+## [2026-11-10T14:45] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-10T14:54] lint | Quality gate passed
+
+## [2026-11-10T14:56] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-10T14:59] lint | Quality gate passed

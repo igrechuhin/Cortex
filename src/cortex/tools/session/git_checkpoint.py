@@ -5,6 +5,8 @@ anchors it under a new shared refs/cortex/checkpoints/* ref. refs/stash is not
 changed. Untracked/ignored files and submodule worktree contents are not saved.
 """
 
+# cspell:ignore gitlinks pathspecs
+
 from __future__ import annotations
 
 import os
@@ -83,9 +85,72 @@ async def _create_snapshot(root: Path, env: dict[str, str]) -> str:
         private_index = Path(temporary) / "index"
         _ = shutil.copyfile(Path(index_path.strip()), private_index)
         private_env = {**env, "GIT_INDEX_FILE": str(private_index)}
-        return (
+        index_tree = (await _git(root, private_env, "write-tree")).strip()
+        entries = await _git(root, private_env, "ls-files", "--stage", "-z")
+        gitlinks = [
+            entry.split("\t", 1)[1]
+            for entry in entries.split("\x00")
+            if entry.startswith("160000 ")
+        ]
+        snapshot = (
             await _git(root, private_env, "stash", "create", "cortex-commit-preflight")
         ).strip()
+        if not gitlinks:
+            return snapshot
+        return await _capture_gitlinks(
+            root, private_env, snapshot, index_tree, gitlinks
+        )
+
+
+async def _capture_gitlinks(
+    root: Path, env: dict[str, str], snapshot: str, index_tree: str, paths: list[str]
+) -> str:
+    """Overlay tracked submodule targets without capturing submodule contents."""
+    base = snapshot or index_tree
+    _ = await _git(root, env, "read-tree", base)
+    # AI: Stash omits unstaged gitlinks; only the disposable index is updated here.
+    for offset in range(0, len(paths), 100):
+        _ = await _git(
+            root,
+            env,
+            "--literal-pathspecs",
+            "add",
+            "-u",
+            "--",
+            *paths[offset : offset + 100],
+        )
+    tree = (await _git(root, env, "write-tree")).strip()
+    base_tree = (await _git(root, env, "rev-parse", f"{base}^{{tree}}")).strip()
+    if snapshot and tree == base_tree:
+        return snapshot
+    head = (await _git(root, env, "rev-parse", "HEAD")).strip()
+    head_tree = (await _git(root, env, "rev-parse", "HEAD^{tree}")).strip()
+    if not snapshot and tree == index_tree == head_tree:
+        return ""
+    index_commit = (
+        (await _git(root, env, "rev-parse", f"{snapshot}^2")).strip()
+        if snapshot
+        else await _checkpoint_commit(root, env, index_tree, [head])
+    )
+    return await _checkpoint_commit(root, env, tree, [head, index_commit])
+
+
+async def _checkpoint_commit(
+    root: Path, env: dict[str, str], tree: str, parents: list[str]
+) -> str:
+    """Retain the stash-shaped HEAD/index parent contract for gitlink snapshots."""
+    parent_args = [arg for parent in parents for arg in ("-p", parent)]
+    return (
+        await _git(
+            root,
+            env,
+            "commit-tree",
+            tree,
+            *parent_args,
+            "-m",
+            "cortex-commit-preflight",
+        )
+    ).strip()
 
 
 async def _save_dirty_checkpoint(
