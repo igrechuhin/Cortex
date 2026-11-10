@@ -1,6 +1,11 @@
 <!-- memory_type: milestone -->
 # Progress Log
 
+## 2026-11-10
+
+- <!-- memory_type: status -->
+**Project-selected Swift formatter** - COMPLETE. Unified formatter selection and exact SwiftFormat version enforcement across checks and autofix. Preserved default SwiftPM and Xcode formatter choices, removed silent missing-tool success, and retained explicit owned-file scope. Selected quality gate passed all 76 tests; full suite was not run.
+
 ## 2026-11-09
 
 - <!-- memory_type: status -->

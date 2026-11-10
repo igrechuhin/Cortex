@@ -43,6 +43,7 @@ def test_swift_selected_checks_lint_without_formatting(tmp_path: Path) -> None:
     unrelated = tmp_path / "unrelated.swift"
     _ = unrelated.write_text("let x=1\n")
     before = unrelated.read_bytes()
+    _ = (tmp_path / "Package.swift").write_text("// swift-tools-version:5.9")
     adapter = SwiftAdapter(str(tmp_path))
     completed = subprocess.CompletedProcess(["swift"], 0, "", "")
     source_list = subprocess.CompletedProcess(["git"], 0, "unrelated.swift\x00", "")
@@ -81,6 +82,7 @@ def test_selected_checks_missing_tools_fail_closed(tmp_path: Path) -> None:
 
 
 def test_selected_checks_reject_xcode(tmp_path: Path) -> None:
+    _ = (tmp_path / "Package.swift").write_text("// swift-tools-version:5.9")
     adapter = SwiftAdapter(str(tmp_path))
     with patch.object(adapter, "has_package_swift", return_value=False):
         with pytest.raises(ValueError, match="Swift Package Manager"):
@@ -93,6 +95,7 @@ def test_swift_selected_format_excludes_build_checkouts(tmp_path: Path) -> None:
     vendor = tmp_path / ".build" / "checkouts" / "Vendor.swift"
     vendor.parent.mkdir(parents=True)
     _ = vendor.write_text("let x=1\n")
+    _ = (tmp_path / "Package.swift").write_text("// swift-tools-version:5.9")
     adapter = SwiftAdapter(str(tmp_path))
     completed = subprocess.CompletedProcess(["swift"], 0, "", "")
     source_list = subprocess.CompletedProcess(
@@ -115,6 +118,7 @@ def test_swift_selected_format_excludes_build_checkouts(tmp_path: Path) -> None:
 
 
 def test_swift_selected_format_without_source_scope_fails(tmp_path: Path) -> None:
+    _ = (tmp_path / "Package.swift").write_text("// swift-tools-version:5.9")
     adapter = SwiftAdapter(str(tmp_path))
     completed = subprocess.CompletedProcess(["swift"], 0, "", "")
     with (

@@ -275,14 +275,12 @@ class TestSwiftAdapter:
             assert result.tests_failed == 0
             assert result.pass_rate == 1.0
 
-    def test_format_code_falls_back_to_swiftformat_when_no_package_swift(self) -> None:
-        """format_code uses swiftformat CLI when no Package.swift (Xcode project)."""
+    def test_format_code_without_source_scope_fails(self) -> None:
+        """Formatting cannot silently skip unavailable source scope."""
         with tempfile.TemporaryDirectory() as tmpdir:
-            adapter = SwiftAdapter(str(tmpdir))
-            result = adapter.format_code()
+            result = SwiftAdapter(tmpdir).format_code()
+            assert not result.success
             assert result.check_type == "format"
-            # swiftformat runs and succeeds on empty dir, or skips gracefully if not installed
-            assert result.success is True or "swiftformat" in result.output.lower()
 
     @patch("cortex.services.framework_adapters.swift_adapter.subprocess.run")
     def test_format_code_success_when_swift_format_exits_0(
@@ -295,8 +293,8 @@ class TestSwiftAdapter:
             )
             mock_result = MagicMock()
             mock_result.returncode = 0
-            mock_result.stdout = b""
-            mock_result.stderr = b""
+            mock_result.stdout = "Package.swift\x00"
+            mock_result.stderr = ""
             mock_run.return_value = mock_result
 
             adapter = SwiftAdapter(str(tmpdir))
@@ -355,8 +353,8 @@ class TestSwiftAdapter:
             )
             mock_result = MagicMock()
             mock_result.returncode = 0
-            mock_result.stdout = b""
-            mock_result.stderr = b""
+            mock_result.stdout = "Package.swift\x00"
+            mock_result.stderr = ""
             mock_run.return_value = mock_result
 
             adapter = SwiftAdapter(str(tmpdir))
@@ -395,7 +393,7 @@ class TestSwiftAdapter:
             _ = (Path(tmpdir) / "Package.swift").write_text(
                 "// swift-tools-version:5.9"
             )
-            mock_run.side_effect = RuntimeError("swift not found")
+            mock_run.side_effect = FileNotFoundError("swift not found")
             adapter = SwiftAdapter(str(tmpdir))
             result = adapter.format_code()
             assert result.success is False

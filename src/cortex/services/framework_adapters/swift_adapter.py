@@ -1,8 +1,8 @@
 """Swift Framework Adapter
 
 Adapter for Swift projects using Swift Package Manager (Package.swift) or
-Xcode (.xcodeproj). SPM uses swift format/build/test; Xcode falls back to
-xcodebuild with swiftformat for formatting.
+Xcode (.xcodeproj). Formatting respects project configuration and version pins. SPM uses
+swift build/test; Xcode falls back to xcodebuild.
 """
 
 import logging
@@ -40,6 +40,7 @@ from .swift_coverage import (
     pick_codecov_json_file,
     read_swift_codecov_json_per_file,
 )
+from .swift_formatting import run_swift_format
 from .swift_test_diagnostics import (
     SwiftTestOutcome,
     SwiftTestStatus,
@@ -667,7 +668,7 @@ class SwiftAdapter(SwiftXcodebuildMixin, FrameworkAdapter):
         auto_fix: bool = True,
         strict_mode: bool = False,
     ) -> CheckResult:
-        """Fix errors using swift format (SPM) or swiftformat CLI (Xcode)."""
+        """Fix errors using the project-selected Swift formatter."""
         if not error_types or "formatting" in error_types:
             fmt_r = self.format_code()
             return CheckResult(
@@ -688,61 +689,8 @@ class SwiftAdapter(SwiftXcodebuildMixin, FrameworkAdapter):
         )
 
     def format_code(self) -> CheckResult:
-        """Format code using swift format (SPM) or swiftformat CLI (Xcode)."""
-        if not self.has_package_swift():
-            return self._format_code_swiftformat()
-        try:
-            result = self._run_swift(["format", "-r", "."])
-            out = result.stdout + result.stderr
-            return CheckResult(
-                check_type="format",
-                success=result.returncode == 0,
-                output=out,
-                errors=[] if result.returncode == 0 else ["swift format failed"],
-                warnings=[],
-                files_modified=[],
-            )
-        except Exception as e:
-            return CheckResult(
-                check_type="format",
-                success=False,
-                output=str(e),
-                errors=[str(e)],
-                warnings=[],
-                files_modified=[],
-            )
-
-    def _format_code_swiftformat(self) -> CheckResult:
-        """Format using swiftformat CLI (for Xcode projects without Package.swift)."""
-        try:
-            result = subprocess.run(
-                ["swiftformat", "."],
-                cwd=self.project_root,
-                capture_output=True,
-                text=True,
-                timeout=120,
-            )
-            out = result.stdout + result.stderr
-            return CheckResult(
-                check_type="format",
-                success=result.returncode == 0,
-                output=out,
-                errors=[] if result.returncode == 0 else ["swiftformat failed"],
-                warnings=[],
-                files_modified=[],
-            )
-        except FileNotFoundError:
-            # swiftformat not installed — treat as pass (already checked by synapse_format)
-            return CheckResult(
-                check_type="format",
-                success=True,
-                output="swiftformat not found; skipped (use synapse_format check instead)",
-                errors=[],
-                warnings=["swiftformat not installed; format check skipped"],
-                files_modified=[],
-            )
-        except Exception as e:
-            return self._error_check_result("format", str(e))
+        """Apply the project-selected formatter to explicit owned Swift sources."""
+        return run_swift_format(self.project_root, check=False)
 
     def type_check(self) -> CheckResult:
         """Run type checker via swift build (SPM) or xcodebuild build (Xcode)."""

@@ -4,11 +4,11 @@ import subprocess
 from pathlib import Path
 
 from cortex.core.path_resolver import get_venv_bin_path
-from cortex.core.quality_scope import filter_owned_files
 
 from .base import CheckResult, FrameworkAdapter
 from .python_adapter import PythonAdapter
 from .swift_adapter import SwiftAdapter
+from .swift_formatting import run_swift_format
 
 
 def _check_command(root: Path, command: list[str], check_type: str) -> CheckResult:
@@ -50,52 +50,6 @@ def _python_checks(root: Path) -> tuple[CheckResult, CheckResult]:
     return lint, formatting
 
 
-def _swift_source_files(root: Path) -> list[str]:
-    """Bound formatting to version-controlled project sources, never build checkouts."""
-    completed = subprocess.run(
-        ["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z"],
-        cwd=root,
-        capture_output=True,
-        text=True,
-        timeout=30,
-        check=True,
-    )
-    paths = [
-        root / name
-        for name in completed.stdout.split("\x00")
-        if name.endswith(".swift") and ".build" not in Path(name).parts
-    ]
-    owned = filter_owned_files(root, paths)
-    if any(not path.resolve().is_relative_to(root.resolve()) for path in owned):
-        raise ValueError("Swift source scope contains a path outside the project")
-    files = sorted({str(path.resolve()) for path in owned if path.is_file()})
-    if not files:
-        raise ValueError("No owned Swift sources found for selected source checks")
-    return files
-
-
-def _swift_format_check(root: Path) -> CheckResult:
-    """Use the adapter's swift-format configuration on explicit owned source files."""
-    try:
-        files = _swift_source_files(root)
-    except (OSError, subprocess.SubprocessError, ValueError) as exc:
-        return CheckResult(
-            check_type="format", success=False, output=str(exc), errors=[str(exc)]
-        )
-    result = CheckResult(check_type="format", success=True, output="")
-    # AI: Bounded argv avoids E2BIG without recursing into dependency checkouts.
-    for offset in range(0, len(files), 100):
-        batch = _check_command(
-            root,
-            ["swift", "format", "lint", "--strict", *files[offset : offset + 100]],
-            "format",
-        )
-        result.success = result.success and batch.success
-        result.output += batch.output
-        result.errors.extend(batch.errors)
-    return result
-
-
 def selected_source_checks(
     adapter: FrameworkAdapter,
 ) -> tuple[CheckResult, CheckResult]:
@@ -107,6 +61,6 @@ def selected_source_checks(
         if not adapter.has_package_swift():
             raise ValueError("Selected source checks require Swift Package Manager")
         lint = _check_command(root, ["swift", "build"], "lint")
-        formatting = _swift_format_check(root)
+        formatting = run_swift_format(root, check=True)
         return lint, formatting
     raise ValueError("Selected source checks support only Python and SwiftPM adapters")

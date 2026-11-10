@@ -3,6 +3,11 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-11-10)
+
+- ✅ **Project-selected Swift formatter** - COMPLETE (2026-11-10) - <!-- memory_type: status -->
+COMPLETE: Read-only source checks and autofix share one formatter selection. Project SwiftFormat configuration or version pin overrides build-system defaults; exact pins, missing tools and conflicting configurations fail closed. Both paths use bounded owned-source batches and exclude dependency checkouts. All 76 selected formatter, adapter and source-check tests passed with clean quality and type checks; full-suite coverage was not measured.
+
 ## Completed Work (2026-11-09)
 
 - ✅ **FPF practices in implementation review, scoped context, and shaping** - COMPLETE (2026-11-09) - <!-- memory_type: status -->
