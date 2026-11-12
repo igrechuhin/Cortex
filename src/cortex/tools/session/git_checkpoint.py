@@ -9,7 +9,6 @@ changed. Untracked/ignored files and submodule worktree contents are not saved.
 
 from __future__ import annotations
 
-import os
 import shutil
 import tempfile
 from enum import Enum
@@ -20,7 +19,7 @@ from cortex.core.context_logging import MCPContext
 from cortex.core.models import OperationStatus
 from cortex.core.usage_context import get_or_resolve_project_root
 from cortex.tools.models_base import StrictBaseModel
-from cortex.tools.session.start_tools import run_git_command
+from cortex.tools.session.start_tools import git_worktree_environment, run_git_command
 
 
 class GitCheckpointState(str, Enum):
@@ -48,23 +47,6 @@ class GitCheckpointResult(StrictBaseModel):
 
 class _GitCheckpointError(RuntimeError):
     """A required Git step failed; no HEAD fallback is safe."""
-
-
-def _git_environment() -> dict[str, str]:
-    """Do not inherit a caller's repository/index/namespace redirection."""
-    env = os.environ.copy()
-    for name in (
-        "GIT_DIR",
-        "GIT_WORK_TREE",
-        "GIT_COMMON_DIR",
-        "GIT_INDEX_FILE",
-        "GIT_NAMESPACE",
-        "GIT_OBJECT_DIRECTORY",
-        "GIT_ALTERNATE_OBJECT_DIRECTORIES",
-    ):
-        _ = env.pop(name, None)
-    env["GIT_OPTIONAL_LOCKS"] = "0"
-    return env
 
 
 async def _git(root: Path, env: dict[str, str], *args: str) -> str:
@@ -179,7 +161,7 @@ async def create_git_checkpoint(project_root: Path) -> GitCheckpointResult:
     Call only while other writers to this worktree are quiescent.
     """
     root = project_root.resolve()
-    env = _git_environment()
+    env = git_worktree_environment()
     result = GitCheckpointResult(project_root=str(root))
     try:
         top = (await _git(root, env, "rev-parse", "--show-toplevel")).strip()

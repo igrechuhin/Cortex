@@ -3,6 +3,11 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-11-12)
+
+- ✅ **Repository Git LFS via Cortex MCP** - COMPLETE (2026-11-12) - <!-- memory_type: status -->
+Extended session() with lfs_status, lfs_install, and lfs_track. Verified the stdio entry point against Git LFS 3.8.1 in a disposable repository, including local filters and hooks, repeat tracking, and an unchanged index.
+
 ## Completed Work (2026-11-10)
 
 - ✅ **Project-selected Swift formatter** - COMPLETE (2026-11-10) - <!-- memory_type: status -->

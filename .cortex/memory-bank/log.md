@@ -1,19 +1,5 @@
 # Cortex Operations Log
 
-## [2026-09-08T15:41] plan | Created plan: Remediate Project Review Findings: Safety, Rules, Planning, Context, and Verification
-
-## [2026-09-08T16:06] fix | Autofix completed
-
-status=success; changed_files=None
-
-## [2026-09-08T16:09] fix | Autofix completed
-
-status=success; changed_files=None
-
-## [2026-09-08T16:12] plan | Created plan: Smoke Test Plan
-
-## [2026-09-08T16:12] plan | Created plan: Demo Plan
-
 ## [2026-09-08T16:12] plan | Created plan: Demo Plan ·2
 
 ## [2026-09-08T16:12] plan | Created plan: Mini
@@ -2181,3 +2167,15 @@ status=success; changed_files=None
 status=success; changed_files=None
 
 ## [2026-11-10T16:53] lint | Quality gate passed
+
+## [2026-11-12T15:38] lint | Quality gate failed
+
+## [2026-11-12T15:40] lint | Quality gate passed
+
+## [2026-11-12T15:49] lint | Quality gate passed
+
+## [2026-11-12T15:50] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-12T15:55] lint | Quality gate passed

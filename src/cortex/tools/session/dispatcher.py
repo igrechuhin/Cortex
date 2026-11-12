@@ -16,6 +16,7 @@ from cortex.core.models import OperationStatus
 from cortex.core.progress_types import SessionProgress, report_structured_progress
 from cortex.server import mcp
 from cortex.tools.models_base import StrictBaseModel
+from cortex.tools.session.git_lfs import GitLfsOperation, run_session_git_lfs
 
 
 class _SessionDispatchArgs(StrictBaseModel):
@@ -42,7 +43,8 @@ def _session_error_invalid_operation(operation: str) -> str:
             "status": OperationStatus.ERROR.value,
             "error": (
                 f"Invalid operation '{operation}'. "
-                "Use start, register, deregister, compact, predict, or checkpoint."
+                "Use start, register, deregister, compact, predict, checkpoint, "
+                "lfs_status, lfs_install, or lfs_track."
             ),
         },
         indent=2,
@@ -329,9 +331,10 @@ async def session(
     decisions_made: list[str] | None = None, create_checkpoint: bool = False,
     prediction: str | None = None, ctx: MCPContext | None = None,
     hook_event: dict[str, object] | None = None,
+    lfs_pattern: str | None = None,
 ) -> str:
     # fmt: on
-    """USE WHEN: Session lifecycle or an explicit commit-preflight Git checkpoint.
+    """USE WHEN: Session lifecycle, Git checkpoints, or repository Git LFS setup.
 
     session(operation="checkpoint") preserves tracked staged/unstaged content in
     a new shared refs/cortex/checkpoints/* ref, including in linked worktrees.
@@ -339,8 +342,16 @@ async def session(
     Untracked/ignored files and submodule worktree contents are not captured.
     Stop on error; start is orientation and compact's tag is HEAD-only.
 
+    lfs_status checks the Git LFS version, effective filter keys and tracked
+    patterns. lfs_install configures local filters and hooks without force.
+    lfs_track adds one explicit lfs_pattern to .gitattributes. Matched files
+    can have their timestamps or permissions updated by Git LFS. Neither
+    mutation stages files, rewrites history, or transfers objects.
+
     EXAMPLES: session(operation="start", goal="Fix auth bug");
     session(operation="checkpoint"); session(operation="compact", summary="Handoff");
+    session(operation="lfs_status"); session(operation="lfs_install");
+    session(operation="lfs_track", lfs_pattern="*.psd");
     session(operation="predict", prediction="gate clean; touches src/x.py",
     task_description="why").
     """
@@ -348,6 +359,9 @@ async def session(
         from cortex.tools.session.plugin_lifecycle import run_plugin_hook
 
         return await run_plugin_hook(hook_event, ctx)
+    normalized = operation.strip().lower()
+    if normalized in GitLfsOperation:
+        return await run_session_git_lfs(GitLfsOperation(normalized), lfs_pattern, ctx)
     return await _session_run(
         operation,
         task_description,

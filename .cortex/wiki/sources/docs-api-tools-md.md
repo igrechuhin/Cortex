@@ -125,6 +125,27 @@ on `error`, record the failure and stop without discarding changes. Capture befo
 Synapse pre-stage and Phase A; checkpoint any submodule's own work separately
 before changing it. Pipeline failure never authorizes automatic restoration.
 
+### Repository Git LFS
+
+Use the existing `session()` tool for Git LFS in the attached Git worktree:
+
+- `session(operation="lfs_status")` reports executable availability, version,
+  effective filter key names, and the Git LFS pattern listing in `output`.
+  Missing Git LFS is reported as `available: false`. This check makes no
+  changes and does not verify remote LFS access or object integrity.
+- `session(operation="lfs_install")` runs `git lfs install --local` without
+  force. Install the Git LFS executable on the MCP host first. Repository-local
+  config and hooks can be shared by linked worktrees. If an existing hook
+  conflicts, Git LFS may have already installed the filters. Integrate the
+  hook manually and retry. A hooks directory outside the worktree and common
+  Git directory requires manual integration.
+- `session(operation="lfs_track", lfs_pattern="*.psd")` passes one pattern to
+  Git LFS. Git LFS updates the root `.gitattributes` and can update matched
+  files' timestamps or permissions. Review the resulting changes before
+  staging. Existing files may need renormalization to use their new attributes.
+
+The operations do not stage, commit, rewrite history, or transfer LFS objects.
+
 ### Exact phase-result publication
 
 `pipeline_handoff(operation="write", pipeline="implement", phase="code", data=payload)`

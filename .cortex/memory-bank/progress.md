@@ -1,6 +1,11 @@
 <!-- memory_type: milestone -->
 # Progress Log
 
+## 2026-11-12
+
+- <!-- memory_type: milestone -->
+Completed Git LFS status, local setup, and pattern tracking via Cortex MCP session(). Focused quality gate passed, including Git LFS, checkpoint, and tool inventory tests. Live stdio smoke passed against Git LFS 3.8.1 in a disposable repository.
+
 ## 2026-11-10
 
 - <!-- memory_type: status -->

@@ -17,6 +17,7 @@ Total: 1 tool
 import asyncio
 import json
 import logging
+import os
 import re
 from pathlib import Path
 from typing import cast
@@ -161,6 +162,23 @@ def _create_error_result(msg: str) -> GitCommandResult:
     return GitCommandResult(
         success=False, stdout="", stderr=msg, returncode=None, error=msg
     )
+
+
+def git_worktree_environment() -> dict[str, str]:
+    """Do not inherit a caller's repository/index/namespace redirection."""
+    env = os.environ.copy()
+    for name in (
+        "GIT_DIR",
+        "GIT_WORK_TREE",
+        "GIT_COMMON_DIR",
+        "GIT_INDEX_FILE",
+        "GIT_NAMESPACE",
+        "GIT_OBJECT_DIRECTORY",
+        "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+    ):
+        _ = env.pop(name, None)
+    env["GIT_OPTIONAL_LOCKS"] = "0"
+    return env
 
 
 async def _spawn_git_process(
