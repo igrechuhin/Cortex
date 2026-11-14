@@ -1,6 +1,12 @@
 <!-- memory_type: milestone -->
 # Progress Log
 
+## 2026-11-14
+
+- **Approved project access** - COMPLETE. Opt-in files, SQLite snapshots and approved jobs validated; fresh full gate and 58 fixture cases passed. TradeWing activation requires an approved policy and server restart.
+- <!-- memory_type: status -->
+**TradeWing connection plan** - COMPLETE. Verified the target chat, known paths and existing partial-archive command through read-only history. Documented concrete integration blockers, fixture-only approval and rollback; scoped adapter work remains PENDING in its registered plan.
+
 ## 2026-11-12
 
 - <!-- memory_type: milestone -->

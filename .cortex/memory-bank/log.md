@@ -1,65 +1,5 @@
 # Cortex Operations Log
 
-## [2026-09-08T16:12] plan | Created plan: Demo Plan ·2
-
-## [2026-09-08T16:12] plan | Created plan: Mini
-
-## [2026-09-08T16:12] plan | Created plan: Demo Plan ·3
-
-## [2026-09-08T16:12] plan | Created plan: Mini ·2
-
-## [2026-09-08T16:12] plan | Created plan: Mini ·3
-
-## [2026-09-08T16:12] plan | Created plan: Mini ·4
-
-## [2026-09-08T16:12] plan | Created plan: Demo Plan ·4
-
-## [2026-09-08T16:12] plan | Created plan: Demo Plan ·5
-
-## [2026-09-08T16:12] plan | Created plan: Demo Plan ·6
-
-## [2026-09-08T16:12] plan | Created plan: Test Plan
-
-## [2026-09-08T16:13] lint | Quality gate failed
-
-## [2026-09-08T16:14] fix | Autofix completed
-
-status=success; changed_files=None
-
-## [2026-09-08T16:16] plan | Created plan: Smoke Test Plan
-
-## [2026-09-08T16:16] plan | Created plan: Demo Plan
-
-## [2026-09-08T16:16] plan | Created plan: Demo Plan ·2
-
-## [2026-09-08T16:16] plan | Created plan: Mini
-
-## [2026-09-08T16:16] plan | Created plan: Demo Plan ·3
-
-## [2026-09-08T16:16] plan | Created plan: Demo Plan ·4
-
-## [2026-09-08T16:16] plan | Created plan: Mini ·2
-
-## [2026-09-08T16:16] plan | Created plan: Demo Plan ·5
-
-## [2026-09-08T16:16] plan | Created plan: Mini ·3
-
-## [2026-09-08T16:16] plan | Created plan: Mini ·4
-
-## [2026-09-08T16:16] plan | Created plan: Demo Plan ·6
-
-## [2026-09-08T16:16] plan | Created plan: Test Plan
-
-## [2026-09-08T16:17] lint | Quality gate failed
-
-## [2026-09-08T16:21] fix | Autofix completed
-
-status=success; changed_files=None
-
-## [2026-09-08T16:23] plan | Created plan: Demo Plan
-
-## [2026-09-08T16:23] plan | Created plan: Demo Plan ·2
-
 ## [2026-09-08T16:23] plan | Created plan: Mini
 
 ## [2026-09-08T16:23] plan | Created plan: Mini ·2
@@ -2179,3 +2119,83 @@ status=success; changed_files=None
 status=success; changed_files=None
 
 ## [2026-11-12T15:55] lint | Quality gate passed
+
+## [2026-11-14T16:09] plan | Created plan: Approved project access through Cortex
+
+## [2026-11-14T16:16] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-14T16:20] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-14T16:21] lint | Quality gate failed
+
+## [2026-11-14T16:25] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-14T16:26] lint | Quality gate failed
+
+## [2026-11-14T16:28] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-14T16:29] lint | Quality gate failed
+
+## [2026-11-14T16:31] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-14T16:32] lint | Quality gate passed
+
+## [2026-11-14T16:37] lint | Quality gate failed
+
+## [2026-11-14T16:45] lint | Quality gate failed
+
+## [2026-11-14T16:49] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-14T16:50] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-14T16:53] lint | Quality gate failed
+
+## [2026-11-14T17:00] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-14T17:01] lint | Quality gate passed
+
+## [2026-11-14T17:12] lint | Quality gate failed
+
+## [2026-11-14T17:17] lint | Quality gate passed
+
+## [2026-11-14T17:27] lint | Quality gate passed
+
+## [2026-11-14T17:32] plan | Completed plan: Approved project access
+
+Implemented opt-in manage_file project_access with exact approved text reads, structured SELECT-only SQLite snapshots, and pinned existing-script jobs with durable status and duplicate prevention. Tool count stays 14. Fresh full quality gate passes with four workers; 58 feature cases pass. TradeWing remains disabled pending operator-approved policy and server install/restart. Local validation needs project Python on PATH and no inherited startup opt-out.
+
+## [2026-11-14T17:54] lint | Quality gate failed
+
+## [2026-11-14T18:04] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-14T18:11] lint | Quality gate passed
+
+## [2026-11-14T18:17] plan | Created plan: TradeWing scoped data root and reader adapters
+
+## [2026-11-14T18:20] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-14T18:25] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-14T18:29] lint | Quality gate passed

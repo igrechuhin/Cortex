@@ -53,6 +53,7 @@ from cortex.tools.files.plan_draft_file_ops import (
     execute_plan_draft_operation,
     validate_discard_draft_content,
 )
+from cortex.tools.files.project_access.handler import handle_project_access
 from cortex.tools.files.session_goal_file_ops import execute_session_goal_operation
 from cortex.tools.response_builder import error_response
 from cortex.validation.schema_validator import SchemaValidator
@@ -160,6 +161,8 @@ def _validate_manage_file_input_limits(
 
 
 def _resolve_manage_file_name(parsed_op: FileOperation, file_name: str | None) -> str:
+    if parsed_op == FileOperation.PROJECT_ACCESS:
+        return "project_access"
     if parsed_op == FileOperation.MIGRATE_ARTIFACTS:
         return "_artifact_migration"
     if parsed_op in GOAL_FILE_OPERATIONS:
@@ -364,9 +367,11 @@ def _validate_and_get_path(
     return _validate_file_path_impl(fs_manager, memory_bank_dir, file_name)
 
 
-async def _execute_schema_file_operation(
+async def _execute_scoped_file_operation(
     root: Path, operation: FileOperation, content: str | None
 ) -> str:
+    if operation == FileOperation.PROJECT_ACCESS:
+        return await handle_project_access(root, content)
     from cortex.tools.files.workflow_schema_file_ops import (
         execute_workflow_schema_operation,
     )
@@ -386,8 +391,8 @@ async def _execute_artifact_migration(root: Path, content: str | None) -> str:
 # fmt: off
 async def execute_file_operation(root: Path, file_name: str, operation: FileOperation, content: str | None, include_metadata: bool, change_description: str | None, sections: list[str] | None, version: int | None = None, skip_classification: bool = False) -> str:
 # fmt: on
-    if operation in SCHEMA_FILE_OPERATIONS:
-        return await _execute_schema_file_operation(root, operation, content)
+    if operation in SCHEMA_FILE_OPERATIONS | {FileOperation.PROJECT_ACCESS}:
+        return await _execute_scoped_file_operation(root, operation, content)
     if _is_plan_draft_file_operation(operation):
         return execute_plan_draft_operation(root, operation, content)
     if operation == FileOperation.MIGRATE_ARTIFACTS:

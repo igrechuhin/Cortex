@@ -11,6 +11,8 @@
 
 ## Future Enhancements
 
+- **TradeWing scoped data root and reader adapters** - PENDING - Design explicit approved data-root and existing-reader adapters; verify chat binding and synthetic smoke tests before owner-authorized activation. Plan: .cortex/plans/tradewing-scoped-data-root-adapters.md
+
 ## Pending plans (from .cortex/plans)
 
 ### Pipeline Infrastructure

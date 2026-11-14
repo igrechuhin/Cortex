@@ -146,7 +146,7 @@ async def manage_file(
     files under .cortex/memory-bank/.
 
     DO NOT:
-    - Use this tool for generic project files (code, tests or workspace files).
+    - Use routine read/write for generic project files (code, tests or workspace files).
     - Pass absolute paths. Except for patch_document, file_name must be a Memory
       Bank filename only (for example, "projectBrief.md", not a path).
     - Perform full-file writes to roadmap.md, progress.md, or activeContext.md
@@ -157,6 +157,18 @@ async def manage_file(
 
     RETURNS: JSON with file content (read), success status (write), or metadata
     object (metadata operation).
+
+    PROJECT ACCESS (explicit opt-in): operation="project_access", content=JSON
+    with action discover | read | query | start | status | read_output. Disabled
+    unless the server operator supplies an approved, hash-pinned policy bound to
+    this project. Never create/enable a policy without the required approval.
+    read uses an exact approved project-relative path; query uses an approved
+    dataset plus equality filters and limit (no SQL); start/status use an approved
+    job and finite parameters (no shell/argv). read_output reads a completed job's
+    exact output path. Other operations and their permissions remain unchanged.
+    Example: content='{"action":"read","path":"docs/profile-contract.md"}'.
+    Use status after an interrupted start; never remove a reservation to retry.
+    See docs/guides/project-access.md for limits, snapshot and job trust requirements.
 
     Routine file operations target the Memory Bank. ``file_artifact`` files reviews,
     analyses and queries in their canonical directories under ``.cortex/``;

@@ -3,6 +3,13 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-11-14)
+
+- ✅ **Approved project access** - COMPLETE (2026-11-14) - Implemented opt-in manage_file project_access with exact approved text reads, structured SELECT-only SQLite snapshots, and pinned existing-script jobs with durable status and duplicate prevention. Tool count stays 14. Fresh full quality gate passes with four workers; 58 feature cases pass. TradeWing remains disabled pending operator-approved policy and server install/restart. Local validation needs project Python on PATH and no inherited startup opt-out.
+
+- ✅ **TradeWing connection plan and project-access commit preparation** - COMPLETE (2026-11-14) - <!-- memory_type: problem -->
+Prepared a read-only connection plan from the existing visible chat history. Configuration-only activation is blocked by the sibling TradeWing_Data root, new-directory semantics, compressed reader output and progress handling. Confirmed v6 prepares a partial archive, not certified complete profiles. Scoped follow-up plan registered; no TradeWing access, installation, restart or working calculation performed. Commit quality passed after one Markdown whitespace fix; all 25 CI parity script invocations passed.
+
 ## Completed Work (2026-11-12)
 
 - ✅ **Repository Git LFS via Cortex MCP** - COMPLETE (2026-11-12) - <!-- memory_type: status -->
