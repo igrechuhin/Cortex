@@ -99,7 +99,7 @@ the blocker and preserve the draft instead of substituting a different command.
 
 ### Approved Markdown tool
 
-The official check and fix stages use the installed native `rumdl` 0.1.45,
+The official check and fix stages use the installed native `rumdl` 0.1.96,
 exactly pinned in Cortex's runtime and development dependencies and lockfile.
 Selection is limited to the attached project's environments and Cortex's package
 environment. Bounded `METADATA` and `RECORD` reads verify the package name/version

@@ -12,7 +12,7 @@ from pathlib import Path
 
 from cortex.core.path_resolver import ProjectResourceType, get_project_path
 
-APPROVED_RUMDL_VERSION = "0.1.45"
+APPROVED_RUMDL_VERSION = "0.1.96"
 _MAX_METADATA_BYTES = 131072
 _MAX_EXECUTABLE_BYTES = 67108864
 

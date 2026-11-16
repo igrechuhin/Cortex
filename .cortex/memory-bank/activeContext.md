@@ -20,6 +20,9 @@ Read-only comparison: both pypi.org and github.com fail system DNS with errno 8 
 - ✅ **Cortex 1.2.0 release prepared, publication blocked** - COMPLETE (2026-11-16) - <!-- memory_type: status -->
 PARTIAL: The owner requested a proper release. Latest GitHub release is 1.1.1 and remote main still matches the authorized d896464f base. Prepared 1.2.0 package/runtime/editable lock alignment and an explicitly unreleased root changelog; static metadata agrees and dependency resolution is preserved. No build or test retry. Official networked verification requires an owner-granted network-only execution mode retaining filesystem protection; this tool exposes only unsandboxed escalation. Full fresh native gate, at least 90 percent coverage, Step 12.7, maintainer review, artifacts and exact-SHA CI remain pending. No commit, push, tag, upload or active TradeWing change.
 
+- ✅ **Restore packaged Cortex installation and public CI smoke** - COMPLETE (2026-11-16) - <!-- memory_type: status -->
+Pinned available rumdl 0.1.96, encoded local wheel paths, corrected Markdown, and required the real Codex startup smoke in CI.
+
 ## Completed Work (2026-11-15)
 
 - ✅ **Cache-independent official Markdown gate review draft** - COMPLETE (2026-11-15) - <!-- memory_type: problem -->

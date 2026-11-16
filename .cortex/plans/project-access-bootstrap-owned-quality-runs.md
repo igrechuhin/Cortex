@@ -472,7 +472,7 @@ There is no checked-in automated release workflow.
 
 Select backward-compatible minor version 1.2.0 and future annotated tag v1.2.0.
 The existing GitHub release numbering is ahead of stale 0.2.0 package metadata;
-align pyproject.toml, src/cortex/__init__.py and only the editable cortex entry in
+align pyproject.toml, `src/cortex/__init__.py` and only the editable cortex entry in
 uv.lock, preserving every dependency resolution and all earlier rumdl pin edits.
 Add CHANGELOG.md with explicitly unreleased notes. Manual lock metadata alignment
 is a reviewable draft, not evidence that uv lock or a locked build has passed.
@@ -502,7 +502,7 @@ Step 12.7, commit, push, tag or release publication is claimed.
 
 ### Release Preparation Result
 
-Prepared only pyproject.toml, src/cortex/__init__.py, the editable project version
+Prepared only pyproject.toml, `src/cortex/__init__.py`, the editable project version
 in uv.lock, and a new CHANGELOG.md. Static AST/TOML inspection confirms all three
 versions are 1.2.0 and the parsed lock differs from its pre-release snapshot only
 in that project version. Existing rumdl pins and all dependency resolution data
@@ -524,4 +524,4 @@ no local config edit can be assumed to override its policy. The only exposed
 require_escalated path is unsandboxed and is not used for gates. The owner must
 apply the appropriate network-only setting at the policy source and resume the
 same session, without changing TradeWing configuration or using full access.
-Reference: https://learn.chatgpt.com/docs/agent-approvals-security
+Reference: [Codex approvals and security](https://learn.chatgpt.com/docs/agent-approvals-security)

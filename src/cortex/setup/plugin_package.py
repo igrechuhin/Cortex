@@ -78,14 +78,23 @@ def _precompact_hook(host: str) -> dict[str, object]:
     }
 
 
+def _wheel_requirement(root: Path, host: str, wheel: Path) -> str:
+    installed = root.resolve() / "dist" / wheel.name
+    # Codex MCP does not expand plugin-root variables. A local file URI also
+    # prevents uv from treating a path's semicolon as a requirement marker.
+    if host == "codex" or any(char in str(installed) for char in ";%#?"):
+        return installed.as_uri()
+    return f"${{CLAUDE_PLUGIN_ROOT}}/dist/{wheel.name}"
+
+
 def _hooks(
-    host: str, wheel: Path, uv_directories: UvLaunchDirectories | None
+    root: Path, host: str, wheel: Path, uv_directories: UvLaunchDirectories | None
 ) -> dict[str, object]:
-    variable = "${CLAUDE_PLUGIN_ROOT}" if host == "claude" else "${PLUGIN_ROOT}"
+    wheel_requirement = _wheel_requirement(root, host, wheel)
     startup = {
         "type": "command",
         "command": (uv_directories.hook_prefix() if uv_directories else "")
-        + f'uv tool run --from "{variable}/dist/{wheel.name}" python -m cortex.setup.plugin_start {host}',
+        + f'uv tool run --from "{wheel_requirement}" python -m cortex.setup.plugin_start {host}',
         "timeout": 15,
     }
     return {
@@ -101,19 +110,14 @@ def _hooks(
 def _mcp_server(
     root: Path, host: str, wheel: Path, uv_directories: UvLaunchDirectories | None
 ) -> dict[str, object]:
-    # ponytail: native Codex MCP has no path interpolation; retain the local distribution.
-    wheel_path = (
-        f"${{CLAUDE_PLUGIN_ROOT}}/dist/{wheel.name}"
-        if host == "claude"
-        else str(root.resolve() / "dist" / wheel.name)
-    )
+    wheel_requirement = _wheel_requirement(root, host, wheel)
     return {
         "command": "uv",
         "args": [
             "tool",
             "run",
             "--from",
-            wheel_path,
+            wheel_requirement,
             "python",
             "-m",
             "cortex.setup.plugin_server",
@@ -153,7 +157,7 @@ def _manifest(
         root / ".mcp.json",
         {"mcpServers": {"cortex": _mcp_server(root, host, wheel, uv_directories)}},
     )
-    _json(root / "hooks/hooks.json", _hooks(host, wheel, uv_directories))
+    _json(root / "hooks/hooks.json", _hooks(root, host, wheel, uv_directories))
 
 
 def _marketplace(output: Path, host: str) -> None:

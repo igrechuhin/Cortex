@@ -25,9 +25,12 @@ inputs to reproduce the file contents; generated packages are not hand-maintaine
 Claude uses `.claude-plugin/plugin.json`; Codex 0.153.4 uses
 `.codex-plugin/plugin.json`. That Codex release explicitly skips hooks in portable
 `plugin.json` packages. Its native MCP loader also does not interpolate plugin-root
-variables, so the generated Codex MCP command contains an absolute path to the
-wheel in this local distribution. **Keep the generated marketplace directory in
-place while installed.** To relocate it, rebuild and reinstall from the new path.
+variables, so the generated Codex MCP and startup commands use an absolute local
+wheel URI. The URI escapes characters that the package resolver would otherwise
+interpret as requirement syntax. Claude normally expands its plugin-root variable;
+for paths that need this escaping, the local package uses the same absolute URI.
+**Keep the generated marketplace directory in place while installed.** To relocate
+an absolute-URI package, rebuild and reinstall from the new path.
 This is local packaging, not a relocatable published-marketplace artifact.
 
 Runtime prerequisites: `uv` on the host PATH, Python 3.13 or later (uv can acquire
@@ -44,7 +47,7 @@ characters, incomplete pairs, and overlapping directories are rejected before
 distribution output is created. This opt-in command prefix requires a POSIX host.
 Both generated MCP environment values and the `SessionStart` command select the
 same literal directories; the latter uses the standard `env` program with quoted
-assignments, retaining the host's plugin-root expansion. No hook `env` field is
+assignments. No hook `env` field is
 invented. Review the new distribution and paths before installing it through the
 existing host trust process; assembly only creates a fresh distribution.
 

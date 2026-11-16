@@ -152,8 +152,11 @@ def test_explicit_uv_paths_match_mcp_and_quoted_startup(tmp_path: Path) -> None:
         assert tokens[3:6] == ["uv", "tool", "run"]
         for key, value in selected.environment().items():
             assert server.env[key] == value
-        macro = "${CLAUDE_PLUGIN_ROOT}" if host == "claude" else "${PLUGIN_ROOT}"
-        assert f'"{macro}/dist/{wheel.name}"' in hook.command
+        root = output / host / "plugins/cortex"
+        wheel_source = (root / "dist" / wheel.name).resolve().as_uri()
+        assert "%3B" in wheel_source
+        assert server.args[3] == wheel_source
+        assert tokens[tokens.index("--from") + 1] == wheel_source
     assert not selected.cache_dir.exists() and not selected.tool_dir.exists()
 
 

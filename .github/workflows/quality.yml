@@ -29,26 +29,30 @@ concurrency:
 jobs:
   quality:
     runs-on: ubuntu-latest
-    # Ensure the job stops on first failure (default behavior, but explicit is better)
+    # Required smoke can run after unrelated lint failures if its own setup succeeded.
     timeout-minutes: 30
 
     steps:
       - name: Checkout code
+        id: checkout
         uses: actions/checkout@v6
         with:
           submodules: true
 
       - name: Set up Python
+        id: setup_python
         uses: actions/setup-python@v6
         with:
           python-version: "3.13"
 
       - name: Install uv
+        id: setup_uv
         uses: astral-sh/setup-uv@v7
         with:
           version: "latest"
 
       - name: Set up Node.js
+        id: setup_node
         uses: actions/setup-node@v6
         with:
           node-version: "20"
@@ -64,9 +68,11 @@ jobs:
           echo "==============================="
 
       - name: Verify Synapse submodule
+        id: synapse
         run: bash scripts/check_synapse.sh
 
       - name: Install dependencies
+        id: bootstrap
         run: |
           bash scripts/bootstrap.sh
 
@@ -287,17 +293,35 @@ jobs:
       # Keep the complete not-slow parity command below unchanged, including smoke.
       - name: Run critical public workflow smoke
         id: public_smoke
-        timeout-minutes: 5
-        run: uv run python -m pytest tests/e2e/test_public_workflow_smoke.py -m "not slow" -n 0 -v --no-cov --junitxml=test-results/public-workflow-smoke.xml
+        if: >-
+          ${{ !cancelled() &&
+            steps.checkout.outcome == 'success' &&
+            steps.setup_python.outcome == 'success' &&
+            steps.setup_uv.outcome == 'success' &&
+            steps.setup_node.outcome == 'success' &&
+            steps.synapse.outcome == 'success' &&
+            steps.bootstrap.outcome == 'success' }}
+        timeout-minutes: 8
+        run: >-
+          uv run python -m pytest
+          tests/e2e/test_public_workflow_smoke.py
+          'tests/integration/test_artifact_migration_protocol.py::test_artifact_migration_stdio_protocol[plugin-codex]'
+          -m "not slow" -n 0 -v --no-cov --junitxml=test-results/public-workflow-smoke.xml
 
       - name: Require executed successful public workflow smoke
         id: public_smoke_results
-        if: always()
-        run: python scripts/check_junit.py test-results/public-workflow-smoke.xml
+        if: ${{ !cancelled() }}
+        run: |
+          if [ "${{ steps.public_smoke.outcome }}" = "skipped" ]; then
+            echo "::error::Public workflow smoke did not run because its setup did not complete."
+            exit 1
+          fi
+          python scripts/check_junit.py test-results/public-workflow-smoke.xml \
+            --require-case 'test_artifact_migration_stdio_protocol[plugin-codex]'
 
       - name: Publish public workflow smoke results
         id: public_smoke_artifact
-        if: always()
+        if: ${{ !cancelled() && steps.public_smoke.outcome != 'skipped' }}
         uses: actions/upload-artifact@v6
         with:
           name: public-workflow-smoke-results
