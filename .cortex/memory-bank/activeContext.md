@@ -35,6 +35,9 @@ Remove the dedicated access feature without replacing it or changing host or wor
 - ✅ **Repair retired guide reference** - COMPLETE (2026-11-16) - <!-- memory_type: status -->
 Link to the historical source revision of the retired guide instead of a removed local path. Both GitHub Markdown checks and the full Cortex gate passed.
 
+- ✅ **Delegate project discovery and exclusions to SwiftFormat** - COMPLETE (2026-11-16) - <!-- memory_type: status -->
+Call SwiftFormat once from the project root in its native directory mode. Preserve the version pin and the separate Apple formatter behavior.
+
 ## Completed Work (2026-11-15)
 
 - ✅ **Cache-independent official Markdown gate review draft** - COMPLETE (2026-11-15) - <!-- memory_type: problem -->

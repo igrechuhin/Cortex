@@ -66,25 +66,28 @@ def _format_command(root: Path, check: bool) -> list[str]:
         raise ValueError("Conflicting Swift formatter configurations")
     if swiftformat or (not apple and not (root / "Package.swift").exists()):
         _validate_swiftformat_version(root)
-        command = ["swiftformat", "--lint"] if check else ["swiftformat"]
-        if (root / ".swiftformat").exists():
-            command.extend(["--config", str((root / ".swiftformat").resolve())])
-        return command
+        return ["swiftformat", "--lint"] if check else ["swiftformat"]
     if check:
         return ["swift", "format", "lint", "--strict"]
     return ["swift", "format", "--in-place"]
 
 
 def run_swift_format(root: Path, *, check: bool) -> CheckResult:
-    """Run exactly one formatter on bounded batches; operational errors fail closed."""
+    """Use native SwiftFormat directory mode or bounded Apple formatter batches."""
     result = CheckResult(check_type="format", success=True, output="")
     try:
-        files = swift_source_files(root)
         command = _format_command(root, check)
-        # AI: Explicit bounded argv avoids E2BIG and recursive vendor mutation.
-        for offset in range(0, len(files), 100):
+        if command[0] == "swiftformat":
+            # SwiftFormat owns directory discovery, configuration, and exclusions.
+            inputs = [["."]]
+        else:
+            files = swift_source_files(root)
+            inputs = [
+                files[offset : offset + 100] for offset in range(0, len(files), 100)
+            ]
+        for paths in inputs:
             completed = subprocess.run(
-                [*command, *files[offset : offset + 100]],
+                [*command, *paths],
                 cwd=root,
                 capture_output=True,
                 text=True,

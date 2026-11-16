@@ -22,7 +22,6 @@ def test_swift_formatting_honors_project_pin(
     if package:
         _ = (tmp_path / "Package.swift").write_text("// swift-tools-version:5.9")
     responses = [
-        subprocess.CompletedProcess([], 0, "Main.swift\x00", ""),
         subprocess.CompletedProcess([], 0, "0.62.1\n", ""),
         subprocess.CompletedProcess([], 0, "", ""),
     ]
@@ -34,11 +33,12 @@ def test_swift_formatting_honors_project_pin(
         )
     assert result.success
     command = run.call_args.args[0]
-    assert command[0] == "swiftformat"
-    assert ("--lint" in command) is check
-    assert command[-1] == str(source.resolve())
-    assert "--config" in command
-    assert run.call_args_list[1].args[0] == ["swiftformat", "--version"]
+    assert command == (
+        ["swiftformat", "--lint", "."] if check else ["swiftformat", "."]
+    )
+    assert run.call_args.kwargs["cwd"] == tmp_path
+    assert run.call_args_list[0].args[0] == ["swiftformat", "--version"]
+    assert run.call_count == 2
     assert source.read_text() == "let x=1\n"
 
 
@@ -51,15 +51,12 @@ def test_swift_formatting_pin_mismatch_fails_without_fallback(
     _ = (tmp_path / "swiftformat.version").write_text("0.62.1")
     with patch(
         "subprocess.run",
-        side_effect=[
-            subprocess.CompletedProcess([], 0, "Main.swift\x00", ""),
-            subprocess.CompletedProcess([], 0, version, ""),
-        ],
+        return_value=subprocess.CompletedProcess([], 0, version, ""),
     ) as run:
         result = run_swift_format(tmp_path, check=check)
     assert not result.success
     assert "version mismatch" in result.output
-    assert run.call_count == 2
+    assert run.call_count == 1
 
 
 @pytest.mark.parametrize("check", [True, False])
@@ -68,18 +65,16 @@ def test_swift_formatting_missing_binary_fails(tmp_path: Path, check: bool) -> N
     _ = (tmp_path / ".swiftformat").write_text("")
     with patch(
         "subprocess.run",
-        side_effect=[
-            subprocess.CompletedProcess([], 0, "Main.swift\x00", ""),
-            FileNotFoundError("swiftformat missing"),
-        ],
+        side_effect=FileNotFoundError("swiftformat missing"),
     ) as run:
         result = run_swift_format(tmp_path, check=check)
     assert not result.success
     assert "swiftformat missing" in result.output
-    assert run.call_count == 2
+    assert run.call_count == 1
 
 
 def test_swift_formatting_rejects_escaping_source(tmp_path: Path) -> None:
+    _ = (tmp_path / ".swift-format").write_text("{}")
     with patch(
         "subprocess.run",
         return_value=subprocess.CompletedProcess([], 0, "../Outside.swift\x00", ""),
@@ -95,7 +90,7 @@ def test_swift_formatting_batches_only_owned_files(tmp_path: Path, check: bool) 
     names = [f"Source{i}.swift" for i in range(101)]
     for name in names:
         _ = (tmp_path / name).write_text("let x=1\n")
-    _ = (tmp_path / ".swiftformat").write_text("")
+    _ = (tmp_path / ".swift-format").write_text("{}")
     vendor = tmp_path / ".build" / "checkouts" / "Vendor.swift"
     vendor.parent.mkdir(parents=True)
     _ = vendor.write_text("let x=1\n")
@@ -133,7 +128,7 @@ def test_swift_formatting_invalid_configuration_fails(
     ) as run:
         result = run_swift_format(tmp_path, check=False)
     assert not result.success
-    assert run.call_count == 1
+    assert run.call_count == 0
 
 
 @pytest.mark.parametrize("apple", [True, False])
@@ -141,17 +136,16 @@ def test_swift_formatting_unpinned_defaults(tmp_path: Path, apple: bool) -> None
     _ = (tmp_path / "Main.swift").write_text("let x=1\n")
     if apple:
         _ = (tmp_path / ".swift-format").write_text("{}")
+    success = subprocess.CompletedProcess([], 0, "", "")
+    listed = subprocess.CompletedProcess([], 0, "Main.swift\x00", "")
     with patch(
-        "subprocess.run",
-        side_effect=[
-            subprocess.CompletedProcess([], 0, "Main.swift\x00", ""),
-            subprocess.CompletedProcess([], 0, "", ""),
-        ],
+        "subprocess.run", side_effect=[listed, success] if apple else [success]
     ) as run:
         result = run_swift_format(tmp_path, check=False)
     assert result.success
-    expected = ["swift", "format", "--in-place"] if apple else ["swiftformat"]
-    assert run.call_args.args[0] == [
-        *expected,
-        str((tmp_path / "Main.swift").resolve()),
-    ]
+    expected = (
+        ["swift", "format", "--in-place", str((tmp_path / "Main.swift").resolve())]
+        if apple
+        else ["swiftformat", "."]
+    )
+    assert run.call_args.args[0] == expected
