@@ -12,8 +12,6 @@ pending; no release date or successful installation is claimed.
 - Optional paired uv cache and tool directories for generated plugin packages,
   applied consistently to MCP and SessionStart commands. Existing default commands
   and GitHub or wheel sources remain supported.
-- A safe Project Access summary at session startup, with actionable configuration
-  reasons and an explicit indication that planning does not require its policy.
 
 ### Fixed
 
@@ -28,6 +26,9 @@ pending; no release date or successful installation is claimed.
 
 ### Changed
 
+- Removed the optional Project Access operations and their separate policy.
+  Normal source work remains subject to the native host permissions.
+
 - Package, runtime and editable lock metadata are aligned at 1.2.0, following the
   existing GitHub release series whose previous published release is 1.1.1.
 
@@ -36,4 +37,3 @@ pending; no release date or successful installation is claimed.
 - [Previous published release: 1.1.1](https://github.com/igrechuhin/Cortex/releases/tag/1.1.1)
 - [Release procedure](docs/development/releasing.md)
 - [Plugin launch configuration](docs/guides/plugins.md)
-- [Project Access behavior](docs/guides/project-access.md)

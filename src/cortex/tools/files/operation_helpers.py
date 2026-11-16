@@ -67,7 +67,6 @@ class FileOperation(str, Enum):
     MEMORY_TIMELINE = "memory_timeline"
     READ_BY_TYPE = "read_by_type"
     SEARCH = "search"
-    PROJECT_ACCESS = "project_access"
 
 
 def parse_file_operation(value: str | None) -> FileOperation | None:
@@ -228,7 +227,6 @@ def validate_manage_file_operation(
         | SCHEMA_FILE_OPERATIONS
         | PLAN_DRAFT_FILE_OPERATIONS
         | SEARCH_FILE_OPERATIONS
-        | {FileOperation.PROJECT_ACCESS}
     ):
         return (parsed_op, None)
     if not file_name and parsed_op not in {

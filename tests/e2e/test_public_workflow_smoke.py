@@ -47,6 +47,38 @@ async def test_shared_rules_and_complete_context_budget(public_project: Path) ->
     assert "Decision: Preserve public workflow isolation." in serialized
 
 
+async def test_removed_project_access_keeps_file_contract(public_project: Path) -> None:
+    async with public_tool_client() as client:
+        tools = await client.list_tools()
+        manage = next(tool for tool in tools if tool.name == "manage_file")
+        assert "project_access" not in json.dumps(manage.inputSchema)
+        with pytest.raises(ToolError, match="validation error for call"):
+            _ = await call_public_tool(
+                "manage_file",
+                client=client,
+                operation="project_access",
+                content='{"action":"read","path":"outside.md"}',
+            )
+        read = await call_public_tool(
+            "manage_file",
+            client=client,
+            operation="read",
+            file_name="projectBrief.md",
+        )
+        assert read["status"] == "success", read
+        assert "Python public workflow smoke" in str(read["content"])
+        filed = await call_public_tool(
+            "manage_file",
+            client=client,
+            operation="file_artifact",
+            artifact_type="review_report",
+            title="File contract check",
+            content="# Report",
+        )
+        assert filed["status"] == "success", filed
+        assert Path(str(filed["path"])).parent == public_project / ".cortex" / "reviews"
+
+
 async def _create_plan(slug: str, dependencies: list[str]) -> None:
     content = (
         f"---\ntitle: {slug}\nstatus: PENDING\n"

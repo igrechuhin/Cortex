@@ -29,6 +29,9 @@ Keep real pass and fail assertions while waiting for the workspace lease; requir
 - ✅ **Use a safe import path for synthetic workers** - COMPLETE (2026-11-16) - <!-- memory_type: status -->
 Prevent the helper named types from shadowing Python standard library modules in Linux fixture processes. All ownership tests passed on Linux.
 
+- ✅ **Retire optional Project Access operations** - COMPLETE (2026-11-16) - <!-- memory_type: status -->
+Remove the dedicated access feature without replacing it or changing host or workflow security. Full Cortex gate passed.
+
 ## Completed Work (2026-11-15)
 
 - ✅ **Cache-independent official Markdown gate review draft** - COMPLETE (2026-11-15) - <!-- memory_type: problem -->

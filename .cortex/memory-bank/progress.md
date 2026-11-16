@@ -8,6 +8,8 @@
 - <!-- memory_type: status -->
 - <!-- memory_type: status -->
 - <!-- memory_type: status -->
+- <!-- memory_type: status -->
+Retire optional Project Access operations. Remove the dedicated access feature without replacing it or changing host or workflow security. Full Cortex gate passed.
 Use a safe import path for synthetic workers. Prevent the helper named types from shadowing Python standard library modules in Linux fixture processes. All ownership tests passed on Linux.
 Honor busy responses in public quality smoke. Keep real pass and fail assertions while waiting for the workspace lease; require stable ownership for every exposed job handle.
 Pinned available rumdl 0.1.96, encoded local wheel paths, corrected Markdown, and required the real Codex startup smoke in CI.

@@ -303,28 +303,6 @@ The long-term consolidation goal is **`TARGET_REGISTERED_TOOLS = 10`** in `src/c
 | `memory_wal` | deferred_medium |
 | `propose_framework_optimization` | deferred_medium |
 
-### Approved project access
-
-Session bootstrap includes `brief.project_access`, an environment-only summary
-with `state`, a closed `reason`, fixed `protected_operations`,
-`planning_requires_policy: false`, and `guidance`. It never opens the policy or
-lists its grants. `configured_unverified` means configuration is present, not
-that access is approved or that the policy passed validation.
-
-Protected access distinguishes `policy_path_missing`, `policy_sha_missing`, and
-`policy_sha_invalid`. Further validation failures have fixed reasons, including
-`policy_path_unsafe`, `policy_unavailable`, `policy_hash_mismatch`,
-`policy_schema_invalid`, and `policy_disabled_or_wrong_project`. Responses do not
-include policy paths, approvals, protected item names, or digests. Normal planning
-and other unrelated workflows do not require Project Access or its `discover`.
-
-`manage_file(operation="project_access", content=<JSON>)` adds opt-in exact file
-reads, structured read-only SQLite snapshot queries, and approved existing project
-jobs with durable status. The server operator must supply a project-bound,
-hash-pinned policy; requests cannot grant or widen access. See
-[Approved project access](../guides/project-access.md) for approval, limits,
-installation and verification from a separate project chat.
-
 ### Artifact filing and relocation
 
 `manage_file(operation="file_artifact", artifact_type=..., title=..., content=...)`
