@@ -15,6 +15,11 @@ from cortex.tools.execution.pre_commit_detached import (
     find_running_job,
     invalid_job_handle,
 )
+from cortex.tools.execution.pre_commit_ownership import (
+    envelope_owned,
+    owned_request_id,
+    request_owner,
+)
 from cortex.tools.execution.pre_commit_phase_dispatch import (
     PreCommitPhase,
     phase_to_checks,
@@ -23,6 +28,7 @@ from cortex.tools.execution.pre_commit_process import (
     pre_commit_result_path,
     read_result_file,
 )
+from cortex.tools.execution.pre_commit_workspace import busy_response
 from cortex.tools.execution.session_paths import session_dir
 
 logger = logging.getLogger(__name__)
@@ -32,21 +38,25 @@ def quality_gate_job_path(
     root: Path, timeout: int, coverage_threshold: float, test_filter: str | None = None
 ) -> Path:
     """Resolve the same identity used by the detached Phase A worker."""
-    job_id = compute_args_hash(
-        list(phase_to_checks(PreCommitPhase.A)),
-        timeout,
-        coverage_threshold,
-        False,
-        True,
-        test_filter=test_filter,
+    job_id = owned_request_id(
+        compute_args_hash(
+            list(phase_to_checks(PreCommitPhase.A)),
+            timeout,
+            coverage_threshold,
+            False,
+            True,
+            test_filter=test_filter,
+        )
     )
     return pre_commit_result_path(session_dir(root), job_id)
 
 
 async def _needs_new_job(result_path: Path, force_fresh: bool) -> bool:
     envelope, _ = await read_result_file(result_path)
-    return envelope is None or (
-        force_fresh and envelope.get("quality_gate_pending") is not True
+    return not envelope_owned(envelope) or (
+        envelope is not None
+        and force_fresh
+        and envelope.get("quality_gate_pending") is not True
     )
 
 
@@ -54,7 +64,7 @@ async def _mark_delivered(result_path: Path) -> None:
     from cortex.tools.execution.pre_commit_worker import atomic_write
 
     envelope, _ = await read_result_file(result_path)
-    if envelope is not None:
+    if envelope is not None and envelope_owned(envelope):
         envelope["quality_gate_pending"] = False
         atomic_write(result_path, envelope)
 
@@ -70,12 +80,7 @@ def _start_and_validate(
 ) -> ModelDict | None:
     """Start a Phase A worker; return a short-circuit result, or None to poll."""
     from cortex.tools.execution import pre_commit_zero_arg_tools as tools
-    from cortex.tools.execution.pre_commit_fingerprint_store import (
-        clear_phase_a_fingerprint,
-    )
 
-    if force_fresh:
-        clear_phase_a_fingerprint(root)
     job = tools.start_phase_a_job(
         root,
         timeout,
@@ -85,7 +90,7 @@ def _start_and_validate(
         quality_gate=True,
         test_filter=test_filter,
     )
-    if job.get("status") == "error":
+    if job.get("status") == "error" or job.get("busy") is True:
         return job
     return cast(
         "ModelDict | None",
@@ -106,7 +111,7 @@ async def _run_locked_job(
     from cortex.tools.execution import pre_commit_zero_arg_tools as tools
 
     async with tools.get_phase_a_lock(str(root.resolve())):
-        active = find_running_job(root)
+        active = find_running_job(root, result_path)
         if active is not None and active.get("result_file") != str(result_path):
             return cast(ModelDict, active)
         spawned = False
@@ -156,7 +161,11 @@ async def _cached_delivered_result(
     so the normal first-delivery path stays intact.
     """
     envelope, status = await read_result_file(result_path)
-    if envelope is None or status not in {"completed", "error"}:
+    if (
+        envelope is None
+        or not envelope_owned(envelope)
+        or status not in {"completed", "error"}
+    ):
         return None
     if envelope.get("quality_gate_pending") is not False:
         return None
@@ -201,21 +210,24 @@ async def run_bounded_phase_a(
     test_filter: str | None = None,
 ) -> ModelDict:
     """Bound lock acquisition and polling without cancelling the detached worker."""
-    result_path = quality_gate_job_path(root, timeout, coverage_threshold, test_filter)
-    try:
-        async with asyncio.timeout(wait_seconds):
-            return await _run_locked_job(
-                root,
-                timeout,
-                coverage_threshold,
-                force_fresh,
-                ctx,
-                env,
-                result_path,
-                test_filter,
-            )
-    except TimeoutError:
-        return await _pending_result(root, result_path, timeout, ctx)
+    with request_owner(ctx):
+        result_path = quality_gate_job_path(
+            root, timeout, coverage_threshold, test_filter
+        )
+        try:
+            async with asyncio.timeout(wait_seconds):
+                return await _run_locked_job(
+                    root,
+                    timeout,
+                    coverage_threshold,
+                    force_fresh,
+                    ctx,
+                    env,
+                    result_path,
+                    test_filter,
+                )
+        except TimeoutError:
+            return await _pending_result(root, result_path, timeout, ctx)
 
 
 async def _pending_result(
@@ -227,15 +239,18 @@ async def _pending_result(
     envelope, status = await read_result_file(result_path)
     if (
         envelope is not None
+        and envelope_owned(envelope)
         and status in {"completed", "error"}
         and envelope.get("quality_gate_pending") is not False
     ):
         return await _poll_and_deliver(root, result_path, timeout, ctx)
-    active = find_running_job(root)
+    active = find_running_job(root, result_path)
     if active is not None:
         return cast(ModelDict, active)
     if not result_path.exists():
-        return {"status": "error", "error": "Phase A lock is busy; retry the gate."}
+        return cast(ModelDict, busy_response())
+    if not envelope_owned(envelope):
+        return cast(ModelDict, busy_response())
     return {
         "status": "running",
         "job_id": result_path.stem.removeprefix("pre_commit_result_"),

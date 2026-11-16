@@ -8,6 +8,8 @@ import shutil
 from pathlib import Path
 from zipfile import ZipFile
 
+from cortex.setup.uv_launch import UvLaunchDirectories, launch_directories
+
 WORKFLOWS = {
     "plan": "plan.md",
     "do": "do-loop.md",
@@ -76,11 +78,14 @@ def _precompact_hook(host: str) -> dict[str, object]:
     }
 
 
-def _hooks(host: str, wheel: Path) -> dict[str, object]:
+def _hooks(
+    host: str, wheel: Path, uv_directories: UvLaunchDirectories | None
+) -> dict[str, object]:
     variable = "${CLAUDE_PLUGIN_ROOT}" if host == "claude" else "${PLUGIN_ROOT}"
     startup = {
         "type": "command",
-        "command": f'uv tool run --from "{variable}/dist/{wheel.name}" python -m cortex.setup.plugin_start {host}',
+        "command": (uv_directories.hook_prefix() if uv_directories else "")
+        + f'uv tool run --from "{variable}/dist/{wheel.name}" python -m cortex.setup.plugin_start {host}',
         "timeout": 15,
     }
     return {
@@ -93,7 +98,9 @@ def _hooks(host: str, wheel: Path) -> dict[str, object]:
     }
 
 
-def _mcp_server(root: Path, host: str, wheel: Path) -> dict[str, object]:
+def _mcp_server(
+    root: Path, host: str, wheel: Path, uv_directories: UvLaunchDirectories | None
+) -> dict[str, object]:
     # ponytail: native Codex MCP has no path interpolation; retain the local distribution.
     wheel_path = (
         f"${{CLAUDE_PLUGIN_ROOT}}/dist/{wheel.name}"
@@ -111,11 +118,20 @@ def _mcp_server(root: Path, host: str, wheel: Path) -> dict[str, object]:
             "-m",
             "cortex.setup.plugin_server",
         ],
-        "env": {"CORTEX_NATIVE_WORKFLOWS": "1"},
+        "env": {
+            "CORTEX_NATIVE_WORKFLOWS": "1",
+            **(uv_directories.environment() if uv_directories else {}),
+        },
     }
 
 
-def _manifest(root: Path, host: str, wheel: Path, version: str) -> None:
+def _manifest(
+    root: Path,
+    host: str,
+    wheel: Path,
+    version: str,
+    uv_directories: UvLaunchDirectories | None,
+) -> None:
     identity: dict[str, object] = {
         "name": "cortex",
         "version": version,
@@ -134,9 +150,10 @@ def _manifest(root: Path, host: str, wheel: Path, version: str) -> None:
         )
         _json(root / ".codex-plugin/plugin.json", identity)
     _json(
-        root / ".mcp.json", {"mcpServers": {"cortex": _mcp_server(root, host, wheel)}}
+        root / ".mcp.json",
+        {"mcpServers": {"cortex": _mcp_server(root, host, wheel, uv_directories)}},
     )
-    _json(root / "hooks/hooks.json", _hooks(host, wheel))
+    _json(root / "hooks/hooks.json", _hooks(host, wheel, uv_directories))
 
 
 def _marketplace(output: Path, host: str) -> None:
@@ -155,10 +172,7 @@ def _marketplace(output: Path, host: str) -> None:
     _json(output / directory / "marketplace.json", catalog)
 
 
-def assemble(synapse: Path, wheel: Path, output: Path, docs: Path) -> None:
-    """Create a fresh distribution; never merge into user settings or existing assets."""
-    synapse, wheel, output = synapse.resolve(), wheel.resolve(), output.absolute()
-    version = _wheel_version(wheel)
+def _assembly_report_template(synapse: Path, docs: Path, output: Path) -> Path:
     for filename in WORKFLOWS.values():
         if not (synapse / "prompts" / filename).is_file():
             raise ValueError(f"Missing canonical prompt: {filename}")
@@ -167,6 +181,23 @@ def assemble(synapse: Path, wheel: Path, output: Path, docs: Path) -> None:
         raise ValueError("Missing canonical final-report template in --docs")
     if output.exists():
         raise FileExistsError(f"Build into a new directory: {output}")
+    return report_template
+
+
+def assemble(
+    synapse: Path,
+    wheel: Path,
+    output: Path,
+    docs: Path,
+    *,
+    uv_directories: UvLaunchDirectories | None = None,
+) -> None:
+    """Create a fresh distribution; never merge into user settings or existing assets."""
+    synapse, wheel, output = synapse.resolve(), wheel.resolve(), output.absolute()
+    if uv_directories is not None:
+        uv_directories = UvLaunchDirectories.model_validate(uv_directories)
+    version = _wheel_version(wheel)
+    report_template = _assembly_report_template(synapse, docs, output)
     for host in ("claude", "codex"):
         root = output / host / "plugins/cortex"
         (root / "dist").mkdir(parents=True)
@@ -179,7 +210,7 @@ def assemble(synapse: Path, wheel: Path, output: Path, docs: Path) -> None:
         (root / "docs/guides").mkdir(parents=True)
         _ = shutil.copy2(report_template, root / "docs/guides" / report_template.name)
         _skills(root, synapse)
-        _manifest(root, host, wheel, version)
+        _manifest(root, host, wheel, version, uv_directories)
         _marketplace(output / host, host)
 
 
@@ -189,8 +220,13 @@ def main() -> None:
     _ = parser.add_argument("--wheel", type=Path, required=True)
     _ = parser.add_argument("--output", type=Path, required=True)
     _ = parser.add_argument("--docs", type=Path, required=True)
+    _ = parser.add_argument("--uv-cache-dir", type=Path)
+    _ = parser.add_argument("--uv-tool-dir", type=Path)
     args = parser.parse_args()
-    assemble(args.synapse, args.wheel, args.output, args.docs)
+    directories = launch_directories(args.uv_cache_dir, args.uv_tool_dir)
+    assemble(
+        args.synapse, args.wheel, args.output, args.docs, uv_directories=directories
+    )
 
 
 if __name__ == "__main__":

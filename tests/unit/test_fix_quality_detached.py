@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from contextlib import nullcontext
 from pathlib import Path
 from typing import cast
 from unittest.mock import patch
@@ -190,9 +191,10 @@ def test_worker_retains_raw_results_when_finalization_fails(tmp_path: Path) -> N
     )
     with (
         patch.object(worker, "_parse_fix_worker_args", return_value=args),
+        patch.object(worker, "worker_lease", return_value=nullcontext()),
         patch.object(worker, "get_tracked_git_changes", return_value=set()),
         patch.object(worker, "_run_fix_checks", return_value=checks),
-        patch.object(worker, "_run_markdown_fix", return_value=markdown),
+        patch.object(worker, "run_markdown_fix", return_value=markdown),
         patch.object(
             worker, "finalize_autofix_result", side_effect=RuntimeError("disk")
         ),
@@ -226,6 +228,7 @@ def test_worker_publishes_completion_only_after_all_mutations(tmp_path: Path) ->
     module = "cortex.tools.execution.pre_commit_fix_quality"
     with (
         patch.object(worker, "_parse_fix_worker_args", return_value=args),
+        patch.object(worker, "worker_lease", return_value=nullcontext()),
         patch.object(worker, "get_tracked_git_changes", return_value=set()),
         patch.object(worker, "_run_fix_checks", return_value={"results": {}}),
         patch(f"{module}._run_synapse_formatter_autofix", return_value=None),

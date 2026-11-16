@@ -226,7 +226,7 @@ class SwiftXcodebuildMixin:
             coverage=None,
             output=output,
             errors=errors,
-        )
+        ).with_process_returncode(result.returncode)
 
     def _run_xcodebuild_tests(self, timeout: int | None) -> TestResult:
         """Run tests via xcodebuild test-without-building for Xcode projects."""
@@ -236,13 +236,17 @@ class SwiftXcodebuildMixin:
             return self._error_test_result(
                 "No .xcodeproj or scheme found for xcodebuild"
             )
+        tests_started = False
         try:
             build_err = self._xcodebuild_build_phase(scheme, proj, timeout or 300)
             if build_err is not None:
                 return build_err
+            tests_started = True
             return self._xcodebuild_test_phase(scheme, proj, timeout or 600)
         except subprocess.TimeoutExpired:
-            return self._timeout_test_result()
+            result = self._timeout_test_result()
+            result.execution_uncertain = tests_started
+            return result
         except Exception as e:
             return self._error_test_result(str(e))
 

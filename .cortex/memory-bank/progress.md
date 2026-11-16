@@ -1,6 +1,21 @@
 <!-- memory_type: milestone -->
 # Progress Log
 
+## 2026-11-16
+
+- <!-- memory_type: status -->
+- <!-- memory_type: problem -->
+PARTIAL - One authorized verbose packaged retry13e8c975f82d failed again:1run/0passed/1failed/0skipped,pytest1,UVexitnotexposed. Safe retained stderr proves pypi.org simple-index metadata request for fastmcp during dependency resolution before Cortex Initialize, then DNS lookup failure after3 internal retries3.2s. Security synthetics336a6fd61885:23/23passed; final actual seven non-test checks plus Markdown green. No further real/plugin/full/DNS attempt or publication. Bounded sanitized JSON retained; same uv/uvx0.13.8 and unchanged guard. Normal authorized DNS/HTTPS remains prerequisite.
+PARTIAL - Repository uv launch contract and controlled test state implemented; existing A/B/C preserved. Contract 003582c4b59d and final unit/static e8c6b1827929 passed eight checks plus Markdown, zero errors/warnings. Real f9e5b4ab269d: 32 run, 31 passed, one DNS failure before Cortex Initialize, zero skipped; actual owned cache/tools and uv0.13.8 proven. Real plugin/wheel/startup, full gate and Step12.7 remain unverified. No real retry, commit or push. Separate approved standalone uv/uvx update0.7.9 to0.13.8 succeeded without PATH/permission changes. Remaining prerequisite: authorized DNS/network for the genuine dependency fetch; hostname/dependency redacted and unknown.
+
+## 2026-11-15
+
+- <!-- memory_type: status -->
+- **Cache-independent approved Markdown tool** - COMPLETE. Scope C draft uses approved pinned installed rumdl without shared uv cache or interpreter fallback. Native selected proof: 45 passed, 0 failed; final all-checks and Markdown gate green; coverage unmeasured. A/B remains BLOCKED with three permission-denied lifecycle cases. No install, commit, activation or publication.
+- <!-- memory_type: problem -->
+**Owned quality lifecycle, session and packaged diagnostics** - PARTIAL. Cooperative lifecycle and genuine owned-session fixtures are verified by scoped Cortex gates. Packaged diagnostics now prove the unchanged uvx refresh fails to open the previously prohibited cache .git target with errno 1 (receipt b6a74bed1d02: 9 selected, 8 passed, 1 failed, 0 skipped). Seven synthetic diagnostics and editable protocol pass. No retry or workaround followed. Full final gate, Step 12.7 and publication remain BLOCKED; original checkout preserved.
+PARTIAL: Separate A/B bootstrap and owned-quality-run draft is implemented in isolated worktree; last native selection121 passed of124, with3 PermissionError lifecycle cases. No denied action was retried;14 later mocked uncertainty cases remain unexecuted. Scope C independently restored the official gate and is verified; original adapter draft untouched.
+
 ## 2026-11-14
 
 - **Approved project access** - COMPLETE. Opt-in files, SQLite snapshots and approved jobs validated; fresh full gate and 58 fixture cases passed. TradeWing activation requires an approved policy and server restart.

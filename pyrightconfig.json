@@ -4,6 +4,7 @@
 
   "include": ["src", "tests", ".cortex/synapse/scripts/python"],
   "extraPaths": [
+    "src",
     "scripts",
     ".cortex/synapse/scripts/python",
     ".cortex/synapse/scripts/swift"

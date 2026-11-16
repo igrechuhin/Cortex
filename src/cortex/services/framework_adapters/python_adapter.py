@@ -133,7 +133,9 @@ class PythonAdapter(FrameworkAdapter):
         except OSError as exc:
             return self._create_error_result(str(exc))
         output = completed.stdout + completed.stderr
-        return selected_pytest_result(output, completed.returncode)
+        return selected_pytest_result(
+            output, completed.returncode
+        ).with_process_returncode(completed.returncode)
 
     def _pytest_parallel_requested(self) -> bool:
         """Return True if parallel test runs are allowed."""
@@ -297,7 +299,7 @@ class PythonAdapter(FrameworkAdapter):
         """Collect streamed output, wait for process, parse pytest result."""
         lines = self._collect_streaming_output(proc, total, progress_callback)
         wait_timeout = timeout if timeout else 3600
-        _ = proc.wait(timeout=wait_timeout)  # noqa: F841
+        returncode = proc.wait(timeout=wait_timeout)
         output = "".join(lines)
         if proc.returncode == 0 and total > 0:
             progress_callback(total, total)
@@ -306,7 +308,7 @@ class PythonAdapter(FrameworkAdapter):
             proc.returncode == 0,
             coverage_threshold,
             self.project_root,
-        )
+        ).with_process_returncode(returncode)
 
     def _execute_test_command_streaming(
         self,
@@ -328,11 +330,20 @@ class PythonAdapter(FrameworkAdapter):
                 proc.kill()
             return self._create_timeout_result()
         except (OSError, subprocess.SubprocessError) as e:
-            return self._create_error_result(str(e))
+            return self._streaming_error_result(proc, str(e))
         except Exception as e:
-            return self._create_error_result(
-                f"Unexpected error during streaming test execution: {e}"
+            return self._streaming_error_result(
+                proc, f"Unexpected error during streaming test execution: {e}"
             )
+
+    def _streaming_error_result(
+        self, proc: subprocess.Popen[str] | None, error: str
+    ) -> TestResult:
+        result = self._create_error_result(error)
+        if proc is not None:
+            returncode = proc.poll()
+            result.execution_uncertain = returncode is None or returncode < 0
+        return result
 
     def _execute_test_command(
         self, cmd: list[str], timeout: int | None, coverage_threshold: float = 0.90
@@ -352,7 +363,7 @@ class PythonAdapter(FrameworkAdapter):
                 result.returncode == 0,
                 coverage_threshold,
                 self.project_root,
-            )
+            ).with_process_returncode(result.returncode)
         except subprocess.TimeoutExpired:
             return self._create_timeout_result()
         except (OSError, subprocess.SubprocessError) as e:
@@ -366,6 +377,7 @@ class PythonAdapter(FrameworkAdapter):
         """Create test result for timeout."""
         return TestResult(
             success=False,
+            execution_uncertain=True,
             tests_run=0,
             tests_passed=0,
             tests_failed=0,

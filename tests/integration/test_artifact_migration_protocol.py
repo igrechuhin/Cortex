@@ -1,15 +1,19 @@
 """Exercise artifact relocation and retrieval through a real stdio MCP server."""
 
+# cspell:ignore errlog
+
 import hashlib
 import json
 import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import cast
+from tempfile import TemporaryFile
+from typing import TextIO, cast
 
 import pytest
 from mcp import ClientSession, StdioServerParameters
+from mcp.client.session import ListRootsFnT
 from mcp.client.stdio import stdio_client
 from mcp.types import (
     Implementation,
@@ -20,12 +24,29 @@ from mcp.types import (
 )
 from pydantic import AnyUrl, FileUrl
 
+from tests.helpers.real_plugin_fixture import (
+    PluginHost,
+    build_real_plugin,
+    run_real_startup,
+)
+from tests.helpers.stdio_diagnostics import capture_stdio_failure
+from tests.helpers.uv_test_state import (
+    UvTestState,
+    assert_uv_install_artifact,
+    owned_uv_state,
+    require_uv_state,
+    verify_uv_state,
+)
+
 _EXTERNAL_RULE_CONTENT = (
     b"# Shared rules\n\nUnmodified rules from the shared code tree.\n"
 )
 _GENERATED_CONTENT = (
     b"# Generated framework\n\nGenerated payload must stay unchanged.\n"
 )
+
+
+_PACKAGED_PREFIX = ("--verbose", "--refresh-package", "cortex", "--from")
 
 
 async def _manage(session: ClientSession, **arguments: object) -> dict[str, object]:
@@ -197,15 +218,20 @@ async def _reject_unsafe_requests(session: ClientSession) -> None:
         assert json.loads(text)["status"] == "error", text
 
 
+async def _assert_protocol_inventory(session: ClientSession) -> int:
+    inventory = await session.list_tools()
+    manage = next(tool for tool in inventory.tools if tool.name == "manage_file")
+    assert "migrate_artifacts" in json.dumps(manage.inputSchema)
+    assert "patch_document" in json.dumps(manage.inputSchema)
+    return len(inventory.tools)
+
+
 async def _exercise_protocol(
     session: ClientSession, root: Path, reports: dict[str, bytes]
 ) -> dict[str, object]:
     initialized = await session.initialize()
     assert initialized.protocolVersion
-    inventory = await session.list_tools()
-    manage = next(tool for tool in inventory.tools if tool.name == "manage_file")
-    assert "migrate_artifacts" in json.dumps(manage.inputSchema)
-    assert "patch_document" in json.dumps(manage.inputSchema)
+    tools = await _assert_protocol_inventory(session)
     await _reject_unsafe_requests(session)
     digest = await _migrate_protocol(session, root, reports)
     await _retrieve_protocol(session)
@@ -222,7 +248,7 @@ async def _exercise_protocol(
     await _patch_document_protocol(session, root)
     return {
         "protocol": initialized.protocolVersion,
-        "tools": len(inventory.tools),
+        "tools": tools,
         "migrated_reports": len(reports),
         "preview_digest": digest,
         "replayed": replay["replayed"],
@@ -231,20 +257,21 @@ async def _exercise_protocol(
     }
 
 
-def _server_parameters(root: Path, launch_mode: str) -> StdioServerParameters:
+def server_parameters(
+    root: Path, launch_mode: str, uv_state: UvTestState | None = None
+) -> StdioServerParameters:
     checkout = Path(__file__).resolve().parents[2]
-    environment = {**os.environ, "CORTEX_USE_FALLBACK_ROOT": "0"}
+    environment = (
+        uv_state.environment()
+        if uv_state
+        else {**os.environ, "CORTEX_USE_FALLBACK_ROOT": "0"}
+    )
     if launch_mode == "packaged":
+        environment = require_uv_state(root, uv_state).environment()
         environment["PYTHONPATH"] = ""
         return StdioServerParameters(
             command="uvx",
-            args=[
-                "--refresh-package",
-                "cortex",
-                "--from",
-                str(checkout),
-                "cortex",
-            ],
+            args=[*_PACKAGED_PREFIX, str(checkout), "cortex"],
             cwd=root,
             env=environment,
         )
@@ -257,35 +284,96 @@ def _server_parameters(root: Path, launch_mode: str) -> StdioServerParameters:
     )
 
 
+def _protocol_roots(root: Path) -> ListRootsFnT:
+    async def roots(context: object) -> ListRootsResult:
+        return ListRootsResult(
+            roots=[
+                Root(
+                    uri=FileUrl(root.resolve().as_uri()), name="isolated-artifact-smoke"
+                )
+            ]
+        )
+
+    return roots
+
+
+async def _stdio_protocol(
+    parameters: StdioServerParameters,
+    root: Path,
+    reports: dict[str, bytes],
+    stderr: TextIO,
+) -> dict[str, object]:
+    async with stdio_client(parameters, errlog=stderr) as (reader, writer):
+        async with ClientSession(
+            reader,
+            writer,
+            client_info=Implementation(name="cortex-artifact-smoke", version="1"),
+            list_roots_callback=_protocol_roots(root),
+        ) as session:
+            return await _exercise_protocol(session, root, reports)
+
+
+async def _execute_launch_mode(
+    root: Path, mode: str, state: UvTestState, reports: dict[str, bytes], stderr: TextIO
+) -> dict[str, object]:
+    hosts = {"plugin-claude": PluginHost.CLAUDE, "plugin-codex": PluginHost.CODEX}
+    version = (
+        verify_uv_state(state, state.environment(), stderr)
+        if mode != "editable"
+        else "not-used"
+    )
+    plugin = build_real_plugin(state, hosts[mode], stderr) if mode in hosts else None
+    parameters = (
+        plugin.parameters(root, state)
+        if plugin
+        else server_parameters(root, mode, state)
+    )
+    assert parameters.env is not None
+    evidence = await _stdio_protocol(parameters, root, reports, stderr)
+    if mode != "editable":
+        assert_uv_install_artifact(state)
+    if plugin:
+        run_real_startup(plugin, root, state, stderr)
+    return {**evidence, "uv_version": version, "generated_plugin": plugin is not None}
+
+
 @pytest.mark.integration
 @pytest.mark.timeout(120)
-@pytest.mark.parametrize("launch_mode", ["editable", "packaged"])
+@pytest.mark.parametrize(
+    "launch_mode", ["editable", "packaged", "plugin-claude", "plugin-codex"]
+)
 async def test_artifact_migration_stdio_protocol(
     tmp_path: Path, launch_mode: str
 ) -> None:
     """Preview/apply, search, context and filing share canonical real-server behavior."""
     reports = _prepare_workspace(tmp_path)
 
-    async def roots(context: object) -> ListRootsResult:
-        return ListRootsResult(
-            roots=[
-                Root(
-                    uri=FileUrl(tmp_path.resolve().as_uri()),
-                    name="isolated-artifact-smoke",
-                )
-            ]
+    checkout = Path(__file__).resolve().parents[2]
+    evidence: dict[str, object] | None = None
+    with (
+        owned_uv_state(tmp_path) as state,
+        TemporaryFile(mode="w+", encoding="utf-8", errors="replace") as stderr,
+        capture_stdio_failure(
+            stderr,
+            tmp_path,
+            checkout,
+            tmp_path.parent / f"{tmp_path.name}-uv-sanitized.json",
+        ),
+    ):
+        evidence = await _execute_launch_mode(
+            tmp_path, launch_mode, state, reports, stderr
         )
-
-    parameters = _server_parameters(tmp_path, launch_mode)
-    async with stdio_client(parameters) as (reader, writer):
-        async with ClientSession(
-            reader,
-            writer,
-            client_info=Implementation(name="cortex-artifact-smoke", version="1"),
-            list_roots_callback=roots,
-        ) as session:
-            evidence = await _exercise_protocol(session, tmp_path, reports)
-            print(json.dumps({"launch_mode": launch_mode, **evidence}))
+    assert not state.base.exists()
+    assert evidence is not None
+    print(
+        json.dumps(
+            {
+                "launch_mode": launch_mode,
+                "isolated_cache_verified": launch_mode == "packaged",
+                **evidence,
+            }
+        )
+    )
 
 
 def _patch_protocol_fixture(root: Path) -> tuple[Path, bytes, dict[str, object]]:

@@ -15,6 +15,7 @@ from cortex.core.constants import (
     DEFAULT_SESSION_SPEND_BUDGET,
 )
 from cortex.core.models import OperationStatus
+from cortex.core.project_access import AccessSummary, access_summary
 from cortex.tools.models_base import (
     ErrorResultBase,
     StrictBaseModel,
@@ -248,6 +249,10 @@ class SessionBrief(StrictBaseModel):
     """Session brief with orientation information."""
 
     project_name: str = Field(description="Project name")
+    project_access: AccessSummary = Field(
+        default_factory=access_summary,
+        description="Safe configuration summary; protected access still validates policy",
+    )
     current_focus: str = Field(
         default="", description="Current focus from activeContext '## Current Focus'"
     )

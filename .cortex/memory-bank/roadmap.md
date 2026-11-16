@@ -9,6 +9,8 @@
 
 ## Active Work (in progress)
 
+- **Project Access bootstrap and owned quality runs** - BLOCKED - BLOCKED: 121/124 selected tests passed; three synthetic lifetime cases denied with errno1; later uncertainty fixes and14 mocked cases await behavioral verification. Plan: .cortex/plans/project-access-bootstrap-owned-quality-runs.md
+
 ## Future Enhancements
 
 - **TradeWing scoped data root and reader adapters** - PENDING - Design explicit approved data-root and existing-reader adapters; verify chat binding and synthetic smoke tests before owner-authorized activation. Plan: .cortex/plans/tradewing-scoped-data-root-adapters.md

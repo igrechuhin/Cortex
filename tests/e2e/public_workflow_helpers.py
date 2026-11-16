@@ -4,10 +4,13 @@ import importlib
 import json
 import shutil
 import textwrap
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import cast
 
 from fastmcp import Client
+from fastmcp.client.transports import FastMCPTransport
 from mcp.types import Implementation, TextContent
 
 from cortex.server import mcp
@@ -30,11 +33,22 @@ def write_memory_bank(root: Path) -> Path:
     return memory
 
 
-async def call_public_tool(name: str, **arguments: object) -> dict[str, object]:
+@asynccontextmanager
+async def public_tool_client() -> AsyncIterator[Client[FastMCPTransport]]:
+    """Keep the negotiated MCP session alive across an owned job and its polls."""
     _ = importlib.import_module("cortex.tools")
     identity = Implementation(name="cortex-workflow-smoke", version="1")
     async with Client(mcp, timeout=180, client_info=identity) as client:
-        result = await client.call_tool(name, arguments)
+        yield client
+
+
+async def call_public_tool(
+    name: str, *, client: Client[FastMCPTransport] | None = None, **arguments: object
+) -> dict[str, object]:
+    if client is None:
+        async with public_tool_client() as owned_client:
+            return await call_public_tool(name, client=owned_client, **arguments)
+    result = await client.call_tool(name, arguments)
     texts = [item.text for item in result.content if isinstance(item, TextContent)]
     assert texts, f"{name} returned no text payload"
     payload = json.loads("".join(texts))

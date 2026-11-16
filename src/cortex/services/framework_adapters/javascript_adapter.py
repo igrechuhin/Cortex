@@ -75,7 +75,9 @@ class JavaScriptAdapter(FrameworkAdapter):
                 timeout=timeout,
             )
             output = result.stdout + result.stderr
-            return self._parse_test_output(output, result.returncode == 0)
+            return self._parse_test_output(
+                output, result.returncode == 0
+            ).with_process_returncode(result.returncode)
         except subprocess.TimeoutExpired:
             return self._timeout_test_result()
         except Exception as e:
@@ -147,6 +149,7 @@ class JavaScriptAdapter(FrameworkAdapter):
         """Build test result for timeout."""
         return TestResult(
             success=False,
+            execution_uncertain=True,
             tests_run=0,
             tests_passed=0,
             tests_failed=0,

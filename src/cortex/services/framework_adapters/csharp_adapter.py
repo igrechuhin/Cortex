@@ -111,11 +111,12 @@ class CSharpAdapter(FrameworkAdapter):
             coverage=None,
             output=output,
             errors=[] if success else ["dotnet test failed"],
-        )
+        ).with_process_returncode(result.returncode)
 
     def _timeout_test_result(self) -> TestResult:
         return TestResult(
             success=False,
+            execution_uncertain=True,
             tests_run=0,
             tests_passed=0,
             tests_failed=0,

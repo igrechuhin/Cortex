@@ -1,129 +1,5 @@
 # Cortex Operations Log
 
-## [2026-09-08T16:23] plan | Created plan: Mini
-
-## [2026-09-08T16:23] plan | Created plan: Mini ·2
-
-## [2026-09-08T16:23] plan | Created plan: Smoke Test Plan
-
-## [2026-09-08T16:23] plan | Created plan: Demo Plan ·3
-
-## [2026-09-08T16:23] plan | Created plan: Mini ·3
-
-## [2026-09-08T16:23] plan | Created plan: Demo Plan ·4
-
-## [2026-09-08T16:23] plan | Created plan: Mini ·4
-
-## [2026-09-08T16:23] plan | Created plan: Demo Plan ·5
-
-## [2026-09-08T16:23] plan | Created plan: Demo Plan ·6
-
-## [2026-09-08T16:23] plan | Created plan: Test Plan
-
-## [2026-09-08T16:24] lint | Quality gate passed
-
-## [2026-09-08T16:26] plan | Created plan: Remediate Project Review Findings: Safety, Rules, Planning, Context, and Verification
-
-## [2026-09-08T16:35] fix | Autofix completed
-
-status=success; changed_files=None
-
-## [2026-09-08T16:37] plan | Created plan: Test Plan
-
-## [2026-09-08T16:37] plan | Created plan: Smoke Test Plan
-
-## [2026-09-08T16:37] plan | Created plan: Demo Plan
-
-## [2026-09-08T16:37] plan | Created plan: Demo Plan ·2
-
-## [2026-09-08T16:37] plan | Created plan: Mini
-
-## [2026-09-08T16:37] plan | Created plan: Demo Plan ·3
-
-## [2026-09-08T16:37] plan | Created plan: Demo Plan ·4
-
-## [2026-09-08T16:37] plan | Created plan: Mini ·2
-
-## [2026-09-08T16:37] plan | Created plan: Mini ·3
-
-## [2026-09-08T16:37] plan | Created plan: Demo Plan ·5
-
-## [2026-09-08T16:37] plan | Created plan: Demo Plan ·6
-
-## [2026-09-08T16:38] lint | Quality gate passed
-
-## [2026-09-08T16:39] plan | Created plan: Remediate Project Review Findings: Safety, Rules, Planning, Context, and Verification
-
-## [2026-09-08T16:51] fix | Autofix completed
-
-status=success; changed_files=None
-
-## [2026-09-08T16:54] plan | Created plan: Smoke Test Plan
-
-## [2026-09-08T16:54] plan | Created plan: Test Plan
-
-## [2026-09-08T16:54] plan | Created plan: Mini
-
-## [2026-09-08T16:54] plan | Created plan: Demo Plan
-
-## [2026-09-08T16:54] plan | Created plan: Demo Plan ·2
-
-## [2026-09-08T16:54] plan | Created plan: Mini ·2
-
-## [2026-09-08T16:54] plan | Created plan: Demo Plan ·3
-
-## [2026-09-08T16:54] plan | Created plan: Demo Plan ·4
-
-## [2026-09-08T16:54] plan | Created plan: Mini ·3
-
-## [2026-09-08T16:54] plan | Created plan: Demo Plan ·5
-
-## [2026-09-08T16:54] plan | Created plan: Mini ·4
-
-## [2026-09-08T16:54] plan | Created plan: Demo Plan ·6
-
-## [2026-09-08T16:54] lint | Quality gate failed
-
-## [2026-09-08T16:59] fix | Autofix completed
-
-status=success; changed_files=None
-
-## [2026-09-08T17:01] plan | Created plan: Mini
-
-## [2026-09-08T17:01] plan | Created plan: Mini ·2
-
-## [2026-09-08T17:01] plan | Created plan: Demo Plan
-
-## [2026-09-08T17:01] plan | Created plan: Mini ·3
-
-## [2026-09-08T17:01] plan | Created plan: Demo Plan ·2
-
-## [2026-09-08T17:01] plan | Created plan: Demo Plan ·3
-
-## [2026-09-08T17:01] plan | Created plan: Demo Plan ·4
-
-## [2026-09-08T17:01] plan | Created plan: Mini ·4
-
-## [2026-09-08T17:01] plan | Created plan: Smoke Test Plan
-
-## [2026-09-08T17:01] plan | Created plan: Demo Plan ·5
-
-## [2026-09-08T17:01] plan | Created plan: Demo Plan ·6
-
-## [2026-09-08T17:01] plan | Created plan: Test Plan
-
-## [2026-09-08T17:02] lint | Quality gate passed
-
-## [2026-09-08T17:07] plan | Created plan: Remediate Project Review Findings: Safety, Rules, Planning, Context, and Verification
-
-## [2026-09-08T17:21] plan | Created plan: Demo Plan
-
-## [2026-09-08T17:21] plan | Created plan: Demo Plan ·2
-
-## [2026-09-08T17:21] plan | Created plan: Mini
-
-## [2026-09-08T17:21] plan | Created plan: Demo Plan ·3
-
 ## [2026-09-08T17:21] plan | Created plan: Demo Plan ·4
 
 ## [2026-09-08T17:21] plan | Created plan: Mini ·2
@@ -2199,3 +2075,161 @@ status=success; changed_files=None
 status=success; changed_files=None
 
 ## [2026-11-14T18:29] lint | Quality gate passed
+
+## [2026-11-15T20:09] plan | Created plan: Project Access bootstrap and owned quality runs
+
+## [2026-11-15T20:38] plan | Created plan: Cache-independent approved Markdown tool
+
+## [2026-11-15T20:51] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-15T20:52] lint | Quality gate failed
+
+## [2026-11-15T20:58] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-15T21:00] lint | Quality gate failed
+
+## [2026-11-15T21:04] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-15T21:05] lint | Quality gate passed
+
+## [2026-11-15T21:10] lint | Quality gate failed
+
+## [2026-11-15T21:29] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-15T21:30] lint | Quality gate failed
+
+## [2026-11-15T21:33] lint | Quality gate passed
+
+## [2026-11-15T21:36] plan | Created plan: Project Access bootstrap and owned quality runs
+
+## [2026-11-15T21:36] plan | Created plan: Cache-independent approved Markdown tool
+
+## [2026-11-15T21:37] plan | Completed plan: Cache-independent approved Markdown tool
+
+Implemented approved installed rumdl 0.1.45 resolution and exact package pins; native C selection 45 passed, 0 failed with all checks and Markdown green. Selected scope only; A/B remains separately blocked; uncommitted code ready for review.
+
+## [2026-11-15T22:51] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-15T22:55] lint | Quality gate passed
+
+## [2026-11-15T23:00] lint | Quality gate passed
+
+## [2026-11-15T23:05] lint | Quality gate failed
+
+## [2026-11-15T23:14] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-15T23:19] lint | Quality gate failed
+
+## [2026-11-15T23:22] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-15T23:27] lint | Quality gate passed
+
+## [2026-11-15T23:30] plan | Created plan: Project Access bootstrap and owned quality runs
+
+## [2026-11-15T23:34] plan | Created plan: Project Access bootstrap and owned quality runs
+
+## [2026-11-15T23:42] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-15T23:44] lint | Quality gate failed
+
+## [2026-11-15T23:47] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-15T23:48] lint | Quality gate passed
+
+## [2026-11-15T23:51] lint | Quality gate failed
+
+## [2026-11-15T23:55] plan | Created plan: Project Access bootstrap and owned quality runs
+
+## [2026-11-15T23:57] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-15T23:59] lint | Quality gate passed
+
+## [2026-11-16T09:02] plan | Created plan: Project Access bootstrap and owned quality runs
+
+## [2026-11-16T09:15] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-16T09:17] lint | Quality gate failed
+
+## [2026-11-16T09:21] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-16T09:23] lint | Quality gate failed
+
+## [2026-11-16T09:49] plan | Created plan: Project Access bootstrap and owned quality runs
+
+## [2026-11-16T10:03] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-16T10:06] lint | Quality gate failed
+
+## [2026-11-16T10:09] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-16T10:11] lint | Quality gate passed
+
+## [2026-11-16T10:21] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-16T10:23] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-16T10:25] lint | Quality gate failed
+
+## [2026-11-16T10:29] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-16T10:32] lint | Quality gate passed
+
+## [2026-11-16T10:37] plan | Created plan: Project Access bootstrap and owned quality runs
+
+## [2026-11-16T10:40] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-16T10:52] plan | Created plan: Project Access bootstrap and owned quality runs
+
+## [2026-11-16T10:58] plan | Created plan: Project Access bootstrap and owned quality runs
+
+## [2026-11-16T11:11] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-16T11:13] lint | Quality gate failed
+
+## [2026-11-16T11:17] lint | Quality gate failed
+
+## [2026-11-16T11:27] plan | Created plan: Project Access bootstrap and owned quality runs
+
+## [2026-11-16T11:44] plan | Created plan: Project Access bootstrap and owned quality runs
+
+## [2026-11-16T12:02] plan | Created plan: Project Access bootstrap and owned quality runs
+
+## [2026-11-16T12:05] plan | Created plan: Project Access bootstrap and owned quality runs

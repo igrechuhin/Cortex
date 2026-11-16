@@ -2,8 +2,9 @@
 
 import argparse
 import json
-from contextlib import ExitStack
+from contextlib import ExitStack, nullcontext
 from pathlib import Path
+from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -26,6 +27,7 @@ from cortex.tools.execution.pre_commit_test_scope import (
     describe_test_scope,
     validate_test_filter,
 )
+from cortex.tools.execution.pre_commit_workspace import busy_response
 from cortex.tools.session.pipeline_handoff import pipeline_handoff
 from tests.tools.pipeline_handoff_test_support import (
     patch_pipeline_handoff_project_root,
@@ -82,9 +84,10 @@ def _run_worker(tmp_path: Path, selection: str | None) -> dict[str, object]:
     )
     with (
         patch.object(worker, "_parse_worker_args", return_value=args),
+        patch.object(worker, "worker_lease", return_value=nullcontext()),
         patch.object(worker, "write_status"),
         patch.object(worker, "_maybe_write_early_exit", return_value=False),
-        patch.object(worker, "_run_markdown_lint", return_value={}),
+        patch.object(worker, "run_markdown_lint", return_value={}),
         patch.object(worker, "_write_success_result") as write,
     ):
         worker.main()
@@ -228,11 +231,7 @@ async def test_real_session_filter_reaches_spawn_without_relabeling_busy_job(
         )
     )
     assert written["status"] == "ok"
-    active: ModelDict = {
-        "status": "running",
-        "job_id": "other",
-        "test_filter": "feature_a",
-    }
+    active = cast(ModelDict, busy_response())
     with (
         patch.object(gate, "get_current_project_root", return_value=tmp_path),
         patch.object(
@@ -241,20 +240,15 @@ async def test_real_session_filter_reaches_spawn_without_relabeling_busy_job(
     ):
         result = await gate.run_quality_gate_inner(None, LocalExecutionEnvironment())
     assert spawn.call_args.kwargs["test_filter"] == "feature_b"
-    assert result["test_filter"] == "feature_a"
+    assert result["busy"] is True
+    assert "test_filter" not in result and "job_id" not in result
 
 
 @pytest.mark.asyncio
-async def test_bounded_gate_returns_other_active_job_without_scope_relabeling(
+async def test_bounded_gate_returns_busy_without_foreign_scope_or_handle(
     tmp_path: Path,
 ) -> None:
-    active_path = quality_gate_job_path(tmp_path, 900, 0.9, "feature_a")
-    active: ModelDict = {
-        "status": "running",
-        "result_file": str(active_path),
-        "job_id": active_path.stem,
-        "preflight_passed": False,
-    }
+    active = cast(ModelDict, busy_response())
     with (
         patch.object(jobs, "find_running_job", return_value=active),
         patch.object(gate, "start_phase_a_job") as spawn,
@@ -272,6 +266,7 @@ async def test_bounded_gate_returns_other_active_job_without_scope_relabeling(
     assert result == active
     assert "test_filter" not in result
     assert "test_scope" not in result
+    assert "job_id" not in result and "result_file" not in result
     spawn.assert_not_called()
 
 

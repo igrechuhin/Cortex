@@ -39,6 +39,35 @@ To use Cortex with Claude Desktop or other MCP clients, add it to your MCP confi
 
 The same `.mcp.json` config as above (command `uvx`, args `["--from", "git+...", "cortex"]`) is enough.
 
+When uv storage directories have been explicitly agreed for a project, keep the
+GitHub source and set the pair in that project's MCP environment:
+
+```json
+{
+  "mcpServers": {
+    "cortex": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/igrechuhin/Cortex.git",
+        "cortex"
+      ],
+      "env": {
+        "UV_CACHE_DIR": "/absolute/agreed/uv-cache",
+        "UV_TOOL_DIR": "/absolute/agreed/uv-tools"
+      }
+    }
+  }
+}
+```
+
+Review these literal paths before using the configuration. This is an optional
+project launch example; existing defaults stay unchanged. For a freshly bundled
+wheel plugin, the [assembler's paired options](guides/plugins.md#build) put the
+same selection into MCP and SessionStart. The repository verification run used
+standalone uv/uvx 0.13.8; it remains blocked on dependency-fetch DNS resolution,
+so the new packaged and generated-plugin routes are not certified by that run.
+
 ### Stable MCP setup (recommended)
 
 For the most stable MCP experience:

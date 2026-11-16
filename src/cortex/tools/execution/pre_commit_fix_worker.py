@@ -29,8 +29,8 @@ from cortex.tools.execution.pre_commit_fix_quality import (
     get_tracked_git_changes,
 )
 from cortex.tools.execution.pre_commit_helpers_models import PreCommitCheck
+from cortex.tools.execution.pre_commit_markdown_tool import MarkdownToolError
 from cortex.tools.execution.pre_commit_rumdl_resolve import (
-    coerce_rumdl_argv0,
     markdown_rumdl_argv,
 )
 from cortex.tools.execution.pre_commit_worker import (
@@ -38,6 +38,7 @@ from cortex.tools.execution.pre_commit_worker import (
     collect_pre_commit_markdown_paths,
     resolve_adapter_worker,
 )
+from cortex.tools.execution.pre_commit_workspace import worker_lease
 
 logging.basicConfig(
     level=logging.INFO,
@@ -80,16 +81,17 @@ def _run_fix_checks(project_root: str) -> dict[str, object]:
     )
 
 
-def _run_markdown_fix(project_root: str) -> dict[str, object]:
+def run_markdown_fix(project_root: str) -> dict[str, object]:
     """Run rumdl --fix on all markdown files and return result dict."""
     root = Path(project_root).resolve()
     md_files = collect_pre_commit_markdown_paths(root)
     if not md_files:
         return {"success": True, "files_fixed": 0, "results": []}
 
-    cmd = markdown_rumdl_argv(root, with_fix=True)
-    if cmd and cmd[0] == "rumdl":
-        cmd = coerce_rumdl_argv0(root, cmd)
+    try:
+        cmd = markdown_rumdl_argv(root, with_fix=True)
+    except MarkdownToolError as exc:
+        return {"success": False, "files_fixed": 0, "results": [], "error": str(exc)}
     cmd = cmd + md_files
     try:
         proc = subprocess.run(
@@ -116,7 +118,7 @@ def _complete_fix_result(args: argparse.Namespace, output: dict[str, object]) ->
     tracked_before = get_tracked_git_changes(root)
     output["result"] = _run_fix_checks(args.project_root)
     if args.include_markdown_fix:
-        output["markdown_result"] = _run_markdown_fix(args.project_root)
+        output["markdown_result"] = run_markdown_fix(args.project_root)
     output["autofix_result"] = finalize_autofix_result(
         root, cast(ModelDict, output), tracked_before
     )
@@ -162,6 +164,13 @@ def _parse_fix_worker_args() -> argparse.Namespace:
 def main() -> None:
     """Entry point for detached fix worker."""
     args = _parse_fix_worker_args()
+    with worker_lease(Path(args.project_root)):
+        if _execute_worker(args):
+            sys.exit(1)
+
+
+def _execute_worker(args: argparse.Namespace) -> bool:
+    """Publish handled failures before declaring the guarded worker terminal."""
     result_path = Path(args.result_file)
     pid = os.getpid()
     started = time.time()
@@ -169,7 +178,8 @@ def main() -> None:
         _run_worker_once(args, result_path, started, pid)
     except Exception as e:
         logger.exception("Fix worker failed: %s", e)
-        sys.exit(1)
+        return True
+    return False
 
 
 if __name__ == "__main__":

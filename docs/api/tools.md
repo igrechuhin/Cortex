@@ -83,6 +83,32 @@ fresh run. The client request deadline is separate from `test_timeout`; clients
 must allow the worker timeout plus polling overhead. If a client request expires,
 inspect the existing detached result before starting another worker.
 
+### Owned runs and workspace occupancy
+
+An owned request resumes its own detached run. A different request or server
+receives a bounded `status: running`, `busy: true`,
+`reason: workspace_occupied` response without another run's job or result-file
+handle. Retry the same Cortex entry point after that response; callers do not
+need to prove that the checkout is idle. A checkout lease serializes launch
+across processes and remains conservative after abnormal worker loss. A terminal
+receipt does not release occupancy while its process group still exists.
+
+This coordination does not skip checks, grant project-data access, or authorize
+another test runner. If a required native check is unavailable or denied, report
+the blocker and preserve the draft instead of substituting a different command.
+
+### Approved Markdown tool
+
+The official check and fix stages use the installed native `rumdl` 0.1.45,
+exactly pinned in Cortex's runtime and development dependencies and lockfile.
+Selection is limited to the attached project's environments and Cortex's package
+environment. Bounded `METADATA` and `RECORD` reads verify the package name/version
+and the executable's recorded SHA-256 digest and size before execution. This route
+uses no `uv` cache or extra interpreter probe. A missing, mismatched, or unusable
+approved tool blocks the gate; a launched linter's nonzero result is returned once
+without an alternate launch. Markdown rules, configuration, check/fix flags, and
+owned file selection remain unchanged.
+
 ### Commit-preflight Git checkpoint
 
 Call `session(operation="checkpoint")` explicitly before any staging, submodule
@@ -278,6 +304,19 @@ The long-term consolidation goal is **`TARGET_REGISTERED_TOOLS = 10`** in `src/c
 | `propose_framework_optimization` | deferred_medium |
 
 ### Approved project access
+
+Session bootstrap includes `brief.project_access`, an environment-only summary
+with `state`, a closed `reason`, fixed `protected_operations`,
+`planning_requires_policy: false`, and `guidance`. It never opens the policy or
+lists its grants. `configured_unverified` means configuration is present, not
+that access is approved or that the policy passed validation.
+
+Protected access distinguishes `policy_path_missing`, `policy_sha_missing`, and
+`policy_sha_invalid`. Further validation failures have fixed reasons, including
+`policy_path_unsafe`, `policy_unavailable`, `policy_hash_mismatch`,
+`policy_schema_invalid`, and `policy_disabled_or_wrong_project`. Responses do not
+include policy paths, approvals, protected item names, or digests. Normal planning
+and other unrelated workflows do not require Project Access or its `discover`.
 
 `manage_file(operation="project_access", content=<JSON>)` adds opt-in exact file
 reads, structured read-only SQLite snapshot queries, and approved existing project

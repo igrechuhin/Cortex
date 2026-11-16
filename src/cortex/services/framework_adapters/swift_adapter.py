@@ -254,10 +254,10 @@ class SwiftAdapter(SwiftXcodebuildMixin, FrameworkAdapter):
             output = result.stdout + result.stderr
             return selected_swift_result(
                 output, outcome, self.extract_test_counts(output)
-            )
+            ).with_process_returncode(result.returncode)
         return self._build_completed_process_test_result(
             result, outcome, timeout, coverage_threshold
-        )
+        ).with_process_returncode(result.returncode)
 
     def _build_completed_process_test_result(
         self,
@@ -640,6 +640,7 @@ class SwiftAdapter(SwiftXcodebuildMixin, FrameworkAdapter):
         """Build test result for timeout."""
         return TestResult(
             success=False,
+            execution_uncertain=True,
             tests_run=0,
             tests_passed=0,
             tests_failed=0,

@@ -36,6 +36,26 @@ The bundled launcher uses `uv tool run --from <bundled-wheel> python -m
 cortex.setup.plugin_server`, binding Cortex to the host's working directory before
 server registration. It does not change into the package, search for a developer
 checkout, or require a project `.venv`.
+
+For explicitly agreed uv storage, the assembler accepts the optional pair
+`--uv-cache-dir /absolute/agreed/cache --uv-tool-dir /absolute/agreed/tools`.
+Omitting both preserves the existing launch defaults. Relative paths, control
+characters, incomplete pairs, and overlapping directories are rejected before
+distribution output is created. This opt-in command prefix requires a POSIX host.
+Both generated MCP environment values and the `SessionStart` command select the
+same literal directories; the latter uses the standard `env` program with quoted
+assignments, retaining the host's plugin-root expansion. No hook `env` field is
+invented. Review the new distribution and paths before installing it through the
+existing host trust process; assembly only creates a fresh distribution.
+
+The repository integration fixture uses disposable cache, tools, home, config,
+and Python-discovery state. It checks real `uv cache dir` and `uv tool dir`, builds
+a real wheel using the installed build backend, and exercises generated MCP and
+`SessionStart` commands in synthetic workspaces. Runtime proof records the actual
+uv version. This repository verification run used standalone uv/uvx 0.13.8. These command
+tests do not claim installation or trust review inside a live host. A cold GitHub
+entry-point experiment is separate from proof of the unpublished local wheel.
+
 Initialize Cortex memory in each target workspace with the
 existing Cortex setup workflow before expecting lifecycle persistence. Packages
 supply read-only procedures, not a replacement project configuration.

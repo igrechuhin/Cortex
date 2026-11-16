@@ -16,6 +16,7 @@ import pytest
 from cortex.tools.execution import pre_commit_autofix_job as coordinator
 from cortex.tools.execution import pre_commit_zero_arg_tools as gate
 from cortex.tools.execution.pre_commit_detached import fix_args_hash, fix_result_path
+from cortex.tools.execution.pre_commit_ownership import current_owner
 
 
 def _result_path(root: Path) -> Path:
@@ -24,6 +25,7 @@ def _result_path(root: Path) -> Path:
 
 def _write_envelope(path: Path, envelope: dict[str, object]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    _ = envelope.setdefault("owner", current_owner())
     _ = path.write_text(json.dumps(envelope))
 
 
@@ -207,9 +209,29 @@ async def test_root_lock_contention_is_bounded_without_duplicate_worker(
         assert result["status"] == "running"
         assert Path(str(result["result_file"])) == _result_path(tmp_path)
     else:
-        assert result["status"] == "error"
+        assert result["status"] == "running"
+        assert result["busy"] is True
         assert "job_id" not in result
         assert "result_file" not in result
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("owner", [None, "another-session"])
+async def test_foreign_or_unowned_worker_metadata_is_not_adopted(
+    tmp_path: Path, bounded_autofix: MagicMock, owner: str | None
+) -> None:
+    envelope = _running_envelope()
+    envelope["owner"] = owner
+    _write_envelope(_result_path(tmp_path), envelope)
+
+    result = await asyncio.wait_for(gate.autofix(), timeout=0.5)
+
+    assert result["status"] == "running"
+    assert result["busy"] is True
+    assert "job_id" not in result
+    assert "result_file" not in result
+    assert json.loads(_result_path(tmp_path).read_text()) == envelope
+    bounded_autofix.assert_not_called()
 
 
 @pytest.mark.asyncio

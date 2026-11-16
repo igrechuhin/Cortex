@@ -19,6 +19,8 @@ from typing import cast
 from cortex.core.context_logging import LogLevel, MCPContext, log_client
 from cortex.core.execution_env import ExecutionEnvironment
 from cortex.core.models import OperationStatus
+from cortex.tools.execution.pre_commit_ownership import current_owner
+from cortex.tools.execution.pre_commit_workspace import inherited_lease, workspace_lease
 from cortex.tools.execution.session_paths import session_dir
 
 logger = logging.getLogger(__name__)
@@ -29,6 +31,12 @@ _HEARTBEAT_MAX_DOTS = 500
 _POLL_FAST_SECONDS = 1.0
 _POLL_SLOW_SECONDS = 3.0
 _POLL_FAST_WINDOW_SECONDS = 30.0
+_WORKERS: list[subprocess.Popen[bytes]] = []
+
+
+def reap_detached_workers() -> None:
+    """Poll retained children so terminal process groups do not stay zombies."""
+    _WORKERS[:] = [worker for worker in _WORKERS if worker.poll() is None]
 
 
 def poll_interval_for_elapsed(elapsed_seconds: float) -> float:
@@ -53,8 +61,10 @@ def is_process_alive(pid: int) -> bool:
     try:
         os.kill(pid, 0)
         return True
-    except (OSError, ProcessLookupError):
+    except ProcessLookupError:
         return False
+    except OSError:
+        return True
 
 
 def build_worker_cmd(
@@ -138,11 +148,15 @@ def spawn_detached_process(
 ) -> int:
     """Start detached subprocess writing stdout/stderr and return its pid."""
     _ = env  # Reserved for non-local dispatch adapters.
-    with open(log_file, "w") as lf:
+    reap_detached_workers()
+    request_id = log_file.stem.rsplit("_", 1)[-1]
+    with workspace_lease(project_root, request_id), open(log_file, "w") as lf:
         # On Unix the child process inherits the fd after the parent's
         # `with` block closes its own handle; this is intentional so
         # stdout/stderr are captured in the detached log file.
         process_env = _build_worker_env(project_root)
+        descriptors, lease_env = inherited_lease(project_root)
+        process_env.update(lease_env)
         process = subprocess.Popen(
             cmd,
             stdin=subprocess.DEVNULL,
@@ -151,7 +165,9 @@ def spawn_detached_process(
             cwd=str(project_root),
             env=process_env,
             start_new_session=True,
+            pass_fds=descriptors,
         )
+        _WORKERS.append(process)
     return process.pid
 
 
@@ -198,6 +214,7 @@ def publish_started_worker(result_path: Path, pid: int, quality_gate: bool) -> N
                     "version": 1,
                     "status": "running",
                     "pid": pid,
+                    "owner": current_owner(),
                     "quality_gate_pending": quality_gate,
                 },
                 result_file,

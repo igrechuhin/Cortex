@@ -3,6 +3,33 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-11-16)
+
+- ✅ **Cortex uv launch verification (PARTIAL)** - COMPLETE (2026-11-16) - <!-- memory_type: status -->
+PARTIAL - Repository uv launch contract and controlled test state implemented; existing A/B/C preserved. Contract 003582c4b59d and final unit/static e8c6b1827929 passed eight checks plus Markdown, zero errors/warnings. Real f9e5b4ab269d: 32 run, 31 passed, one DNS failure before Cortex Initialize, zero skipped; actual owned cache/tools and uv0.13.8 proven. Real plugin/wheel/startup, full gate and Step12.7 remain unverified. No real retry, commit or push. Separate approved standalone uv/uvx update0.7.9 to0.13.8 succeeded without PATH/permission changes. Remaining prerequisite: authorized DNS/network for the genuine dependency fetch; hostname/dependency redacted and unknown.
+
+- ✅ **Cortex DNS prerequisite remains blocked** - COMPLETE (2026-11-16) - <!-- memory_type: preference -->
+Read-only follow-up: retained f9e5b4ab269d full URLs were redacted, so historical hostname/dependency and precise package-fetch subphase are unrecoverable. Exact-checkout UVX was not fetching GitHub source. One ordinary getaddrinfo(pypi.org,443) in the same M1 default executor failed socket.gaierror errno8; no explicit permission/network-policy rejection. Current proxy/index overrides absent. Recovery unproven: no HTTPS/install/plugin/full-gate retry, route/executor/DNS/proxy/TLS change or publication. Source unchanged; same allowed workflow needs working normal DNS/HTTPS.
+
+- ✅ **Verbose packaged retry confirms DNS blocker** - COMPLETE (2026-11-16) - <!-- memory_type: problem -->
+PARTIAL - One authorized verbose packaged retry13e8c975f82d failed again:1run/0passed/1failed/0skipped,pytest1,UVexitnotexposed. Safe retained stderr proves pypi.org simple-index metadata request for fastmcp during dependency resolution before Cortex Initialize, then DNS lookup failure after3 internal retries3.2s. Security synthetics336a6fd61885:23/23passed; final actual seven non-test checks plus Markdown green. No further real/plugin/full/DNS attempt or publication. Bounded sanitized JSON retained; same uv/uvx0.13.8 and unchanged guard. Normal authorized DNS/HTTPS remains prerequisite.
+
+- ✅ **DNS differs by execution context** - COMPLETE (2026-11-16) - <!-- memory_type: status -->
+Read-only comparison: both pypi.org and github.com fail system DNS with errno 8 in managed parent and actual fixture environment; both resolve and return HTTPS HEAD 200 in separately approved ordinary M1 parent and fixture contexts, using the same Python and checkout. No package or Cortex test was run. Execution-context difference measured; restricted networking is the leading explanation, exact resolver mechanism unproven. Official networked gates still need supported authorization with filesystem safeguards. No DNS, proxy, VPN, settings or permissions changed.
+
+- ✅ **Cortex 1.2.0 release prepared, publication blocked** - COMPLETE (2026-11-16) - <!-- memory_type: status -->
+PARTIAL: The owner requested a proper release. Latest GitHub release is 1.1.1 and remote main still matches the authorized d896464f base. Prepared 1.2.0 package/runtime/editable lock alignment and an explicitly unreleased root changelog; static metadata agrees and dependency resolution is preserved. No build or test retry. Official networked verification requires an owner-granted network-only execution mode retaining filesystem protection; this tool exposes only unsandboxed escalation. Full fresh native gate, at least 90 percent coverage, Step 12.7, maintainer review, artifacts and exact-SHA CI remain pending. No commit, push, tag, upload or active TradeWing change.
+
+## Completed Work (2026-11-15)
+
+- ✅ **Cache-independent official Markdown gate review draft** - COMPLETE (2026-11-15) - <!-- memory_type: problem -->
+Prepared an uncommitted scope C fix with approved rumdl0.1.45 package/dependency pins and bounded installed-file provenance, preserving rules/scope/lint failures. Native C selection45 passed with all checks and Markdown green; full suite not certified. Separate A/B implementation remains blocked on3 synthetic process permission failures; no live TradeWing or configuration changes.
+
+- ✅ **Cache-independent approved Markdown tool** - COMPLETE (2026-11-15) - Implemented approved installed rumdl 0.1.45 resolution and exact package pins; native C selection 45 passed, 0 failed with all checks and Markdown green. Selected scope only; A/B remains separately blocked; uncommitted code ready for review.
+
+- ✅ **Owned quality workflow verification (PARTIAL)** - COMPLETE (2026-11-15) - <!-- memory_type: problem -->
+Cooperative lifecycle and genuine owned-session fixtures are verified by scoped Cortex gates. Packaged diagnostics now prove the unchanged uvx refresh fails to open the previously prohibited cache .git target with errno 1 (receipt b6a74bed1d02: 9 selected, 8 passed, 1 failed, 0 skipped). Seven synthetic diagnostics and editable protocol pass. No retry or workaround followed. Full final gate, Step 12.7 and publication remain BLOCKED; original checkout preserved.
+
 ## Completed Work (2026-11-14)
 
 - ✅ **Approved project access** - COMPLETE (2026-11-14) - Implemented opt-in manage_file project_access with exact approved text reads, structured SELECT-only SQLite snapshots, and pinned existing-script jobs with durable status and duplicate prevention. Tool count stays 14. Fresh full quality gate passes with four workers; 58 feature cases pass. TradeWing remains disabled pending operator-approved policy and server install/restart. Local validation needs project Python on PATH and no inherited startup opt-out.

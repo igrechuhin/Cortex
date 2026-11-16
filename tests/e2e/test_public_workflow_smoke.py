@@ -6,12 +6,13 @@ from typing import cast
 
 import pytest
 from fastmcp import Client
+from fastmcp.client.transports import FastMCPTransport
 from fastmcp.exceptions import ToolError
 from mcp.types import Implementation
 from tiktoken.registry import get_encoding
 
 from cortex.server import mcp
-from tests.e2e.public_workflow_helpers import call_public_tool
+from tests.e2e.public_workflow_helpers import call_public_tool, public_tool_client
 from tests.helpers.spelling_fixtures import (
     SPELLING_CASES,
     cleanup_checker,
@@ -98,14 +99,40 @@ async def test_plan_completion_archives_and_unblocks_dependency(
 
 
 async def _quality_gate_outcome() -> dict[str, object]:
-    result = await call_public_tool("run_quality_gate")
+    async with public_tool_client() as client:
+        result = await call_public_tool("run_quality_gate", client=client)
+        return await _poll_quality_gate(client, result)
+
+
+async def _poll_quality_gate(
+    client: Client[FastMCPTransport], result: dict[str, object]
+) -> dict[str, object]:
     while result.get("status") == "running":
         previous = result
-        result = await call_public_tool("run_quality_gate")
+        result = await call_public_tool("run_quality_gate", client=client)
         if result.get("status") == "running":
             assert result["job_id"] == previous["job_id"], result
             assert result["result_file"] == previous["result_file"], result
     return result
+
+
+async def test_foreign_public_session_waits_without_adopting_job(
+    quality_project: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        "cortex.tools.execution.pre_commit_zero_arg_tools.QUALITY_GATE_WAIT_SECONDS",
+        0.02,
+    )
+    async with public_tool_client() as owner, public_tool_client() as foreign:
+        running = await call_public_tool("run_quality_gate", client=owner)
+        assert running["status"] == "running", running
+        busy = await call_public_tool("run_quality_gate", client=foreign)
+        assert busy["status"] == "running", busy
+        assert busy["busy"] is True, busy
+        assert "job_id" not in busy
+        assert "result_file" not in busy
+        completed = await _poll_quality_gate(owner, running)
+    assert completed["preflight_passed"] is True, completed
 
 
 async def test_quality_gate_reports_real_success_and_failure(

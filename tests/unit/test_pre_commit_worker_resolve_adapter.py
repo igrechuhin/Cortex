@@ -2,6 +2,7 @@
 
 import json
 import sys
+from contextlib import nullcontext
 from pathlib import Path
 from unittest.mock import patch
 
@@ -122,6 +123,7 @@ def test_quality_gate_marker_survives_terminal_worker_writes(
         return ["ignored.py"] if outcome == "ignored" else []
 
     with (
+        patch.object(worker, "worker_lease", return_value=nullcontext()),
         patch.object(worker, "check_staged_gitignored", side_effect=check_staging),
         patch.object(
             worker,
@@ -136,13 +138,17 @@ def test_quality_gate_marker_survives_terminal_worker_writes(
         ),
     ):
         # Act
-        if outcome == "error":
-            with pytest.raises(SystemExit, match="1"):
-                worker.main()
-        else:
-            worker.main()
+        _invoke_worker(outcome)
 
     # Assert
     envelope = json.loads(result_path.read_text())
     assert envelope["quality_gate_pending"] is True
     assert envelope["status"] == ("error" if outcome == "error" else "completed")
+
+
+def _invoke_worker(outcome: str) -> None:
+    if outcome == "error":
+        with pytest.raises(SystemExit, match="1"):
+            worker.main()
+    else:
+        worker.main()

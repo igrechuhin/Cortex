@@ -58,6 +58,10 @@ class TestResult(DictLikeModel):
     model_config = ConfigDict(extra=EXTRA_FORBID, validate_assignment=True)
 
     success: bool = Field(description="Whether tests passed")
+    execution_uncertain: bool = Field(
+        default=False,
+        description="A started test command was interrupted; descendants may remain",
+    )
     tests_run: int = Field(ge=0, description="Number of tests run")
     tests_passed: int = Field(ge=0, description="Number of tests passed")
     tests_failed: int = Field(ge=0, description="Number of tests failed")
@@ -86,6 +90,11 @@ class TestResult(DictLikeModel):
         default_factory=list,
         description="Warnings (e.g. coverage below 90% but >= 89.5%)",
     )
+
+    def with_process_returncode(self, returncode: int) -> "TestResult":
+        """A signal end cannot establish descendant completion from output alone."""
+        self.execution_uncertain = returncode < 0
+        return self
 
 
 class FrameworkAdapter(ABC):

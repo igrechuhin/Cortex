@@ -16,19 +16,30 @@ from collections.abc import Mapping
 from enum import Enum
 from pathlib import Path
 
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, Field, ValidationError
 
 from cortex.core.context_logging import MCPContext
 from cortex.core.execution_env import ExecutionEnvironment
 from cortex.core.models import OperationStatus
+from cortex.tools.execution.pre_commit_ownership import (
+    current_owner,
+    owned_request_id,
+)
 from cortex.tools.execution.pre_commit_process import (
     build_fix_worker_cmd,
     is_process_alive,
     poll_for_result,
     pre_commit_result_path,
     publish_started_worker,
+    reap_detached_workers,
     spawn_detached_process,
     spawn_detached_worker,
+)
+from cortex.tools.execution.pre_commit_workspace import (
+    WorkspaceBusy,
+    busy_response,
+    process_group_alive,
+    workspace_lease,
 )
 from cortex.tools.execution.session_paths import session_dir
 
@@ -61,9 +72,10 @@ class DetachedResultEnvelope(BaseModel):
 
     status: DetachedResultStatus
     completed_at: float | None = None
-    pid: int | None = None
+    pid: int | None = Field(default=None, gt=0, strict=True)
     result: dict[str, object] | None = None
     error: str | None = None
+    owner: str | None = None
 
 
 class DetachedJobInfo(BaseModel):
@@ -117,6 +129,8 @@ def find_existing_result(
         parsed = DetachedResultEnvelope.model_validate(data)
     except ValidationError:
         return None
+    if parsed.owner != current_owner():
+        return None
     status = parsed.status
     completed_at = parsed.completed_at
 
@@ -126,15 +140,13 @@ def find_existing_result(
         age = time.time() - completed_at
         if age < _RESULT_FRESHNESS_SECONDS:
             return data
-        # Stale, remove
-        rp.unlink(missing_ok=True)
+        # AI: Reads never evict a worker's evidence; startup cleans under its lease.
         return None
 
     if status == DetachedResultStatus.RUNNING:
         if _has_live_worker(parsed):
             return data  # Worker is still running, caller should poll
-        # Orphaned running status, remove
-        rp.unlink(missing_ok=True)
+        # The workspace lease, including crash evidence, decides safe reuse.
         return None
 
     return data  # error status — return as-is
@@ -143,7 +155,7 @@ def find_existing_result(
 def _has_live_worker(parsed: DetachedResultEnvelope) -> bool:
     """Return True when a running envelope still points at a live pid."""
     pid = parsed.pid
-    return isinstance(pid, int) and is_process_alive(pid)
+    return isinstance(pid, int) and (is_process_alive(pid) or process_group_alive(pid))
 
 
 def _cached_detached_result(
@@ -245,9 +257,14 @@ def clear_all_cached_results(project_root: Path) -> int:
     sd = session_dir(project_root)
     removed = 0
     for p in sd.glob("pre_commit_result_*.json"):
-        job_id = p.stem.removeprefix("pre_commit_result_")
-        existing = find_existing_result(project_root, job_id)
-        if existing is not None and existing.get("status") == "running":
+        try:
+            parsed = DetachedResultEnvelope.model_validate_json(p.read_text())
+        except (OSError, ValidationError):
+            continue
+        if (
+            parsed.owner != current_owner()
+            or parsed.status == DetachedResultStatus.RUNNING
+        ):
             continue
         p.unlink(missing_ok=True)
         removed += 1
@@ -256,8 +273,11 @@ def clear_all_cached_results(project_root: Path) -> int:
     return removed
 
 
-def find_running_job(project_root: Path) -> dict[str, object] | None:
+def find_running_job(
+    project_root: Path, owned_result_path: Path | None = None
+) -> dict[str, object] | None:
     """Find a live check or fix worker before another workspace operation."""
+    reap_detached_workers()
     for result_path in session_dir(project_root).glob("pre_commit_*result_*.json"):
         job_id = result_path.stem.rsplit("_", 1)[-1]
         try:
@@ -269,6 +289,8 @@ def find_running_job(project_root: Path) -> dict[str, object] | None:
         if existing.status == DetachedResultStatus.RUNNING and _has_live_worker(
             existing
         ):
+            if result_path != owned_result_path or existing.owner != current_owner():
+                return busy_response()
             return {
                 "status": "running",
                 "job_id": job_id,
@@ -287,13 +309,15 @@ def _compute_job_hash(
     include_markdown_lint: bool,
     test_filter: str | None = None,
 ) -> str:
-    return _build_job_id(
-        checks,
-        timeout,
-        coverage_threshold,
-        strict_mode,
-        include_markdown_lint,
-        test_filter,
+    return owned_request_id(
+        _build_job_id(
+            checks,
+            timeout,
+            coverage_threshold,
+            strict_mode,
+            include_markdown_lint,
+            test_filter,
+        )
     )
 
 
@@ -313,17 +337,50 @@ def start_pre_commit_job_impl(
     # AI: One spec tuple feeds identity and spawn so the two argument lists cannot drift.
     spec = (checks, timeout, coverage_threshold, strict_mode, include_markdown_lint)
     args_hash = _compute_job_hash(*spec, test_filter)
-    existing_result = _existing_or_busy_job(project_root, args_hash, force_fresh)
-    if existing_result is not None:
-        return existing_result
+    result_path = pre_commit_result_path(session_dir(project_root), args_hash)
+    try:
+        with workspace_lease(project_root, args_hash):
+            return _start_under_lease(
+                project_root,
+                spec,
+                args_hash,
+                env,
+                force_fresh,
+                quality_gate,
+                test_filter,
+            )
+    except WorkspaceBusy:
+        return _start_response(
+            find_running_job(project_root, result_path) or busy_response()
+        )
+
+
+def _start_under_lease(
+    root: Path,
+    spec: tuple[list[str], int, float, bool, bool],
+    args_hash: str,
+    env: ExecutionEnvironment,
+    force_fresh: bool,
+    quality_gate: bool,
+    test_filter: str | None,
+) -> dict[str, object]:
+    existing = _existing_or_busy_job(root, args_hash, force_fresh)
+    if existing is not None:
+        return existing
     return _spawn_new_job(
-        project_root,
+        root,
         *spec,
         args_hash,
         env=env,
         quality_gate=quality_gate,
         test_filter=test_filter,
     )
+
+
+def _start_response(active: dict[str, object]) -> dict[str, object]:
+    if active.get("busy") is True:
+        return active
+    return {**active, "status": DetachedJobStatus.ALREADY_RUNNING.value}
 
 
 def _existing_or_busy_job(
@@ -334,15 +391,18 @@ def _existing_or_busy_job(
         not force_fresh or existing.get("status") == "already_running"
     ):
         return existing
-    active = find_running_job(project_root)
+    active = find_running_job(
+        project_root, pre_commit_result_path(session_dir(project_root), args_hash)
+    )
     if active is not None:
-        return {
-            **active,
-            "status": "error",
-            "error": "Another Phase A configuration is still running.",
-        }
+        return active
+    _clear_cached_result(project_root, args_hash)
     if force_fresh:
-        _clear_cached_result(project_root, args_hash)
+        from cortex.tools.execution.pre_commit_fingerprint_store import (
+            clear_phase_a_fingerprint,
+        )
+
+        clear_phase_a_fingerprint(project_root)
     return None
 
 
@@ -362,7 +422,7 @@ async def run_checks_detached(
     returns {job_id, status} so the MCP connection is not held open; callers
     poll with poll_for_result(job_id).
     """
-    args_hash = compute_args_hash(
+    args_hash = _compute_job_hash(
         checks, timeout, coverage_threshold, strict_mode, False
     )
     existing = find_existing_result(project_root, args_hash)
@@ -373,16 +433,9 @@ async def run_checks_detached(
     maybe_running = _running_job_response(existing_envelope, args_hash)
     if maybe_running is not None:
         return maybe_running
-    _spawn_detached_checks_worker(
-        project_root=project_root,
-        checks=checks,
-        timeout=timeout,
-        coverage_threshold=coverage_threshold,
-        strict_mode=strict_mode,
-        args_hash=args_hash,
-        env=env,
+    return start_pre_commit_job_impl(
+        project_root, checks, timeout, coverage_threshold, strict_mode, False, env
     )
-    return DetachedJobInfo(job_id=args_hash, status=DetachedJobStatus.STARTED).to_dict()
 
 
 def _running_job_response(
@@ -403,28 +456,6 @@ def _running_job_response(
         job_id=args_hash,
         status=DetachedJobStatus.ALREADY_RUNNING,
     ).to_dict()
-
-
-def _spawn_detached_checks_worker(
-    project_root: Path,
-    checks: list[str],
-    timeout: int,
-    coverage_threshold: float,
-    strict_mode: bool,
-    args_hash: str,
-    env: ExecutionEnvironment,
-) -> None:
-    """Spawn a detached worker for the checks-only path."""
-    _ = spawn_detached_worker(
-        project_root,
-        checks,
-        timeout,
-        coverage_threshold,
-        strict_mode,
-        False,
-        args_hash,
-        env=env,
-    )
 
 
 def _validate_existing_envelope(
@@ -449,7 +480,7 @@ def fix_result_path(sd: Path, args_hash: str) -> Path:
 def fix_args_hash(include_markdown_fix: bool) -> str:
     """Deterministic hash for fix worker args."""
     key = json.dumps({"fix": True, "markdown": include_markdown_fix}, sort_keys=True)
-    return hashlib.sha256(key.encode()).hexdigest()[:12]
+    return owned_request_id(hashlib.sha256(key.encode()).hexdigest()[:12])
 
 
 def spawn_detached_fix_worker(
@@ -475,16 +506,26 @@ def start_fix_job_impl(
     env: ExecutionEnvironment,
 ) -> dict[str, object]:
     """Start a fresh fix worker only when no workspace worker is running."""
-    active = find_running_job(project_root)
-    if active is not None:
-        return active
     args_hash = fix_args_hash(include_markdown_fix)
     rp = fix_result_path(session_dir(project_root), args_hash)
-    rp.unlink(missing_ok=True)
-    _ = spawn_detached_fix_worker(
-        project_root, include_markdown_fix, args_hash, env=env
-    )
-    return DetachedJobInfo(job_id=args_hash, status=DetachedJobStatus.STARTED).to_dict()
+    active = find_running_job(project_root, rp)
+    if active is not None:
+        return active
+    try:
+        with workspace_lease(project_root, args_hash):
+            active = find_running_job(project_root, rp)
+            if active is not None:
+                return active
+            _ = clear_all_cached_results(project_root)
+            rp.unlink(missing_ok=True)
+            _ = spawn_detached_fix_worker(
+                project_root, include_markdown_fix, args_hash, env=env
+            )
+            return DetachedJobInfo(
+                job_id=args_hash, status=DetachedJobStatus.STARTED
+            ).to_dict()
+    except WorkspaceBusy:
+        return find_running_job(project_root, rp) or busy_response()
 
 
 def invalid_job_handle(

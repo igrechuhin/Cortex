@@ -16,19 +16,17 @@ import pytest
 from cortex.core.execution_env import LocalExecutionEnvironment
 from cortex.core.quality_gate_config import DEFAULT_TEST_TIMEOUT
 from cortex.tools.execution import pre_commit_zero_arg_tools as gate
-from cortex.tools.execution.pre_commit_detached import compute_args_hash
-from cortex.tools.execution.pre_commit_phase_dispatch import PHASE_A_CHECKS
+from cortex.tools.execution.pre_commit_ownership import current_owner
+from cortex.tools.execution.pre_commit_quality_gate_job import quality_gate_job_path
 
 
 def _result_path(root: Path) -> Path:
-    job_id = compute_args_hash(
-        list(PHASE_A_CHECKS), DEFAULT_TEST_TIMEOUT, 0.9, False, True
-    )
-    return root / ".cortex" / ".session" / f"pre_commit_result_{job_id}.json"
+    return quality_gate_job_path(root, DEFAULT_TEST_TIMEOUT, 0.9)
 
 
 def _write_envelope(path: Path, envelope: dict[str, object]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    _ = envelope.setdefault("owner", current_owner())
     _ = path.write_text(json.dumps(envelope))
 
 
@@ -245,7 +243,8 @@ async def test_contended_lock_recovers_completion_or_reports_missing_job(
         fitness.assert_awaited_once()
         tracker.record_phase_a.assert_called_once()
     else:
-        assert result["status"] == "error"
+        assert result["status"] == "running"
+        assert result["busy"] is True
         assert result.get("preflight_passed") is not True
         assert "job_id" not in result
         assert "result_file" not in result
@@ -256,7 +255,7 @@ async def test_contended_lock_recovers_completion_or_reports_missing_job(
 
 
 @pytest.mark.asyncio
-async def test_changed_configuration_reports_the_actual_live_worker(
+async def test_changed_configuration_waits_without_adopting_live_worker(
     tmp_path: Path, bounded_gate: tuple[MagicMock, AsyncMock, MagicMock]
 ) -> None:
     spawn, _, tracker = bounded_gate
@@ -270,9 +269,10 @@ async def test_changed_configuration_reports_the_actual_live_worker(
         result = await asyncio.wait_for(gate.run_quality_gate(), timeout=0.5)
 
     assert result["status"] == "running"
-    assert result["job_id"] == pending["job_id"]
-    assert result["result_file"] == pending["result_file"]
-    assert Path(str(result["result_file"])).is_file()
+    assert pending["job_id"]
+    assert result["busy"] is True
+    assert "job_id" not in result
+    assert "result_file" not in result
     assert result.get("preflight_passed") is not True
     spawn.assert_called_once()
     tracker.record_phase_a.assert_not_called()
@@ -524,7 +524,9 @@ async def test_autofix_leaves_files_unchanged_during_live_gate(
         result = await asyncio.wait_for(gate.autofix(), timeout=0.5)
 
     assert result["status"] == "running"
-    assert result["job_id"] == pending["job_id"]
+    assert pending["job_id"]
+    assert result["busy"] is True
+    assert "job_id" not in result and "result_file" not in result
     assert source.read_text() == "original source"
     assert _result_path(tmp_path).read_text() == envelope_before
     spawn_fix.assert_not_called()
@@ -550,12 +552,13 @@ async def test_quality_gate_cannot_overlap_live_autofix(
         "autofix_pending": True,
     }
     _write_envelope(result_file, envelope)
+    envelope["owner"] = current_owner()
 
     result = await asyncio.wait_for(gate.run_quality_gate(), timeout=0.5)
 
     assert result["status"] == "running"
-    assert result["job_id"] == fix_args_hash(True)
-    assert Path(str(result["result_file"])) == result_file
+    assert result["busy"] is True
+    assert "job_id" not in result and "result_file" not in result
     assert result.get("preflight_passed") is not True
     assert json.loads(result_file.read_text()) == envelope
     spawn.assert_not_called()

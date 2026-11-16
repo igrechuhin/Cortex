@@ -70,6 +70,13 @@ The packaged artifact-migration protocol test refreshes Cortex from the current
 checkout. Keep refresh enabled and do not combine it with offline mode: uv rejects
 that combination before MCP startup.
 
+Each real protocol run owns temporary uv cache, tool, home, config, and Python
+state beside its synthetic project. The fixture verifies real cache/tool
+selection and records the uv version, then checks physically contained installed
+Cortex metadata and removes owned state after the stdio server exits. The plugin
+variants build an actual wheel and run the generated MCP and SessionStart
+commands for both hosts; unit stub wheels are not packaged-install proof.
+
 Document-patch test helpers keep typed fixture inputs positional-only so
 `**overrides: object` supplies request fields without binding fixture parameters.
 This preserves malformed-request coverage while satisfying Pyright.

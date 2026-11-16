@@ -40,9 +40,9 @@ from cortex.tools.execution.pre_commit_helpers_models import (
     PreCommitCheck,
     QualityCheckResult,
 )
+from cortex.tools.execution.pre_commit_markdown_tool import MarkdownToolError
 from cortex.tools.execution.pre_commit_rumdl_resolve import (
     markdown_rumdl_argv,
-    uv_executable,
 )
 from cortex.tools.execution.pre_commit_submodule_guard import (
     GITIGNORED_STAGED_REMEDIATION,
@@ -56,6 +56,7 @@ from cortex.tools.execution.pre_commit_test_scope import (
 from cortex.tools.execution.pre_commit_tools_run_helpers import (
     build_pre_commit_response,
 )
+from cortex.tools.execution.pre_commit_workspace import worker_lease, worker_owner
 from cortex.tools.files.markdown_lint_core import get_all_markdown_files_for_lint
 
 logging.basicConfig(
@@ -82,6 +83,9 @@ def write_status(
 
 def atomic_write(result_path: Path, data: dict[str, object]) -> None:
     """Write JSON atomically via tmp file + rename."""
+    owner = worker_owner()
+    if owner:
+        data = {**data, "owner": owner}
     result_path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(
         dir=str(result_path.parent), suffix=".tmp", prefix=".worker_"
@@ -317,25 +321,7 @@ def _run_subprocess_attempt(
     return _rumdl_result_from_completed_process(proc)
 
 
-def _build_rumdl_attempts(
-    root: Path, cmd: list[str], md_files: list[str]
-) -> list[list[str]]:
-    """Build ordered list of rumdl invocation attempts from most to least specific."""
-    tail = list(cmd[1:]) + md_files
-    attempts: list[list[str]] = [cmd + md_files]
-    argv0 = cmd[0] if cmd else ""
-    p0 = Path(argv0)
-    # Only add venv fallbacks when argv0 is bare "rumdl" or a bin-sibling path
-    # (not when it is already a `uv run` invocation — that would double the prefix).
-    if argv0 == "rumdl" or (p0.name == "rumdl" and p0.parent.name == "bin"):
-        for rel in (".venv/bin/rumdl", "venv/bin/rumdl"):
-            explicit = str((root / rel).resolve())
-            if explicit != argv0:
-                attempts.append([explicit, *tail])
-    return attempts
-
-
-def _run_markdownlint_subprocess(
+def run_markdownlint_subprocess(
     root: Path, cmd: list[str], md_files: list[str]
 ) -> dict[str, object]:
     """Run rumdl markdown lint and return result dict.
@@ -347,34 +333,30 @@ def _run_markdownlint_subprocess(
     if not md_files:
         return {"files_with_errors": 0}
     env = augmented_environ_with_project_venv_bins(root)
-    for attempt in _build_rumdl_attempts(root, cmd, md_files):
-        result = _run_subprocess_attempt(attempt, env, root)
-        if result is not None:
-            return result
-    # All attempts raised FileNotFoundError — try `uv run rumdl` as a last resort.
-    # Only do this when cmd does NOT already start with uv (avoid doubled prefix).
-    uv_bin = uv_executable()
-    is_uv_cmd = bool(cmd) and Path(cmd[0]).name == "uv"
-    if uv_bin and not is_uv_cmd:
-        uv_result = _run_subprocess_attempt(
-            [uv_bin, "run", "rumdl", "check", *md_files], env, root
-        )
-        if uv_result is not None:
-            return uv_result
+    result = _run_subprocess_attempt(cmd + md_files, env, root)
+    if result is not None:
+        return result
     return {
         "files_with_errors": 0,
         "status": OperationStatus.ERROR.value,
-        "error": "rumdl not found",
+        "error": "Approved rumdl executable is unavailable; no alternate route was attempted",
     }
 
 
-def _run_markdown_lint(project_root: str) -> dict[str, object]:
+def run_markdown_lint(project_root: str) -> dict[str, object]:
     """Run rumdl in check-only mode, return result dict."""
     root = Path(project_root).resolve()
-    cmd = markdown_rumdl_argv(root, with_fix=False)
+    try:
+        cmd = markdown_rumdl_argv(root, with_fix=False)
+    except MarkdownToolError as exc:
+        return {
+            "files_with_errors": 0,
+            "status": OperationStatus.ERROR.value,
+            "error": str(exc),
+        }
     md_files = collect_pre_commit_markdown_paths(root)
     logger.info("markdown lint rumdl argv=%s md_files=%d", cmd, len(md_files))
-    return _run_markdownlint_subprocess(root, cmd, md_files)
+    return run_markdownlint_subprocess(root, cmd, md_files)
 
 
 def _parse_worker_args() -> argparse.Namespace:
@@ -507,7 +489,7 @@ def _run_worker_once(
         ),
     )
     markdown_result = (
-        _run_markdown_lint(args.project_root) if args.include_markdown_lint else None
+        run_markdown_lint(args.project_root) if args.include_markdown_lint else None
     )
     _write_success_result(
         result_path, started, pid, checks_result, markdown_result, quality_gate
@@ -518,6 +500,13 @@ def _run_worker_once(
 def main() -> None:
     """Entry point for detached worker."""
     args = _parse_worker_args()
+    with worker_lease(Path(args.project_root)):
+        if _execute_worker(args):
+            sys.exit(1)
+
+
+def _execute_worker(args: argparse.Namespace) -> bool:
+    """Publish ordinary terminal errors before the workspace lease completes."""
     result_path = Path(args.result_file)
     pid = os.getpid()
     quality_gate = args.quality_gate
@@ -539,7 +528,8 @@ def main() -> None:
                 **({"quality_gate_pending": True} if quality_gate else {}),
             },
         )
-        sys.exit(1)
+        return True
+    return False
 
 
 if __name__ == "__main__":

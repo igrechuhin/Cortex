@@ -29,10 +29,13 @@ from .php_parsing import parse_clover, parse_junit
 ErrorExtractor = Callable[[object], list[str]]
 
 
-def _empty_test_result(output: str, errors: list[str]) -> TestResult:
+def _empty_test_result(
+    output: str, errors: list[str], execution_uncertain: bool = False
+) -> TestResult:
     """Build a zero-count failing TestResult."""
     return TestResult(
         success=False,
+        execution_uncertain=execution_uncertain,
         tests_run=0,
         tests_passed=0,
         tests_failed=0,
@@ -127,7 +130,7 @@ class PhpAdapter(FrameworkAdapter):
                 result.stdout + result.stderr,
                 coverage_threshold,
                 result.returncode,
-            )
+            ).with_process_returncode(result.returncode)
 
     def _try_run(
         self, cmd: list[str], timeout: int | None
@@ -137,7 +140,9 @@ class PhpAdapter(FrameworkAdapter):
             return self._run(cmd, timeout=timeout)
         except subprocess.TimeoutExpired:
             return _empty_test_result(
-                "Test execution timed out", ["Test execution exceeded timeout"]
+                "Test execution timed out",
+                ["Test execution exceeded timeout"],
+                execution_uncertain=True,
             )
         except OSError as e:
             return _empty_test_result(str(e), [str(e)])

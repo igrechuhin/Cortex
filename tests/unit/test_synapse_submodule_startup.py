@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import subprocess
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from unittest.mock import patch
 
@@ -13,6 +15,12 @@ from cortex.core.synapse_submodule_startup import (
     SynapseStartupSyncResult,
     try_sync_synapse_submodule_at_mcp_startup,
 )
+
+
+@pytest.fixture(autouse=True)
+def isolated_startup_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Mocked startup cases choose opt-out independently of their parent server."""
+    monkeypatch.delenv("CORTEX_SKIP_SYNAPSE_UPDATE", raising=False)
 
 
 def _git_root(tmp: Path) -> Path:
@@ -50,16 +58,7 @@ def test_dirty_worktree_stash_update_pop(
         cmd: list[str],
         **_kwargs: object,
     ) -> subprocess.CompletedProcess[str]:
-        if "stash" in cmd and "push" in cmd:
-            calls.append("stash_push")
-            return subprocess.CompletedProcess(cmd, 0, "", "")
-        if "stash" in cmd and "pop" in cmd:
-            calls.append("stash_pop")
-            return subprocess.CompletedProcess(cmd, 0, "", "")
-        if "pull" in cmd:
-            calls.append("update")
-            return subprocess.CompletedProcess(cmd, 0, "", "")
-        return subprocess.CompletedProcess(cmd, 1, "", "unknown")
+        return _record_sync_command(cmd, calls)
 
     with (
         patch(
@@ -74,6 +73,20 @@ def test_dirty_worktree_stash_update_pop(
         result = try_sync_synapse_submodule_at_mcp_startup(tmp_path)
     assert calls == ["stash_push", "update", "stash_pop"]
     assert result.outcome is SynapseStartupSyncOutcome.SUCCESS_WITH_STASH
+
+
+def _record_sync_command(
+    cmd: list[str], calls: list[str]
+) -> subprocess.CompletedProcess[str]:
+    if "stash" in cmd and "push" in cmd:
+        calls.append("stash_push")
+    elif "stash" in cmd and "pop" in cmd:
+        calls.append("stash_pop")
+    elif "pull" in cmd:
+        calls.append("update")
+    else:
+        return subprocess.CompletedProcess(cmd, 1, "", "unknown")
+    return subprocess.CompletedProcess(cmd, 0, "", "")
 
 
 def test_dirty_worktree_stash_push_fails(
@@ -212,28 +225,16 @@ def test_git_timeout_nonfatal_returns_outcome(tmp_path: Path) -> None:
     assert result.outcome is SynapseStartupSyncOutcome.GIT_TIMEOUT
 
 
-@pytest.mark.asyncio
-async def test_lazy_registry_invokes_sync_after_root_resolution(
-    tmp_path: Path,
-) -> None:
-    """Lazy prompt registry calls synapse sync after resolving project root."""
-    from cortex.setup.lazy_prompt_registration import LazyPromptRegistry
-
-    _ = _git_root(tmp_path)
-    calls: list[str] = []
-
+@contextmanager
+def _registry_startup_patches(root: Path, calls: list[str]) -> Iterator[None]:
     async def fake_resolve(_ctx: object) -> Path:
         calls.append("resolve_root")
-        return tmp_path
+        return root
 
     def fake_sync(root: Path) -> SynapseStartupSyncResult:
         calls.append(f"sync:{root}")
         return SynapseStartupSyncResult(outcome=SynapseStartupSyncOutcome.SUCCESS)
 
-    def fake_has_synapse() -> bool:
-        return True  # Skip synapse prompt registration
-
-    registry = LazyPromptRegistry()
     with (
         patch(
             "cortex.setup.lazy_prompt_registration._resolve_project_root",
@@ -245,7 +246,7 @@ async def test_lazy_registry_invokes_sync_after_root_resolution(
         ),
         patch(
             "cortex.setup.lazy_prompt_registration.prompt_manager_has_synapse_prompts",
-            side_effect=fake_has_synapse,
+            return_value=True,
         ),
         patch(
             "cortex.setup.lazy_prompt_registration._run_startup_repair",
@@ -256,6 +257,20 @@ async def test_lazy_registry_invokes_sync_after_root_resolution(
             return_value=False,
         ),
     ):
+        yield
+
+
+@pytest.mark.asyncio
+async def test_lazy_registry_invokes_sync_after_root_resolution(
+    tmp_path: Path,
+) -> None:
+    """Lazy prompt registry calls synapse sync after resolving project root."""
+    from cortex.setup.lazy_prompt_registration import LazyPromptRegistry
+
+    _ = _git_root(tmp_path)
+    calls: list[str] = []
+    registry = LazyPromptRegistry()
+    with _registry_startup_patches(tmp_path, calls):
         await registry.ensure_registered(None)
 
     assert calls[0] == "resolve_root"

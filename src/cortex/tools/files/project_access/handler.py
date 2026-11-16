@@ -14,7 +14,7 @@ from cortex.tools.files.project_access.paths import (
     read_text,
     screen_text,
 )
-from cortex.tools.files.project_access.policy import load_access
+from cortex.tools.files.project_access.policy import PolicyAccessError, load_access
 from cortex.tools.files.project_access.sqlite_read import query
 
 
@@ -50,6 +50,16 @@ async def handle_project_access(root: Path, content: str | None) -> str:
         encoded = screen_text(json.dumps({"status": "success", "result": result}))
         if len(encoded.encode()) > MAX_RESPONSE_BYTES:
             raise ValueError("Project access response exceeds the result limit")
+    except PolicyAccessError as exc:
+        return json.dumps(
+            {
+                "status": "error",
+                "error": str(exc),
+                "reason": exc.reason.value,
+                "scope": "project_access",
+                "planning_requires_policy": False,
+            }
+        )
     except ValidationError:
         return json.dumps(
             {"status": "error", "error": "Invalid project-access policy/request schema"}

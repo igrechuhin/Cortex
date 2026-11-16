@@ -22,6 +22,7 @@ from cortex.tools.execution.pre_commit_detached import (
     run_checks_detached,
     start_pre_commit_job_impl,
 )
+from cortex.tools.execution.pre_commit_ownership import current_owner, owned_request_id
 from cortex.tools.execution.pre_commit_phase_dispatch import (
     PHASE_A_CHECKS,
     PHASE_B_CHECKS,
@@ -37,18 +38,21 @@ def _write_result_file(
 ) -> Path:
     session_dir = project_root / ".cortex" / ".session"
     session_dir.mkdir(parents=True, exist_ok=True)
+    _ = payload.setdefault("owner", current_owner())
     result_path = session_dir / f"pre_commit_result_{args_hash}.json"
     _ = result_path.write_text(json.dumps(payload))
     return result_path
 
 
 def _default_hash() -> str:
-    return compute_args_hash(
-        checks=["tests"],
-        timeout=300,
-        coverage_threshold=0.9,
-        strict_mode=False,
-        include_markdown=False,
+    return owned_request_id(
+        compute_args_hash(
+            checks=["tests"],
+            timeout=300,
+            coverage_threshold=0.9,
+            strict_mode=False,
+            include_markdown=False,
+        )
     )
 
 

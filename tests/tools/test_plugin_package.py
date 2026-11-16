@@ -1,11 +1,15 @@
 """Fresh assembly must not modify a user's install or canonical sources."""
 
+import shlex
 from pathlib import Path
 from zipfile import ZipFile
 
 import pytest
 
+from cortex.setup import uv_launch
 from cortex.setup.plugin_package import WORKFLOWS, assemble, main
+from cortex.setup.uv_launch import UvLaunchDirectories, launch_directories
+from tests.helpers.plugin_launch_models import read_plugin_launch
 
 
 def _sources(tmp_path: Path) -> tuple[Path, Path, Path]:
@@ -114,4 +118,109 @@ def test_incomplete_inputs_leave_no_partial_package(
     with pytest.raises(ValueError):
         assemble(synapse, wheel, output, docs)
 
+    assert not output.exists()
+
+
+def test_uv_launch_defaults_preserve_existing_commands(tmp_path: Path) -> None:
+    synapse, wheel, docs = _sources(tmp_path)
+    output = tmp_path / "legacy"
+    assemble(synapse, wheel, output, docs)
+    assert launch_directories(None, None) is None
+    for host in ("claude", "codex"):
+        server, hook = read_plugin_launch(output / host / "plugins/cortex")
+        assert server.command == "uv"
+        assert server.env == {"CORTEX_NATIVE_WORKFLOWS": "1"}
+        assert hook.command.startswith("uv tool run --from ")
+        assert hook.timeout == 15
+
+
+def test_explicit_uv_paths_match_mcp_and_quoted_startup(tmp_path: Path) -> None:
+    synapse, wheel, docs = _sources(tmp_path)
+    output = tmp_path / "new plugin ; $(literal)"
+    selected = UvLaunchDirectories(
+        cache_dir=tmp_path / "cache space ; $(literal) 'quote'",
+        tool_dir=tmp_path / "tools space & `literal`",
+    )
+    assemble(synapse, wheel, output, docs, uv_directories=selected)
+    for host in ("claude", "codex"):
+        server, hook = read_plugin_launch(output / host / "plugins/cortex")
+        tokens = shlex.split(hook.command)
+        assert tokens[:3] == [
+            "env",
+            *[f"{key}={value}" for key, value in selected.environment().items()],
+        ]
+        assert tokens[3:6] == ["uv", "tool", "run"]
+        for key, value in selected.environment().items():
+            assert server.env[key] == value
+        macro = "${CLAUDE_PLUGIN_ROOT}" if host == "claude" else "${PLUGIN_ROOT}"
+        assert f'"{macro}/dist/{wheel.name}"' in hook.command
+    assert not selected.cache_dir.exists() and not selected.tool_dir.exists()
+
+
+@pytest.mark.parametrize(
+    "invalid",
+    ["relative/path", "/", "/tmp/../escape", "/tmp/new\nline", "/tmp/null\0byte"],
+)
+def test_invalid_uv_paths_fail_without_output(tmp_path: Path, invalid: str) -> None:
+    output = tmp_path / "not-created"
+    with pytest.raises(ValueError):
+        directories = UvLaunchDirectories.model_validate(
+            {"cache_dir": invalid, "tool_dir": tmp_path / "tools"}
+        )
+        synapse, wheel, docs = _sources(tmp_path)
+        assemble(synapse, wheel, output, docs, uv_directories=directories)
+    assert not output.exists()
+
+
+@pytest.mark.parametrize(
+    "cache,tools",
+    [
+        (None, "/tmp/tools"),
+        ("/tmp/cache", None),
+        ("/tmp/state", "/tmp/state"),
+        ("/tmp/state", "/tmp/state/tools"),
+    ],
+)
+def test_incomplete_or_overlapping_uv_directories_rejected(
+    cache: str | None, tools: str | None
+) -> None:
+    with pytest.raises(ValueError):
+        _ = launch_directories(
+            Path(cache) if cache else None, Path(tools) if tools else None
+        )
+
+
+def test_opt_in_posix_contract_rejects_unsupported_platform(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr(uv_launch, "POSIX_LAUNCH_SUPPORTED", False)
+    with pytest.raises(ValueError, match="POSIX"):
+        _ = UvLaunchDirectories(
+            cache_dir=tmp_path / "cache", tool_dir=tmp_path / "tools"
+        )
+
+
+def test_partial_cli_uv_pair_creates_no_output(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    synapse, wheel, docs = _sources(tmp_path)
+    output = tmp_path / "not-created"
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "plugin_package",
+            "--synapse",
+            str(synapse),
+            "--wheel",
+            str(wheel),
+            "--docs",
+            str(docs),
+            "--output",
+            str(output),
+            "--uv-cache-dir",
+            str(tmp_path / "cache"),
+        ],
+    )
+    with pytest.raises(ValueError, match="both"):
+        main()
     assert not output.exists()

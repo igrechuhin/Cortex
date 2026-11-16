@@ -33,7 +33,7 @@ from cortex.validation.quality_metrics import QualityMetrics
 # Validation (Phase 3)
 from cortex.validation.schema_validator import SchemaValidator
 
-__version__ = "0.2.0"
+__version__ = "1.2.0"
 
 __all__ = [
     # Analysis

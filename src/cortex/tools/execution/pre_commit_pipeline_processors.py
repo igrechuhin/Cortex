@@ -252,11 +252,23 @@ def process_tests_check(
             include_slow_tests,
             **({"test_filter": test_filter} if test_filter is not None else {}),
         )
+        _preserve_test_uncertainty(test_result)
         results[PreCommitCheck.TESTS.value] = test_result
         stats.checks_performed.append(PreCommitCheck.TESTS.value)
         stats.total_warnings += len(test_result.warnings)
         if not test_result.success:
             stats.total_errors += len(test_result.errors)
+
+
+def _preserve_test_uncertainty(result: TestResult) -> None:
+    from cortex.tools.execution.pre_commit_workspace import mark_worker_uncertain
+
+    if result.execution_uncertain:
+        mark_worker_uncertain()
+        result.success = False
+        result.errors.append(
+            "Test command was interrupted; descendant completion requires owner review."
+        )
 
 
 def _execute_fix_errors(
