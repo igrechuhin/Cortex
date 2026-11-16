@@ -1,29 +1,5 @@
 # Cortex Operations Log
 
-## [2026-09-08T16:23] plan | Created plan: Mini
-
-## [2026-09-08T16:23] plan | Created plan: Mini ·2
-
-## [2026-09-08T16:23] plan | Created plan: Smoke Test Plan
-
-## [2026-09-08T16:23] plan | Created plan: Demo Plan ·3
-
-## [2026-09-08T16:23] plan | Created plan: Mini ·3
-
-## [2026-09-08T16:23] plan | Created plan: Demo Plan ·4
-
-## [2026-09-08T16:23] plan | Created plan: Mini ·4
-
-## [2026-09-08T16:23] plan | Created plan: Demo Plan ·5
-
-## [2026-09-08T16:23] plan | Created plan: Demo Plan ·6
-
-## [2026-09-08T16:23] plan | Created plan: Test Plan
-
-## [2026-09-08T16:24] lint | Quality gate passed
-
-## [2026-09-08T16:26] plan | Created plan: Remediate Project Review Findings: Safety, Rules, Planning, Context, and Verification
-
 ## [2026-09-08T16:35] fix | Autofix completed
 
 status=success; changed_files=None
@@ -2199,3 +2175,35 @@ status=success; changed_files=None
 status=success; changed_files=None
 
 ## [2026-11-14T18:29] lint | Quality gate passed
+
+## [2026-11-15T13:26] plan | Created plan: TradeWing scoped data root and Swift adapter draft
+
+## [2026-11-15T14:25] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-15T14:27] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-15T14:29] lint | Quality gate failed
+
+## [2026-11-15T14:30] lint | Quality gate failed
+
+## [2026-11-15T14:33] plan | Created plan: TradeWing scoped data root and Swift adapter draft
+
+## [2026-11-16T17:39] lint | Quality gate failed
+
+## [2026-11-16T17:41] lint | Quality gate failed
+
+## [2026-11-16T17:46] lint | Quality gate passed
+
+## [2026-11-16T17:48] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-16T17:49] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-16T17:52] lint | Quality gate passed

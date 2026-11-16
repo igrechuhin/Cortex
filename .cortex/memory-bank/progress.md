@@ -1,6 +1,11 @@
 <!-- memory_type: milestone -->
 # Progress Log
 
+## 2026-11-16
+
+- <!-- memory_type: status -->
+Preserve local Cortex changes and restore SwiftFormat directory mode. Preserve the existing local data-root draft without publication, and delegate Swift configuration and exclusions to SwiftFormat directory mode.
+
 ## 2026-11-14
 
 - **Approved project access** - COMPLETE. Opt-in files, SQLite snapshots and approved jobs validated; fresh full gate and 58 fixture cases passed. TradeWing activation requires an approved policy and server restart.

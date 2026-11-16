@@ -7,8 +7,14 @@ import os
 import re
 import sqlite3
 import time
+from pathlib import Path
 
-from cortex.tools.files.project_access.models import ApprovedAccess, Dataset, Request
+from cortex.tools.files.project_access.models import (
+    ApprovedAccess,
+    Dataset,
+    Request,
+    Scope,
+)
 from cortex.tools.files.project_access.paths import (
     MAX_RESPONSE_BYTES,
     directory,
@@ -25,12 +31,12 @@ def identifier(value: str) -> str:
     return f'"{value}"'
 
 
-def snapshot(access: ApprovedAccess, dataset: Dataset) -> bytes:
+def snapshot(root: Path, dataset: Dataset) -> bytes:
     """Never silently omit committed WAL rows or load a hot rollback journal."""
     parts = relative_parts(dataset.path)
-    with directory(access.root, parts[:-1]) as parent:
+    with directory(root, parts[:-1]) as parent:
         ensure_no_sidecars(parent, parts[-1])
-        data = read_bytes(access.root, dataset.path, dataset.max_bytes)
+        data = read_bytes(root, dataset.path, dataset.max_bytes)
         # AI: Recheck sidecars after copying; active databases require their existing exporter.
         ensure_no_sidecars(parent, parts[-1])
     return data
@@ -109,11 +115,18 @@ def configure_readonly(connection: sqlite3.Connection, dataset: Dataset) -> None
 
 def query(access: ApprovedAccess, request: Request) -> dict[str, object]:
     """Read full approved scalar values, rejecting oversize or sensitive results."""
-    dataset = access.policy.datasets.get(request.dataset)
+    root = access.root
+    datasets = access.policy.datasets
+    if request.scope == Scope.DATA:
+        grant = access.policy.data_root
+        if access.data_root is None or grant is None:
+            raise ValueError("Data root access disabled")
+        root, datasets = access.data_root, grant.datasets
+    dataset = datasets.get(request.dataset)
     if dataset is None:
         raise ValueError("Dataset is not approved")
     sql, values = select_sql(dataset, request)
-    data = snapshot(access, dataset)
+    data = snapshot(root, dataset)
     with sqlite3.connect(":memory:") as connection:
         connection.deserialize(data)
         configure_readonly(connection, dataset)

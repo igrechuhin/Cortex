@@ -275,9 +275,10 @@ class TestSwiftAdapter:
             assert result.tests_failed == 0
             assert result.pass_rate == 1.0
 
-    def test_format_code_without_source_scope_fails(self) -> None:
-        """Formatting cannot silently skip unavailable source scope."""
+    def test_apple_format_code_without_source_scope_fails(self) -> None:
+        """Apple swift-format still needs a verified source scope."""
         with tempfile.TemporaryDirectory() as tmpdir:
+            _ = (Path(tmpdir) / ".swift-format").write_text("{}")
             result = SwiftAdapter(tmpdir).format_code()
             assert not result.success
             assert result.check_type == "format"

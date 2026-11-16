@@ -11,7 +11,7 @@
 
 ## Future Enhancements
 
-- **TradeWing scoped data root and reader adapters** - PENDING - Design explicit approved data-root and existing-reader adapters; verify chat binding and synthetic smoke tests before owner-authorized activation. Plan: .cortex/plans/tradewing-scoped-data-root-adapters.md
+- **TradeWing scoped data root and Swift adapter draft** - BLOCKED - BLOCKED: Stage 1 data-root draft and synthetic cases written; native Markdown validation denied uv cache access; no tests passed and Swift stages not started. Plan: .cortex/plans/tradewing-scoped-data-root-adapters.md
 
 ## Pending plans (from .cortex/plans)
 

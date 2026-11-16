@@ -8,7 +8,12 @@ from pathlib import Path
 from pydantic import ValidationError
 
 from cortex.tools.files.project_access.jobs import read_output, start, status
-from cortex.tools.files.project_access.models import Action, Request
+from cortex.tools.files.project_access.models import (
+    Action,
+    ApprovedAccess,
+    Request,
+    Scope,
+)
 from cortex.tools.files.project_access.paths import (
     MAX_RESPONSE_BYTES,
     read_text,
@@ -24,6 +29,8 @@ def dispatch(root: Path, content: str | None) -> dict[str, object]:
     if content is None or len(content.encode()) > 16384:
         raise ValueError("project_access content must be a bounded JSON request")
     request = Request.model_validate_json(content)
+    if request.scope == Scope.DATA:
+        return dispatch_data(access, request)
     if request.action == Action.DISCOVER:
         return {
             "files": access.policy.files,
@@ -41,6 +48,28 @@ def dispatch(root: Path, content: str | None) -> dict[str, object]:
     if request.action == Action.STATUS:
         return status(access, request)
     return read_output(access, request)
+
+
+def dispatch_data(access: ApprovedAccess, request: Request) -> dict[str, object]:
+    """Legacy calculations cannot select or inherit the new data-root grant."""
+    grant = access.policy.data_root
+    if access.data_root is None or grant is None:
+        raise ValueError(
+            "Data root access disabled: separate operator approval required"
+        )
+    if request.action == Action.DISCOVER:
+        return {
+            "files": grant.files,
+            "datasets": {k: v.columns for k, v in grant.datasets.items()},
+            "output_bases": list(grant.output_bases),
+        }
+    if request.action == Action.READ and request.path in grant.files:
+        return read_text(access.data_root, request.path, request.offset, request.length)
+    if request.action == Action.QUERY:
+        return query(access, request)
+    raise ValueError(
+        "Data scope permits only exact approved reads and structured queries"
+    )
 
 
 async def handle_project_access(root: Path, content: str | None) -> str:

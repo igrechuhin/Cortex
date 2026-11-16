@@ -17,6 +17,13 @@ class Action(str, Enum):
     READ_OUTPUT = "read_output"
 
 
+class Scope(str, Enum):
+    """Separate explicit grants; the default never selects the data root."""
+
+    PROJECT = "project"
+    DATA = "data"
+
+
 class Dataset(BaseModel):
     """Approved base table and exported columns of a SQLite snapshot."""
 
@@ -39,6 +46,17 @@ class Job(BaseModel):
     timeout: int = Field(default=60, ge=1, le=7200)
 
 
+class DataRoot(BaseModel):
+    """Independent opt-in data permissions with exact read and write allowlists."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+    enabled: bool = False
+    root: str
+    files: list[str] = Field(default_factory=list, max_length=64)
+    datasets: dict[str, Dataset] = Field(default_factory=dict, max_length=16)
+    output_bases: dict[str, str] = Field(default_factory=dict, max_length=8)
+
+
 class Policy(BaseModel):
     """Operator-approved policy, pinned outside the MCP request channel."""
 
@@ -49,6 +67,7 @@ class Policy(BaseModel):
     datasets: dict[str, Dataset] = Field(default_factory=dict, max_length=16)
     jobs: dict[str, Job] = Field(default_factory=dict, max_length=16)
     output_directory: str
+    data_root: DataRoot | None = None
 
 
 class Request(BaseModel):
@@ -56,6 +75,7 @@ class Request(BaseModel):
 
     model_config = ConfigDict(extra="forbid", strict=True)
     action: Action = Action.DISCOVER
+    scope: Scope = Scope.PROJECT
     path: str = Field(default="", max_length=512)
     dataset: str = Field(default="", max_length=64)
     filters: dict[str, str | int | float | None] = Field(
@@ -76,6 +96,7 @@ class ApprovedAccess(BaseModel):
     policy: Policy
     policy_path: Path
     policy_hash: str
+    data_root: Path | None = None
 
 
 class Outcome(str, Enum):

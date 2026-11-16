@@ -26,6 +26,16 @@ _SECRET_CONTENT = re.compile(
 )
 
 
+def canonical_directory(value: str) -> Path:
+    """Require an existing physical absolute root, never normalize an alias."""
+    path = Path(value)
+    if not path.is_absolute() or str(path) != value or path.resolve() != path:
+        raise ValueError("Root must be a canonical absolute directory without aliases")
+    with directory(path):
+        pass
+    return path
+
+
 def relative_parts(value: str) -> tuple[str, ...]:
     """Accept only canonical, visible, nonsensitive project-relative paths."""
     parts = value.split("/")
@@ -43,9 +53,11 @@ def relative_parts(value: str) -> tuple[str, ...]:
 @contextmanager
 def directory(root: Path, parts: tuple[str, ...] = ()) -> Iterator[int]:
     """Walk with openat and O_NOFOLLOW, retaining the directory inode."""
-    fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    if not root.is_absolute() or ".." in root.parts:
+        raise ValueError("Directory root must be absolute without traversal")
+    fd = os.open(root.anchor, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
     try:
-        for part in parts:
+        for part in root.parts[1:] + parts:
             next_fd = os.open(
                 part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=fd
             )
@@ -54,6 +66,19 @@ def directory(root: Path, parts: tuple[str, ...] = ()) -> Iterator[int]:
         yield fd
     finally:
         os.close(fd)
+
+
+def physically_contains(root: Path, path: Path) -> bool:
+    """Compare directory identity, including case aliases on macOS volumes."""
+    with directory(root) as fd:
+        metadata = os.fstat(fd)
+        identity = (metadata.st_dev, metadata.st_ino)
+    for ancestor in (path, *path.parents):
+        with directory(ancestor) as fd:
+            metadata = os.fstat(fd)
+            if identity == (metadata.st_dev, metadata.st_ino):
+                return True
+    return False
 
 
 def read_bytes(root: Path, relative: str, maximum: int) -> bytes:

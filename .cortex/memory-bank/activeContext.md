@@ -3,6 +3,11 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-11-16)
+
+- ✅ **Preserve local Cortex changes and restore SwiftFormat directory mode** - COMPLETE (2026-11-16) - <!-- memory_type: status -->
+Preserve the existing local data-root draft without publication, and delegate Swift configuration and exclusions to SwiftFormat directory mode.
+
 ## Completed Work (2026-11-14)
 
 - ✅ **Approved project access** - COMPLETE (2026-11-14) - Implemented opt-in manage_file project_access with exact approved text reads, structured SELECT-only SQLite snapshots, and pinned existing-script jobs with durable status and duplicate prevention. Tool count stays 14. Fresh full quality gate passes with four workers; 58 feature cases pass. TradeWing remains disabled pending operator-approved policy and server install/restart. Local validation needs project Python on PATH and no inherited startup opt-out.
