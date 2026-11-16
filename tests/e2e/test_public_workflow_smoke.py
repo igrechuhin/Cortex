@@ -1,5 +1,6 @@
 """Bounded PR smoke through the registered MCP tools and resources."""
 
+import asyncio
 import json
 from pathlib import Path
 from typing import cast
@@ -107,12 +108,23 @@ async def _quality_gate_outcome() -> dict[str, object]:
 async def _poll_quality_gate(
     client: Client[FastMCPTransport], result: dict[str, object]
 ) -> dict[str, object]:
+    owned_handle: tuple[str, str] | None = None
     while result.get("status") == "running":
-        previous = result
+        if result.get("busy") is True:
+            # Detached workers can still be releasing the workspace lease after
+            # the previous verdict. A busy response does not disclose a job.
+            assert result.get("preflight_passed") is False, result
+            assert "job_id" not in result and "result_file" not in result, result
+            await asyncio.sleep(0.05)
+        else:
+            job_id, result_file = result.get("job_id"), result.get("result_file")
+            assert isinstance(job_id, str) and job_id, result
+            assert isinstance(result_file, str) and result_file, result
+            handle = (job_id, result_file)
+            if owned_handle is not None:
+                assert handle == owned_handle, result
+            owned_handle = handle
         result = await call_public_tool("run_quality_gate", client=client)
-        if result.get("status") == "running":
-            assert result["job_id"] == previous["job_id"], result
-            assert result["result_file"] == previous["result_file"], result
     return result
 
 

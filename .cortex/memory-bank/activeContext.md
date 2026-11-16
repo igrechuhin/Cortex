@@ -23,6 +23,9 @@ PARTIAL: The owner requested a proper release. Latest GitHub release is 1.1.1 an
 - ✅ **Restore packaged Cortex installation and public CI smoke** - COMPLETE (2026-11-16) - <!-- memory_type: status -->
 Pinned available rumdl 0.1.96, encoded local wheel paths, corrected Markdown, and required the real Codex startup smoke in CI.
 
+- ✅ **Honor busy responses in public quality smoke** - COMPLETE (2026-11-16) - <!-- memory_type: status -->
+Keep real pass and fail assertions while waiting for the workspace lease; require stable ownership for every exposed job handle.
+
 ## Completed Work (2026-11-15)
 
 - ✅ **Cache-independent official Markdown gate review draft** - COMPLETE (2026-11-15) - <!-- memory_type: problem -->

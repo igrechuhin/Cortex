@@ -6,6 +6,8 @@
 - <!-- memory_type: status -->
 - <!-- memory_type: problem -->
 - <!-- memory_type: status -->
+- <!-- memory_type: status -->
+Honor busy responses in public quality smoke. Keep real pass and fail assertions while waiting for the workspace lease; require stable ownership for every exposed job handle.
 Pinned available rumdl 0.1.96, encoded local wheel paths, corrected Markdown, and required the real Codex startup smoke in CI.
 PARTIAL - One authorized verbose packaged retry13e8c975f82d failed again:1run/0passed/1failed/0skipped,pytest1,UVexitnotexposed. Safe retained stderr proves pypi.org simple-index metadata request for fastmcp during dependency resolution before Cortex Initialize, then DNS lookup failure after3 internal retries3.2s. Security synthetics336a6fd61885:23/23passed; final actual seven non-test checks plus Markdown green. No further real/plugin/full/DNS attempt or publication. Bounded sanitized JSON retained; same uv/uvx0.13.8 and unchanged guard. Normal authorized DNS/HTTPS remains prerequisite.
 PARTIAL - Repository uv launch contract and controlled test state implemented; existing A/B/C preserved. Contract 003582c4b59d and final unit/static e8c6b1827929 passed eight checks plus Markdown, zero errors/warnings. Real f9e5b4ab269d: 32 run, 31 passed, one DNS failure before Cortex Initialize, zero skipped; actual owned cache/tools and uv0.13.8 proven. Real plugin/wheel/startup, full gate and Step12.7 remain unverified. No real retry, commit or push. Separate approved standalone uv/uvx update0.7.9 to0.13.8 succeeded without PATH/permission changes. Remaining prerequisite: authorized DNS/network for the genuine dependency fetch; hostname/dependency redacted and unknown.
