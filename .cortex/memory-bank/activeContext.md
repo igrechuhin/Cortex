@@ -26,6 +26,9 @@ Pinned available rumdl 0.1.96, encoded local wheel paths, corrected Markdown, an
 - ✅ **Honor busy responses in public quality smoke** - COMPLETE (2026-11-16) - <!-- memory_type: status -->
 Keep real pass and fail assertions while waiting for the workspace lease; require stable ownership for every exposed job handle.
 
+- ✅ **Use a safe import path for synthetic workers** - COMPLETE (2026-11-16) - <!-- memory_type: status -->
+Prevent the helper named types from shadowing Python standard library modules in Linux fixture processes. All ownership tests passed on Linux.
+
 ## Completed Work (2026-11-15)
 
 - ✅ **Cache-independent official Markdown gate review draft** - COMPLETE (2026-11-15) - <!-- memory_type: problem -->

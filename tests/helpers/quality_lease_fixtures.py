@@ -200,6 +200,8 @@ def launch_stub_worker(
 def _worker_command(root: Path, result_path: Path) -> list[str]:
     return [
         sys.executable,
+        # Do not let tests/helpers/types.py shadow the standard library.
+        "-P",
         str(Path(__file__).resolve()),
         "worker",
         str(root),
@@ -265,7 +267,7 @@ def _spawn_descendant(root: Path, mode: str) -> subprocess.Popen[bytes] | None:
     if mode not in {"descendant", "escaped_descendant", "terminal_descendant"}:
         return None
     child = subprocess.Popen(
-        [sys.executable, str(Path(__file__).resolve()), "descendant", str(root)],
+        [sys.executable, "-P", str(Path(__file__).resolve()), "descendant", str(root)],
         close_fds=True,
         start_new_session=mode == "escaped_descendant",
     )

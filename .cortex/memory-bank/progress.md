@@ -7,6 +7,8 @@
 - <!-- memory_type: problem -->
 - <!-- memory_type: status -->
 - <!-- memory_type: status -->
+- <!-- memory_type: status -->
+Use a safe import path for synthetic workers. Prevent the helper named types from shadowing Python standard library modules in Linux fixture processes. All ownership tests passed on Linux.
 Honor busy responses in public quality smoke. Keep real pass and fail assertions while waiting for the workspace lease; require stable ownership for every exposed job handle.
 Pinned available rumdl 0.1.96, encoded local wheel paths, corrected Markdown, and required the real Codex startup smoke in CI.
 PARTIAL - One authorized verbose packaged retry13e8c975f82d failed again:1run/0passed/1failed/0skipped,pytest1,UVexitnotexposed. Safe retained stderr proves pypi.org simple-index metadata request for fastmcp during dependency resolution before Cortex Initialize, then DNS lookup failure after3 internal retries3.2s. Security synthetics336a6fd61885:23/23passed; final actual seven non-test checks plus Markdown green. No further real/plugin/full/DNS attempt or publication. Bounded sanitized JSON retained; same uv/uvx0.13.8 and unchanged guard. Normal authorized DNS/HTTPS remains prerequisite.
