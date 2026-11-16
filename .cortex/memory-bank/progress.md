@@ -9,6 +9,8 @@
 - <!-- memory_type: status -->
 - <!-- memory_type: status -->
 - <!-- memory_type: status -->
+- <!-- memory_type: status -->
+Repair retired guide reference. Link to the historical source revision of the retired guide instead of a removed local path. Both GitHub Markdown checks and the full Cortex gate passed.
 Retire optional Project Access operations. Remove the dedicated access feature without replacing it or changing host or workflow security. Full Cortex gate passed.
 Use a safe import path for synthetic workers. Prevent the helper named types from shadowing Python standard library modules in Linux fixture processes. All ownership tests passed on Linux.
 Honor busy responses in public quality smoke. Keep real pass and fail assertions while waiting for the workspace lease; require stable ownership for every exposed job handle.

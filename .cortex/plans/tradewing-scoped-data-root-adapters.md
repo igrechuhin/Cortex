@@ -10,7 +10,7 @@ PENDING. Planning only; no installation, restart, access activation, TradeWing s
 
 ## Evidence and goal
 
-See [connection plan](../../docs/guides/tradewing-connection-plan.md). The current Cortex feature is implemented and fixture-tested, but TradeWing_Data is a sibling of the project root; the v6 destination must be new, profile payloads use the existing compressed reader, and live progress is printed to stdout. The confirmed v6 command materializes a partial archive and does not certify complete profiles.
+The [historical connection plan](https://github.com/igrechuhin/Cortex/blob/2fae2c233ee60c3eb15a178df348e53e94a22bb6/docs/guides/tradewing-connection-plan.md) describes the retired feature; it is not part of current Cortex. TradeWing_Data is a sibling of the project root; the v6 destination must be new, profile payloads use the existing compressed reader, and live progress is printed to stdout. The confirmed v6 command materializes a partial archive and does not certify complete profiles.
 
 ## Proposed work after approval
 
