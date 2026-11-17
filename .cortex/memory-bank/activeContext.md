@@ -14,6 +14,9 @@ Reap completed detached workers before checking checkout ownership and retain th
 - ✅ **SwiftLint commit gate** - COMPLETE (2026-11-17) - <!-- memory_type: problem -->
 Enforce strict SwiftLint and baseline-free error checks for opted-in Swift projects. The final gate checks SwiftLint again when only its configuration changes.
 
+- ✅ **Idle quality worker cleanup** - COMPLETE (2026-11-17) - <!-- memory_type: status -->
+Reap detached quality workers after they exit even while the owner is idle. Regression coverage verifies another server can take the lease once the worker exits.
+
 ## Completed Work (2026-11-16)
 
 - ✅ **Cortex uv launch verification (PARTIAL)** - COMPLETE (2026-11-16) - <!-- memory_type: status -->

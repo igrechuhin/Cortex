@@ -7,6 +7,7 @@
 - <!-- memory_type: status -->
 - **Quality worker cleanup and final gate timeout** - COMPLETE. Reap finished workers before checking ownership and inherit the project timeout in Step 12. Phase A passed with 8,963 tests and 92.24% coverage.
 - **SwiftLint commit gate** - COMPLETE. Added strict lint and baseline-free error checks for opted-in Swift projects, with regression coverage for the final gate.
+- **Idle quality worker cleanup** - COMPLETE. Reap exited detached quality workers while the owner is idle so another server can acquire the lease.
 **Swift Testing summary parsing** - COMPLETE. Parse the result from the runner summary line so status words in test names do not affect the run status or coverage. Added regression tests; the Cortex quality gate and applicable CI parity checks passed.
 
 ## 2026-11-16

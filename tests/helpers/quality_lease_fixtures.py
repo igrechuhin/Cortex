@@ -235,7 +235,7 @@ def run_server(
         _ = barrier.wait(timeout=8)
     connection.send(start_stub(Path(root)))
     if stay:
-        _ = wait_control(Path(root), (Control.RELEASE_SERVER, Control.RELEASE))
+        _ = wait_control(Path(root), (Control.RELEASE_SERVER,))
     connection.close()
 
 

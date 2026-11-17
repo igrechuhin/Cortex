@@ -12,6 +12,7 @@ import logging
 import os
 import subprocess
 import sys
+import threading
 import time
 from pathlib import Path
 from typing import cast
@@ -37,6 +38,20 @@ _WORKERS: list[subprocess.Popen[bytes]] = []
 def reap_detached_workers() -> None:
     """Poll retained children so terminal process groups do not stay zombies."""
     _WORKERS[:] = [worker for worker in _WORKERS if worker.poll() is None]
+
+
+def _watch_detached_worker(process: subprocess.Popen[bytes]) -> None:
+    """Reap our child even if the owning MCP server gets no more requests."""
+    # Popen serializes wait() and poll() for this specific child. A daemon
+    # thread does not stop the detached worker from surviving server shutdown.
+    watcher = threading.Thread(
+        target=process.wait, name="cortex-quality-worker-reaper", daemon=True
+    )
+    try:
+        watcher.start()
+    except RuntimeError:
+        # The existing request-bound polling still holds the process handle.
+        logger.warning("Could not start detached worker reaper", exc_info=True)
 
 
 def poll_interval_for_elapsed(elapsed_seconds: float) -> float:
@@ -168,6 +183,7 @@ def spawn_detached_process(
             pass_fds=descriptors,
         )
         _WORKERS.append(process)
+        _watch_detached_worker(process)
     return process.pid
 
 

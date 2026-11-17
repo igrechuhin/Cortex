@@ -317,7 +317,9 @@ def test_failed_spawn_leaves_startup_lease_reusable(tmp_path: Path) -> None:
 def test_normal_terminal_exit_permits_next_request(tmp_path: Path) -> None:
     _prepare(tmp_path)
     try:
-        _ = start_stub(tmp_path)
+        # Exercise request-bound reaping if the background watcher could not start.
+        with patch("cortex.tools.execution.pre_commit_process._watch_detached_worker"):
+            _ = start_stub(tmp_path)
         worker = _wait_json(tmp_path / "worker.json")
         _ = (tmp_path / "release").write_text("released")
         # Observe the child exit without consuming it. A retry would hide the
@@ -333,6 +335,28 @@ def test_normal_terminal_exit_permits_next_request(tmp_path: Path) -> None:
         assert not process_group_alive(worker["pgid"])
         assert len((tmp_path / "executions.txt").read_text().splitlines()) == 1
     finally:
+        _cleanup(tmp_path)
+
+
+def test_idle_owner_reaps_before_foreign_request(tmp_path: Path) -> None:
+    _prepare(tmp_path)
+    context = multiprocessing.get_context("spawn")
+    parent, child = context.Pipe()
+    server = context.Process(target=run_server, args=(str(tmp_path), None, child, True))
+    try:
+        server.start()
+        assert parent.poll(8), "Owner server did not launch the fixture worker"
+        assert parent.recv()["status"] == "started"
+        _ = _wait_json(tmp_path / "worker.json")
+        _ = (tmp_path / Control.RELEASE.value).write_text("release worker only")
+        # This process cannot reap the foreign server's child.
+        wait_exit(tmp_path, "worker", require_group_gone=False)
+        assert server.is_alive()
+        wait_exit(tmp_path, "worker")
+        assert server.is_alive()
+        _assert_next_foreign_launch(tmp_path)
+    finally:
+        _close_servers([server], [(parent, child)])
         _cleanup(tmp_path)
 
 
