@@ -14,6 +14,7 @@ from cortex.services.framework_adapters.swift_test_diagnostics import (
     SwiftTestStatus,
     build_swift_test_harness_errors,
     extract_compiler_error_lines,
+    extract_swift_test_counts,
     interpret_swift_test_output,
     stderr_tail,
 )
@@ -67,6 +68,21 @@ class TestInterpretSwiftTestOutputPassed:
         assert outcome.teardown_signal is None
         assert outcome.diagnostic == "all tests passed"
 
+    def test_failed_word_in_later_passing_test_does_not_fail_run(self) -> None:
+        stdout = (
+            "\U0010105b  Test run with 95 tests in 17 suites "
+            "passed after 126.461 seconds.\n"
+            '\U0010105b  Test "Failed schedule refresh" passed after 0.001 seconds.\n'
+            "\U00100882  Test run with 1 test in 1 suite passed after 0.1 seconds "
+            "with 1 known issue.\n"
+        )
+
+        outcome = interpret_swift_test_output(stdout, "", returncode=0)
+
+        assert outcome.status is SwiftTestStatus.PASSED
+        assert outcome.tests_reported == 95
+        assert extract_swift_test_counts(stdout) == (95, 0)
+
 
 class TestInterpretSwiftTestOutputFailed:
     def test_swift_testing_failure_line_classified_as_failed(self) -> None:
@@ -74,6 +90,14 @@ class TestInterpretSwiftTestOutputFailed:
         outcome = interpret_swift_test_output(stdout, "", returncode=1)
         assert outcome.status is SwiftTestStatus.FAILED
         assert outcome.tests_reported == 534
+
+    def test_passed_word_after_failed_summary_is_not_success(self) -> None:
+        stdout = (
+            "✘ Test run with 12 tests in 1 suite failed after 0.5 seconds.\n"
+            '✔ Test "Passed command" passed after 0.1 seconds.\n'
+        )
+
+        assert extract_swift_test_counts(stdout) == (0, 0)
 
     def test_failed_line_takes_priority_over_passed_line_in_mixed_output(self) -> None:
         # A failed test run should always win over a stale passed line
@@ -84,6 +108,7 @@ class TestInterpretSwiftTestOutputFailed:
         )
         outcome = interpret_swift_test_output(stdout, "", returncode=1)
         assert outcome.status is SwiftTestStatus.FAILED
+        assert outcome.tests_reported == 534
 
 
 class TestInterpretSwiftTestOutputHarnessFailure:

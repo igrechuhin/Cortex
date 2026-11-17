@@ -3,6 +3,11 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-11-17)
+
+- ✅ **Swift Testing summary parsing** - COMPLETE (2026-11-17) - <!-- memory_type: status -->
+Read pass or fail from the Swift Testing run summary line. Status words in individual test names no longer misclassify the run or prevent coverage reporting. Added regression tests for mixed output; the Cortex quality gate and applicable CI parity checks passed.
+
 ## Completed Work (2026-11-16)
 
 - ✅ **Cortex uv launch verification (PARTIAL)** - COMPLETE (2026-11-16) - <!-- memory_type: status -->

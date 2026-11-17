@@ -1,6 +1,11 @@
 <!-- memory_type: milestone -->
 # Progress Log
 
+## 2026-11-17
+
+- <!-- memory_type: status -->
+**Swift Testing summary parsing** - COMPLETE. Parse the result from the runner summary line so status words in test names do not affect the run status or coverage. Added regression tests; the Cortex quality gate and applicable CI parity checks passed.
+
 ## 2026-11-16
 
 - <!-- memory_type: status -->

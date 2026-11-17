@@ -15,6 +15,8 @@ pending; no release date or successful installation is claimed.
 
 ### Fixed
 
+- Swift Testing results are read from the runner summary line, so status words
+  in test names no longer misclassify a successful run or block coverage.
 - Quality runs distinguish an owner's existing request from another session's
   active run. A checkout lease prevents concurrent test processes across server
   processes and remains guarded while live test descendants exist.

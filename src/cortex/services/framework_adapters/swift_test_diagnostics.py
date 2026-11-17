@@ -31,15 +31,20 @@ from enum import StrEnum
 # Output-based success markers
 # ---------------------------------------------------------------------------
 
-# Swift Testing (Swift 6.0+) end-of-run line. Tolerant to future format tweaks
-# — matches the stable ``passed`` verb and the count prefix.
+# AI: Treat only the verb immediately after the counts as the result. Other
+# lines (including passing test names) can contain either status word.
+_SWIFT_TESTING_RUN_PREFIX = (
+    r"^[ \t]*(?:[^\w\s][ \t]+)?"
+    r"Test run with[ \t]+(?P<total>\d+)[ \t]+tests?"
+    r"(?:[ \t]+in[ \t]+\d+[ \t]+suites?)?[ \t]+"
+)
 _SWIFT_TESTING_PASSED_RE = re.compile(
-    r"Test run with\s+(?P<total>\d+)\s+tests?\b.*\bpassed\b",
-    re.IGNORECASE | re.DOTALL,
+    _SWIFT_TESTING_RUN_PREFIX + r"passed\b",
+    re.IGNORECASE | re.MULTILINE,
 )
 _SWIFT_TESTING_FAILED_RE = re.compile(
-    r"Test run with\s+(?P<total>\d+)\s+tests?\b.*\bfailed\b",
-    re.IGNORECASE | re.DOTALL,
+    _SWIFT_TESTING_RUN_PREFIX + r"failed\b",
+    re.IGNORECASE | re.MULTILINE,
 )
 
 # XCTest legacy grand-total line: ``Test Suite 'All tests' passed at ...``.
@@ -67,13 +72,6 @@ _XCTEST_SUMMARY_RE = re.compile(
     re.IGNORECASE,
 )
 
-# Swift Testing grand total: ``Test run with N test(s) ... passed``. This line
-# is the authoritative count for mixed XCTest + Swift Testing suites.
-_SWIFT_TESTING_SUMMARY_RE = re.compile(
-    r"Test run with\s+(?P<total>\d+)\s+tests?\b.*?passed",
-    re.IGNORECASE | re.DOTALL,
-)
-
 
 def extract_swift_test_counts(output: str) -> tuple[int, int]:
     """Extract passed/failed counts from swift test output.
@@ -94,7 +92,7 @@ def extract_swift_test_counts(output: str) -> tuple[int, int]:
     keyword heuristic that fabricated a one-run pseudo-test).
     """
     # Prefer Swift Testing grand total when present (mixed suites).
-    swift_testing_match = _SWIFT_TESTING_SUMMARY_RE.search(output)
+    swift_testing_match = _SWIFT_TESTING_PASSED_RE.search(output)
     if swift_testing_match:
         total = int(swift_testing_match.group("total"))
         # XCTest failure lines still report individual bundle failures;
