@@ -1,6 +1,6 @@
 """Owned retries and foreign occupancy across synthetic Cortex server processes."""
 
-# cspell:words pgid
+# cspell:words pgid waitid WEXITED WNOWAIT WNOHANG
 
 import asyncio
 import json
@@ -320,11 +320,15 @@ def test_normal_terminal_exit_permits_next_request(tmp_path: Path) -> None:
         _ = start_stub(tmp_path)
         worker = _wait_json(tmp_path / "worker.json")
         _ = (tmp_path / "release").write_text("released")
+        # Observe the child exit without consuming it. A retry would hide the
+        # bug because the unsuccessful first request reaps in its busy handler.
         deadline = time.monotonic() + 8
-        outcome = start_stub(tmp_path)
-        while outcome["status"] != "completed" and time.monotonic() < deadline:
+        flags = os.WEXITED | os.WNOWAIT | os.WNOHANG
+        while os.waitid(os.P_PID, worker["pid"], flags) is None:
+            assert time.monotonic() < deadline, "Synthetic worker did not exit"
             time.sleep(0.01)
-            outcome = start_stub(tmp_path)
+        assert process_group_alive(worker["pgid"])
+        outcome = start_stub(tmp_path)
         assert outcome["status"] == "completed"
         assert not process_group_alive(worker["pgid"])
         assert len((tmp_path / "executions.txt").read_text().splitlines()) == 1

@@ -338,6 +338,9 @@ def start_pre_commit_job_impl(
     spec = (checks, timeout, coverage_threshold, strict_mode, include_markdown_lint)
     args_hash = _compute_job_hash(*spec, test_filter)
     result_path = pre_commit_result_path(session_dir(project_root), args_hash)
+    # AI: Reap our exited children before the lease probes their process groups.
+    # Otherwise a zombie makes the first request after autofix report busy.
+    reap_detached_workers()
     try:
         with workspace_lease(project_root, args_hash):
             return _start_under_lease(

@@ -116,8 +116,14 @@ def test_project_can_choose_less_than_global_default(tmp_path: Path) -> None:
         assert _read_quality_gate_config(tmp_path)[0] == 300
 
 
-def test_force_fresh_session_inherits_project_timeout(tmp_path: Path) -> None:
-    _ = configure_quality_gate(tmp_path, '{"test_timeout":7200}')
+@pytest.mark.parametrize("project_budget", [None, 5400])
+def test_force_fresh_session_inherits_project_timeout(
+    tmp_path: Path, project_budget: int | None
+) -> None:
+    if project_budget is not None:
+        _ = configure_quality_gate(
+            tmp_path, json.dumps({"test_timeout": project_budget})
+        )
     phase = tmp_path / ".cortex" / ".session" / "fresh-run" / "commit"
     phase.mkdir(parents=True)
     _ = (phase / "checks-task.json").write_text('{"force_fresh":true}')
@@ -125,7 +131,11 @@ def test_force_fresh_session_inherits_project_timeout(tmp_path: Path) -> None:
         "cortex.tools.session.pipeline_handoff_session.get_session_id",
         return_value="fresh-run",
     ):
-        assert _read_quality_gate_config(tmp_path)[:3] == (7200, 0.9, True)
+        assert _read_quality_gate_config(tmp_path)[:3] == (
+            project_budget or 900,
+            0.9,
+            True,
+        )
 
 
 def test_corrupt_persisted_config_fails_before_gate_can_start(tmp_path: Path) -> None:

@@ -10,6 +10,7 @@ The commit pipeline runs entirely inline in the orchestrator:
 Tests search the orchestrator prompt for semantic requirements.
 """
 
+import json
 from pathlib import Path
 
 import pytest
@@ -127,6 +128,28 @@ class TestCommitPipelineAlignment:
         """Pipeline has a final validation gate before commit."""
         lower = pipeline_content.lower()
         assert "final" in lower and ("gate" in lower or "validation" in lower)
+
+    def test_final_gate_payloads_inherit_project_timeout(
+        self, commit_prompt_content: str
+    ) -> None:
+        """Both inline paths and the delegated agent omit a timeout override."""
+        step = commit_prompt_content.split("## Step 12:", 1)[1].split("## Step 13:", 1)[
+            0
+        ]
+        agent = (synapse_path() / "claude-agents" / "commit-final-gate.md").read_text()
+        configs = [
+            json.loads(line.strip())
+            for line in step.splitlines()
+            if line.strip().startswith('{"operation":"write","phase":"checks"')
+        ]
+        configs += [
+            json.loads(line.split("`")[1])
+            for line in agent.splitlines()
+            if '"phase":"checks"' in line
+        ]
+        assert len(configs) == 3
+        assert all(config.get("force_fresh") is True for config in configs)
+        assert all("test_timeout" not in config for config in configs)
 
     # -- Compound engineering --
 

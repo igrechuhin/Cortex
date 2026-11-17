@@ -20,6 +20,10 @@ pending; no release date or successful installation is claimed.
 - Quality runs distinguish an owner's existing request from another session's
   active run. A checkout lease prevents concurrent test processes across server
   processes and remains guarded while live test descendants exist.
+- Quality gate workers reap exited child processes before checking for an
+  occupied checkout, while live workers still prevent concurrent runs.
+- The final commit gate uses the project test timeout, or the Cortex default
+  when no timeout is configured.
 - The Markdown gate can use the approved installed, pinned rumdl executable
   without the shared uv cache, verifying dependency provenance and preserving
   genuine lint failures.

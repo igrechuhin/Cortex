@@ -207,6 +207,14 @@ class TestStep12FinalGate:
         assert "else" not in section
         assert "commit-final-gate" in section
 
+    def test_final_gate_inherits_project_timeout(self, wf_source: str) -> None:
+        section = wf_source.split('phase("Final Gate")', 1)[1].split(
+            "if (!finalGate", 1
+        )[0]
+        assert "force_fresh=true" in section
+        assert "Omit test_timeout" in section
+        assert not re.search(r"test_timeout\s*=\s*\d+", section)
+
     def test_skipped_checks_reported(self, wf_source: str) -> None:
         # Arrange / Act / Assert
         assert "skipped_checks" in wf_source

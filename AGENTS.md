@@ -134,7 +134,7 @@ All pipelines (commit, do) run **inline** in the orchestrator — no subagents f
 
 **Zero-arg tools**: All MCP tools work with empty `{}` arguments (some MCP client bridges strip args). Tools read config from session files or use sensible defaults. Key zero-arg tools:
 
-- `run_quality_gate()` — Phase A quality gate and Step 12 final gate (write `{"force_fresh": true, "test_timeout": 600}` via `pipeline_handoff` first for Step 12)
+- `run_quality_gate()` — Phase A quality gate and Step 12 final gate (write `{"force_fresh": true}` via `pipeline_handoff` first for Step 12)
 - `run_docs_gate()` — Phase B docs validation
 - `autofix()` — Auto-fix formatting/linting/types/markdown
 
@@ -146,7 +146,7 @@ All phases run inline. Use zero-arg tools — do NOT use legacy pre-commit tools
 
 - **Phase A**: `run_quality_gate()` — runs all quality checks end-to-end
 - **Phase B**: `run_docs_gate()` — validates timestamps and sync
-- **Step 12**: `pipeline_handoff(write, checks, {"force_fresh": true, "test_timeout": 600})` then `run_quality_gate()` — final gate with cache clear
+- **Step 12**: `pipeline_handoff(write, checks, {"force_fresh": true})` then `run_quality_gate()` — final gate with cache clear and the project test timeout (or Cortex default)
 - **Zero-errors policy**: Any check with errors blocks commit
 - **Doc-only when tooling unavailable**: See [Troubleshooting](docs/guides/troubleshooting.md#quality-gate-unavailable-in-environment).
 

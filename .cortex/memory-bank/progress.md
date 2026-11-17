@@ -4,6 +4,8 @@
 ## 2026-11-17
 
 - <!-- memory_type: status -->
+- <!-- memory_type: status -->
+- **Quality worker cleanup and final gate timeout** - COMPLETE. Reap finished workers before checking ownership and inherit the project timeout in Step 12. Phase A passed with 8,963 tests and 92.24% coverage.
 **Swift Testing summary parsing** - COMPLETE. Parse the result from the runner summary line so status words in test names do not affect the run status or coverage. Added regression tests; the Cortex quality gate and applicable CI parity checks passed.
 
 ## 2026-11-16

@@ -8,6 +8,9 @@
 - ✅ **Swift Testing summary parsing** - COMPLETE (2026-11-17) - <!-- memory_type: status -->
 Read pass or fail from the Swift Testing run summary line. Status words in individual test names no longer misclassify the run or prevent coverage reporting. Added regression tests for mixed output; the Cortex quality gate and applicable CI parity checks passed.
 
+- ✅ **Quality worker cleanup and final gate timeout** - COMPLETE (2026-11-17) - <!-- memory_type: milestone -->
+Reap completed detached workers before checking checkout ownership and retain the lease for live workers. Step 12 inherits the project test timeout. Phase A passed with 8,963 tests and 92.24% coverage.
+
 ## Completed Work (2026-11-16)
 
 - ✅ **Cortex uv launch verification (PARTIAL)** - COMPLETE (2026-11-16) - <!-- memory_type: status -->
