@@ -250,6 +250,18 @@ best-effort and is not payload-identity evidence.
 | rumdl markdown | `markdown_lint` | Worker runs `rumdl check` on the complete owned-file list (`pre_commit_worker.collect_pre_commit_markdown_paths`). CI and autofix share the collector and validated installed-skill exclusions; see [owned-file quality scope](../guides/markdown-formatting.md#owned-file-quality-scope). Generated/dependency exclusions: `node_modules`, `.venv`, `venv`, `__pycache__`, `.git`, `.cortex/plans/archive`, `.cortex/history/`, `.cortex/.cache/`, `.cortex/wiki/sources/` (immutable wiki snapshots with repo-relative links). |
 | pytest `-m "not slow"`, `-n auto`, coverage | `tests` | `python_adapter._build_test_command` mirrors the workflow command documented in `quality.yml` (`tests/`, markers, xdist when available, `--cov=src/cortex`, `--cov-fail-under` from gate threshold default 0.9). |
 
+#### SwiftLint for Swift projects
+
+A tracked `.swiftlint.yml`, `.swiftlint.yaml`, `swiftlint.version`, or
+`swiftlint-baseline.json` opts the project into blocking SwiftLint checks.
+The local gate uses the installed `swiftlint` from PATH and validates the
+version if the project pins one. It runs strict lint with the existing baseline
+and uses the tracked `.github/scripts/swiftlint-baseline.py` helper if provided.
+It also verifies zero errors in `Sources/` and `Tests/` without the baseline.
+The gate does not install tools or modify project configuration or baselines.
+Missing tools, tool failures, or unreadable tracked settings block the commit.
+A source-only fingerprint does not skip this gate in the final commit phase.
+
 #### CI-only or non-local gate steps
 
 | CI step | Local gate | Notes |

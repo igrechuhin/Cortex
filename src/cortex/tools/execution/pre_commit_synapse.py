@@ -12,6 +12,7 @@ from cortex.core.path_resolver import (
     get_venv_bin_path,
 )
 from cortex.services.framework_adapters.base import CheckResult
+from cortex.tools.execution.pre_commit_swiftlint import run_swiftlint_if_configured
 
 
 def _synapse_script_skipped_result(check_type: str, language: str) -> CheckResult:
@@ -77,6 +78,14 @@ def run_synapse_script(
     check_type: str,
 ) -> CheckResult:
     """Run a synapse script and return CheckResult. Scripts are implementation detail."""
+    if (
+        language == "swift"
+        and script_name == "check_linting.py"
+        and check_type == "synapse_lint"
+    ):
+        swiftlint = run_swiftlint_if_configured(project_root)
+        if swiftlint is not None:
+            return swiftlint
     synapse_root = get_cortex_path(project_root, CortexResourceType.SYNAPSE)
     script_path = synapse_root / "scripts" / language / script_name
     if not script_path.exists():

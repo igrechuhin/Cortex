@@ -83,6 +83,32 @@ fresh run. The client request deadline is separate from `test_timeout`; clients
 must allow the worker timeout plus polling overhead. If a client request expires,
 inspect the existing detached result before starting another worker.
 
+### Owned runs and workspace occupancy
+
+An owned request resumes its own detached run. A different request or server
+receives a bounded `status: running`, `busy: true`,
+`reason: workspace_occupied` response without another run's job or result-file
+handle. Retry the same Cortex entry point after that response; callers do not
+need to prove that the checkout is idle. A checkout lease serializes launch
+across processes and remains conservative after abnormal worker loss. A terminal
+receipt does not release occupancy while its process group still exists.
+
+This coordination does not skip checks, grant project-data access, or authorize
+another test runner. If a required native check is unavailable or denied, report
+the blocker and preserve the draft instead of substituting a different command.
+
+### Approved Markdown tool
+
+The official check and fix stages use the installed native `rumdl` 0.1.96,
+exactly pinned in Cortex's runtime and development dependencies and lockfile.
+Selection is limited to the attached project's environments and Cortex's package
+environment. Bounded `METADATA` and `RECORD` reads verify the package name/version
+and the executable's recorded SHA-256 digest and size before execution. This route
+uses no `uv` cache or extra interpreter probe. A missing, mismatched, or unusable
+approved tool blocks the gate; a launched linter's nonzero result is returned once
+without an alternate launch. Markdown rules, configuration, check/fix flags, and
+owned file selection remain unchanged.
+
 ### Commit-preflight Git checkpoint
 
 Call `session(operation="checkpoint")` explicitly before any staging, submodule
@@ -223,6 +249,18 @@ best-effort and is not payload-identity evidence.
 | cSpell (`check_spelling.py`) | `spelling` | Same script as CI (Phase A default checks). |
 | rumdl markdown | `markdown_lint` | Worker runs `rumdl check` on the complete owned-file list (`pre_commit_worker.collect_pre_commit_markdown_paths`). CI and autofix share the collector and validated installed-skill exclusions; see [owned-file quality scope](../guides/markdown-formatting.md#owned-file-quality-scope). Generated/dependency exclusions: `node_modules`, `.venv`, `venv`, `__pycache__`, `.git`, `.cortex/plans/archive`, `.cortex/history/`, `.cortex/.cache/`, `.cortex/wiki/sources/` (immutable wiki snapshots with repo-relative links). |
 | pytest `-m "not slow"`, `-n auto`, coverage | `tests` | `python_adapter._build_test_command` mirrors the workflow command documented in `quality.yml` (`tests/`, markers, xdist when available, `--cov=src/cortex`, `--cov-fail-under` from gate threshold default 0.9). |
+
+#### SwiftLint for Swift projects
+
+A tracked `.swiftlint.yml`, `.swiftlint.yaml`, `swiftlint.version`, or
+`swiftlint-baseline.json` opts the project into blocking SwiftLint checks.
+The local gate uses the installed `swiftlint` from PATH and validates the
+version if the project pins one. It runs strict lint with the existing baseline
+and uses the tracked `.github/scripts/swiftlint-baseline.py` helper if provided.
+It also verifies zero errors in `Sources/` and `Tests/` without the baseline.
+The gate does not install tools or modify project configuration or baselines.
+Missing tools, tool failures, or unreadable tracked settings block the commit.
+A source-only fingerprint does not skip this gate in the final commit phase.
 
 #### CI-only or non-local gate steps
 

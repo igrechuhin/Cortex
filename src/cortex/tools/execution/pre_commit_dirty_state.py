@@ -21,6 +21,9 @@ from cortex.tools.execution.pre_commit_fingerprint_store import (
     load_fingerprint_record,
     save_fingerprint_record,
 )
+from cortex.tools.execution.pre_commit_swiftlint import (
+    swiftlint_required_for_final_gate,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -357,6 +360,14 @@ class PipelineDirtyTracker:
             return SkipDecision(False, "No Phase A fingerprint recorded")
         if check_name not in _SOURCE_DEPENDENT_CHECKS:
             return SkipDecision(False, f"Check '{check_name}' always re-runs")
+
+        root = self.project_root
+        if (
+            check_name == "synapse_lint"
+            and root is not None
+            and swiftlint_required_for_final_gate(root)
+        ):
+            return SkipDecision(False, "SwiftLint configuration requires a fresh check")
 
         phase_a_hash = self.phase_a_fingerprint.source_hash[:8]
         current_hash = current.source_hash[:8]

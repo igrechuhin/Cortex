@@ -11,6 +11,9 @@ Read pass or fail from the Swift Testing run summary line. Status words in indiv
 - ✅ **Quality worker cleanup and final gate timeout** - COMPLETE (2026-11-17) - <!-- memory_type: milestone -->
 Reap completed detached workers before checking checkout ownership and retain the lease for live workers. Step 12 inherits the project test timeout. Phase A passed with 8,963 tests and 92.24% coverage.
 
+- ✅ **SwiftLint commit gate** - COMPLETE (2026-11-17) - <!-- memory_type: problem -->
+Enforce strict SwiftLint and baseline-free error checks for opted-in Swift projects. The final gate checks SwiftLint again when only its configuration changes.
+
 ## Completed Work (2026-11-16)
 
 - ✅ **Cortex uv launch verification (PARTIAL)** - COMPLETE (2026-11-16) - <!-- memory_type: status -->
