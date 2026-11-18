@@ -228,6 +228,29 @@ execution, change completed-phase skipping, permit sibling takeover, or bypass a
 failed execution frontier's required fix path. Experience recording remains
 best-effort and is not payload-identity evidence.
 
+### Optional SwiftPM test evidence in the final commit gate
+
+Use only for a macOS SwiftPM project whose test contract establishes that the
+Cortex session/output files and SwiftPM-generated build artifacts are not test
+inputs. Configure `reuse_swiftpm_final_tests: true` in the project's quality
+gate configuration **only after** validating that boundary. A project may
+also explicitly declare `swiftpm_final_test_outputs` from the narrow allowlist
+using their full repository-relative paths: specific Cortex memory-bank files,
+experience database and artifact output, Cortex write logs, the Markdown
+checker cache, and `.venv/`. Do not declare a path if a test consumes it. Partially staged inputs invalidate evidence; wholly unstaged
+files are hashed and must retain identical bytes. Other adapters,
+unknown ignored paths, and legacy callers run tests normally.
+
+The native commit consumer writes `gate_intent: "phase-a"` alongside
+`force_fresh: true` before Phase A, and `gate_intent: "final"` before Step 12.
+These values identify workflow position, not a public skip switch. The gate
+requires the same bound commit run, the same MCP session/server, matching inputs, and
+a green full Phase A worker result with measured coverage. A fresh final job
+still runs all independent checks. When it reuses the tests, its
+`reused_test_evidence` records the original job, time, coverage and zero tests
+executed in the final worker. Input uncertainty runs tests fresh; drift after
+choosing the evidence makes the final gate fail closed.
+
 ### CI parity guarantee (`run_quality_gate` vs `quality.yml`)
 
 **Goal:** If the GitHub Actions **Code Quality** workflow would fail on a change, `run_quality_gate()` should fail locally first for the same categories of issues, so dirty commits are less likely to reach the remote.

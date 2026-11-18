@@ -244,6 +244,43 @@ def process_tests_check(
 ) -> None:
     """Process tests check if requested."""
     if PreCommitCheck.TESTS in checks_to_perform:
+        test_result = _execute_or_reuse_tests(
+            adapter,
+            timeout,
+            coverage_threshold,
+            progress_callback,
+            include_slow_tests,
+            test_filter,
+        )
+        _preserve_test_uncertainty(test_result)
+        results[PreCommitCheck.TESTS.value] = test_result
+        stats.checks_performed.append(PreCommitCheck.TESTS.value)
+        stats.total_warnings += len(test_result.warnings)
+        if not test_result.success:
+            stats.total_errors += len(test_result.errors)
+
+
+def _execute_or_reuse_tests(
+    adapter: FrameworkAdapter,
+    timeout: int | None,
+    coverage_threshold: float,
+    progress_callback: Callable[[int, int], None] | None,
+    include_slow_tests: bool,
+    test_filter: str | None,
+) -> TestResult:
+    from cortex.tools.execution.pre_commit_test_reuse import (
+        begin_test_evidence,
+        finish_test_evidence,
+    )
+
+    can_observe = (
+        test_filter is None
+        and isinstance(adapter, SwiftAdapter)
+        and adapter.has_package_swift()
+    )
+    evidence = begin_test_evidence(coverage_threshold) if can_observe else None
+    test_result = evidence
+    if test_result is None:
         test_result = _execute_tests(
             adapter,
             timeout,
@@ -252,12 +289,9 @@ def process_tests_check(
             include_slow_tests,
             **({"test_filter": test_filter} if test_filter is not None else {}),
         )
-        _preserve_test_uncertainty(test_result)
-        results[PreCommitCheck.TESTS.value] = test_result
-        stats.checks_performed.append(PreCommitCheck.TESTS.value)
-        stats.total_warnings += len(test_result.warnings)
-        if not test_result.success:
-            stats.total_errors += len(test_result.errors)
+        if can_observe:
+            finish_test_evidence(test_result, coverage_threshold)
+    return test_result
 
 
 def _preserve_test_uncertainty(result: TestResult) -> None:

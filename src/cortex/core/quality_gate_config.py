@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import tempfile
+from enum import StrEnum
 from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -14,12 +15,28 @@ from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 DEFAULT_TEST_TIMEOUT = 900
 
 
+class SwiftTestOutput(StrEnum):
+    """Project-reviewed operational paths that are not Swift test inputs."""
+
+    ACTIVE_CONTEXT = ".cortex/memory-bank/activeContext.md"
+    PROGRESS = ".cortex/memory-bank/progress.md"
+    ROADMAP = ".cortex/memory-bank/roadmap.md"
+    EXPERIENCE = ".cortex/experience/experience.db"
+    EXPERIENCE_ARTIFACTS = ".cortex/experience/artifacts/"
+    TOOL_WAL = ".cortex/wal/tool_invocations.jsonl"
+    WRITE_WAL = ".cortex/wal/write_log.jsonl"
+    MARKDOWN_CACHE = ".rumdl_cache/"
+    PYTHON_VENV = ".venv/"
+
+
 class ProjectQualityGateConfig(BaseModel):
     """A project timeout default, independent of pipeline sessions."""
 
     model_config = ConfigDict(extra="forbid", strict=True)
 
     test_timeout: int | None = Field(gt=0)
+    reuse_swiftpm_final_tests: bool = False
+    swiftpm_final_test_outputs: tuple[SwiftTestOutput, ...] = ()
 
 
 def quality_gate_config_path(root: Path) -> Path:
@@ -55,7 +72,9 @@ def save_quality_gate_config(root: Path, config: ProjectQualityGateConfig) -> Pa
     fd, temporary = tempfile.mkstemp(prefix=".quality-gate-", dir=path.parent)
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as stream:
-            _ = stream.write(config.model_dump_json(indent=2) + "\n")
+            _ = stream.write(
+                config.model_dump_json(indent=2, exclude_defaults=True) + "\n"
+            )
         _ = Path(temporary).replace(path)
     finally:
         Path(temporary).unlink(missing_ok=True)
@@ -82,7 +101,7 @@ def configure_quality_gate(root: Path, data: str | None) -> str:
             "status": "ok",
             "scope": "project",
             "config_file": str(path),
-            "config": config.model_dump(),
+            "config": config.model_dump(exclude_defaults=True),
             "effective_default_test_timeout": config.test_timeout
             or DEFAULT_TEST_TIMEOUT,
             "timeout_semantics": "session override > project setting > global default",

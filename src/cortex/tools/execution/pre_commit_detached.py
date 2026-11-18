@@ -98,6 +98,9 @@ def compute_args_hash(
     test_filter: str | None = None,
 ) -> str:
     """Deterministic hash of call arguments for result file naming."""
+    from cortex.tools.execution.pre_commit_test_reuse import gate_intent_json
+
+    intent = gate_intent_json()
     key = json.dumps(
         {
             "checks": sorted(checks),
@@ -106,6 +109,7 @@ def compute_args_hash(
             "strict": strict_mode,
             "markdown": include_markdown,
             **({"test_filter": test_filter} if test_filter is not None else {}),
+            **({"gate_intent": intent} if intent is not None else {}),
         },
         sort_keys=True,
     )

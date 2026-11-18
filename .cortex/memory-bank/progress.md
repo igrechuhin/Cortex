@@ -1,6 +1,11 @@
 <!-- memory_type: milestone -->
 # Progress Log
 
+## 2026-11-18
+
+- <!-- memory_type: status -->
+SwiftPM final-gate test evidence: Native M1 confirmed a full fresh final gate reused the one measured Swift test after an explicitly declared documentation-only change. Deployment requires the matching Synapse caller and an explicit project opt-in.
+
 ## 2026-11-17
 
 - <!-- memory_type: status -->

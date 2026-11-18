@@ -13,6 +13,8 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+from collections.abc import Mapping
+from contextlib import AbstractContextManager
 from pathlib import Path
 from typing import cast
 
@@ -277,6 +279,7 @@ async def _spawn_and_poll_phase_a(
 
 _QUALITY_GATE_DEFAULTS: dict[str, object] = {
     "test_filter": None,
+    "gate_intent": None,
     "coverage_threshold": 0.90,
     "test_timeout": DEFAULT_TEST_TIMEOUT,
     "force_fresh": True,
@@ -319,6 +322,7 @@ _PASS_TRIM_KEYS: frozenset[str] = frozenset(
         "test_scope",
         "coverage_scope",
         "full_suite_validated",
+        "reused_test_evidence",
     }
 )
 
@@ -343,15 +347,16 @@ async def run_quality_gate_inner(
         return {"status": "error", "error": str(exc), "preflight_passed": False}
     scope = str(root.resolve())
     _log_quality_gate_start(scope, timeout, coverage_threshold, force_fresh)
-    result = await _spawn_and_poll_phase_a(
-        root,
-        timeout=timeout,
-        coverage_threshold=coverage_threshold,
-        force_fresh=force_fresh,
-        ctx=ctx,
-        env=env,
-        **({"test_filter": test_filter} if test_filter is not None else {}),
-    )
+    with _gate_scope(root, cfg, force_fresh, test_filter):
+        result = await _spawn_and_poll_phase_a(
+            root,
+            timeout=timeout,
+            coverage_threshold=coverage_threshold,
+            force_fresh=force_fresh,
+            ctx=ctx,
+            env=env,
+            **({"test_filter": test_filter} if test_filter is not None else {}),
+        )
     if (
         result.get("status") in {"running", "timeout"}
         or "preflight_passed" not in result
@@ -360,6 +365,18 @@ async def run_quality_gate_inner(
     gate_passed = await _finalize_quality_gate_result(root, result, cfg, ctx)
     logger.info("run_quality_gate: done scope=%s passed=%s", scope, gate_passed)
     return result
+
+
+def _gate_scope(
+    root: Path, cfg: Mapping[str, object], force_fresh: bool, test_filter: str | None
+) -> AbstractContextManager[object]:
+    from cortex.tools.execution.pre_commit_test_reuse import (
+        derive_gate_intent,
+        gate_intent_scope,
+    )
+
+    intent = derive_gate_intent(root, cfg.get("gate_intent"), force_fresh, test_filter)
+    return gate_intent_scope(intent)
 
 
 def _log_quality_gate_start(
@@ -393,7 +410,9 @@ async def _finalize_quality_gate_result(
         _ = trim_passing_quality_gate_result(result)
         # AI: Selected tests cannot authorize a later full-suite fingerprint skip.
         PipelineDirtyTracker.get_instance().record_phase_a(
-            root, result.get("full_suite_validated") is not False
+            root,
+            result.get("full_suite_validated") is not False
+            and not result.get("reused_test_evidence"),
         )
     else:
         append_agent_log_to_quality_result(result)

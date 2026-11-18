@@ -3,6 +3,11 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-11-18)
+
+- ✅ **SwiftPM final-gate test evidence** - COMPLETE (2026-11-18) - <!-- memory_type: status -->
+The opt-in final gate retains full SwiftPM test evidence only while the same commit run and MCP session can prove matching inputs. A native M1 Swift fixture confirmed a fresh final gate can report zero new tests after a declared documentation-only change.
+
 ## Completed Work (2026-11-17)
 
 - ✅ **Swift Testing summary parsing** - COMPLETE (2026-11-17) - <!-- memory_type: status -->

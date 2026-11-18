@@ -214,7 +214,7 @@ def spawn_detached_worker(
         test_filter,
     )
     if quality_gate:
-        cmd.append("--quality-gate")
+        _append_quality_gate_args(cmd)
     pid = spawn_detached_process(cmd, log_file, project_root, env=env)
     publish_started_worker(rp, pid, quality_gate)
     logger.info("Spawned detached worker: hash=%s result=%s", args_hash, rp)
@@ -320,3 +320,11 @@ async def poll_for_result(
             if isinstance(pid, int) and not is_process_alive(pid):
                 return worker_died_error(pid)
     return timeout_error(timeout)
+
+
+def _append_quality_gate_args(cmd: list[str]) -> None:
+    from cortex.tools.execution.pre_commit_test_reuse import gate_intent_json
+
+    cmd.append("--quality-gate")
+    if (intent := gate_intent_json()) is not None:
+        cmd.extend(("--gate-test-intent", intent))

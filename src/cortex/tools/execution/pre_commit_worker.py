@@ -246,7 +246,9 @@ def _checks_to_run(
     project_root: str, checks: list[str], test_filter: str | None
 ) -> tuple[list[str], dict[str, str]]:
     """Skip fingerprint-unchanged checks; a selection never reuses fingerprints."""
-    if test_filter is not None:
+    from cortex.tools.execution.pre_commit_test_reuse import test_lane_active
+
+    if test_filter is not None or test_lane_active():
         return checks, {}
     from cortex.tools.execution.pre_commit_dirty_state import (
         partition_skippable_checks,
@@ -370,6 +372,7 @@ def _parse_worker_args() -> argparse.Namespace:
     _ = parser.add_argument("--strict", action="store_true")
     _ = parser.add_argument("--include-markdown-lint", action="store_true")
     _ = parser.add_argument("--quality-gate", action="store_true")
+    _ = parser.add_argument("--gate-test-intent", default=None)
     _ = parser.add_argument("--result-file", required=True)
     _ = parser.add_argument("--project-root", required=True)
     return parser.parse_args()
@@ -476,25 +479,55 @@ def _run_worker_once(
     """Run checks and write success result; raises on failure."""
     if _maybe_write_early_exit(args, result_path, started, pid, quality_gate):
         return
-    checks_result = _run_checks(
-        args.project_root,
-        args.checks,
-        args.timeout,
-        args.coverage_threshold,
-        args.strict,
-        **(
-            {"test_filter": args.test_filter}
-            if getattr(args, "test_filter", None) is not None
-            else {}
-        ),
-    )
-    markdown_result = (
-        run_markdown_lint(args.project_root) if args.include_markdown_lint else None
-    )
+    checks_result, markdown_result = _run_worker_checks(args, result_path, quality_gate)
     _write_success_result(
         result_path, started, pid, checks_result, markdown_result, quality_gate
     )
     logger.info("Worker completed in %.1fs", time.time() - started)
+
+
+def _run_worker_checks(
+    args: argparse.Namespace, result_path: Path, quality_gate: bool
+) -> tuple[dict[str, object], dict[str, object] | None]:
+    """Record verified SwiftPM evidence without altering the ordinary gates."""
+    from cortex.tools.execution.pre_commit_test_reuse import (
+        did_reused_inputs_drift,
+        publish_test_evidence,
+        worker_test_lane,
+    )
+
+    filter_value = getattr(args, "test_filter", None)
+    intent = getattr(args, "gate_test_intent", None)
+    if not quality_gate or filter_value is not None:
+        intent = None
+    with worker_test_lane(Path(args.project_root).resolve(), intent) as lane:
+        result = _run_checks(
+            args.project_root,
+            args.checks,
+            args.timeout,
+            args.coverage_threshold,
+            args.strict,
+            **({"test_filter": filter_value} if filter_value is not None else {}),
+        )
+        markdown = (
+            run_markdown_lint(args.project_root) if args.include_markdown_lint else None
+        )
+        if did_reused_inputs_drift(lane):
+            return _swift_inputs_drift_error(), markdown
+        publish_test_evidence(
+            lane, result_path.stem.rsplit("_", 1)[-1], result, markdown
+        )
+        return result, markdown
+
+
+def _swift_inputs_drift_error() -> dict[str, object]:
+    return {
+        "status": OperationStatus.ERROR.value,
+        "success": False,
+        "preflight_passed": False,
+        "error": "SwiftPM test inputs changed during the final gate; run tests fresh.",
+        "total_errors": 1,
+    }
 
 
 def main() -> None:

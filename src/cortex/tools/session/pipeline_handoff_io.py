@@ -270,7 +270,7 @@ _ROUTING_KEYS: frozenset[str] = frozenset({"operation", "phase", "pipeline"})
 # When present in a write_result payload these are lifted to a top-level
 # "config" block so they do not pollute the phase result record.
 PHASE_CONFIG_KEYS: frozenset[str] = frozenset(
-    {"force_fresh", "test_timeout", "test_filter"}
+    {"force_fresh", "test_timeout", "test_filter", "gate_intent"}
 )
 
 
