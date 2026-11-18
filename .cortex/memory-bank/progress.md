@@ -4,6 +4,8 @@
 ## 2026-11-18
 
 - <!-- memory_type: status -->
+- <!-- memory_type: status -->
+Early Markdown failure in full Swift gates: Native Swift fixtures verified successful full tests, earlier rejection for broken Markdown or missing approved rumdl, and final rejection when tests introduce a Markdown failure.
 SwiftPM final-gate test evidence: Native M1 confirmed a full fresh final gate reused the one measured Swift test after an explicitly declared documentation-only change. Deployment requires the matching Synapse caller and an explicit project opt-in.
 
 ## 2026-11-17

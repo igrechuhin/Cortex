@@ -251,6 +251,16 @@ still runs all independent checks. When it reuses the tests, its
 executed in the final worker. Input uncertainty runs tests fresh; drift after
 choosing the evidence makes the final gate fail closed.
 
+### Early Markdown failure in full Swift gates
+
+Ordinary detached full Swift gates check required Markdown after their fast
+checks and before starting the tests. A blocking Markdown result is returned
+with `tests_not_run_reason: "markdown_preflight_failed"` and no completed
+full-suite evidence. When the early check passes, the usual test path and
+final Markdown check still run; the final check can catch Markdown changes
+made during testing. Selected-test runs, repair tools and other languages
+retain their ordinary ordering.
+
 ### CI parity guarantee (`run_quality_gate` vs `quality.yml`)
 
 **Goal:** If the GitHub Actions **Code Quality** workflow would fail on a change, `run_quality_gate()` should fail locally first for the same categories of issues, so dirty commits are less likely to reach the remote.

@@ -24,7 +24,7 @@ import time
 from pathlib import Path
 from typing import cast
 
-from cortex.core.models import ModelDict, OperationStatus
+from cortex.core.models import JsonDict, ModelDict, OperationStatus
 from cortex.core.path_resolver import (
     augmented_environ_with_project_venv_bins,
 )
@@ -41,6 +41,10 @@ from cortex.tools.execution.pre_commit_helpers_models import (
     QualityCheckResult,
 )
 from cortex.tools.execution.pre_commit_markdown_tool import MarkdownToolError
+from cortex.tools.execution.pre_commit_preflight_helpers import (
+    markdown_preflight_passed,
+    swift_test_preflight,
+)
 from cortex.tools.execution.pre_commit_rumdl_resolve import (
     markdown_rumdl_argv,
 )
@@ -501,23 +505,68 @@ def _run_worker_checks(
     if not quality_gate or filter_value is not None:
         intent = None
     with worker_test_lane(Path(args.project_root).resolve(), intent) as lane:
-        result = _run_checks(
-            args.project_root,
-            args.checks,
-            args.timeout,
-            args.coverage_threshold,
-            args.strict,
-            **({"test_filter": filter_value} if filter_value is not None else {}),
-        )
-        markdown = (
-            run_markdown_lint(args.project_root) if args.include_markdown_lint else None
-        )
+        result, markdown = _run_checks_with_markdown(args, quality_gate, filter_value)
         if did_reused_inputs_drift(lane):
             return _swift_inputs_drift_error(), markdown
         publish_test_evidence(
             lane, result_path.stem.rsplit("_", 1)[-1], result, markdown
         )
         return result, markdown
+
+
+def _run_checks_with_markdown(
+    args: argparse.Namespace, quality_gate: bool, filter_value: str | None
+) -> tuple[dict[str, object], dict[str, object] | None]:
+    """Stop on a blocking early lint, but keep the authoritative final lint."""
+    blocker: dict[str, object] | None = None
+
+    def check_markdown() -> bool:
+        nonlocal blocker
+        early = run_markdown_lint(args.project_root)
+        if not markdown_preflight_passed(cast(JsonDict, early)):
+            blocker = early
+            return False
+        return True
+
+    token = swift_test_preflight.set(
+        check_markdown if quality_gate and args.include_markdown_lint else None
+    )
+    try:
+        result = _run_worker_check_set(args, filter_value)
+    finally:
+        swift_test_preflight.reset(token)
+    if blocker is not None:
+        _report_markdown_blocker(result)
+        return result, blocker
+    markdown = (
+        run_markdown_lint(args.project_root) if args.include_markdown_lint else None
+    )
+    return result, markdown
+
+
+def _run_worker_check_set(
+    args: argparse.Namespace, test_filter: str | None
+) -> dict[str, object]:
+    return _run_checks(
+        args.project_root,
+        args.checks,
+        args.timeout,
+        args.coverage_threshold,
+        args.strict,
+        **({"test_filter": test_filter} if test_filter is not None else {}),
+    )
+
+
+def _report_markdown_blocker(result: dict[str, object]) -> None:
+    failures = result.get("total_errors", 0)
+    result.update(
+        status=OperationStatus.ERROR.value,
+        success=False,
+        preflight_passed=False,
+        total_errors=max(1, failures) if isinstance(failures, int) else 1,
+        full_suite_validated=False,
+        tests_not_run_reason="markdown_preflight_failed",
+    )
 
 
 def _swift_inputs_drift_error() -> dict[str, object]:

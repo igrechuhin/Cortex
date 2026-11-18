@@ -8,6 +8,9 @@
 - ✅ **SwiftPM final-gate test evidence** - COMPLETE (2026-11-18) - <!-- memory_type: status -->
 The opt-in final gate retains full SwiftPM test evidence only while the same commit run and MCP session can prove matching inputs. A native M1 Swift fixture confirmed a fresh final gate can report zero new tests after a declared documentation-only change.
 
+- ✅ **Early Markdown failure in full Swift gates** - COMPLETE (2026-11-18) - <!-- memory_type: status -->
+A full detached Swift gate stops before tests when required Markdown already blocks. If early Markdown passes, the full tests and authoritative final Markdown check still run.
+
 ## Completed Work (2026-11-17)
 
 - ✅ **Swift Testing summary parsing** - COMPLETE (2026-11-17) - <!-- memory_type: status -->

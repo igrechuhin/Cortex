@@ -7,7 +7,15 @@ used by the detached Phase A runner behind ``run_quality_gate()``.
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from contextvars import ContextVar
+
 from cortex.core.models import JsonDict, ModelDict
+
+# Bound only by the detached ordinary gate; no effect in repair or direct runs.
+swift_test_preflight: ContextVar[Callable[[], bool] | None] = ContextVar(
+    "swift_test_preflight", default=None
+)
 
 
 def compute_preflight_passed(
@@ -20,10 +28,11 @@ def compute_preflight_passed(
     if not exec_success:
         return False
 
-    if markdown_result is None:
-        # If markdown was not run, base decision solely on the check-execution result.
-        return exec_success
+    return markdown_result is None or markdown_preflight_passed(markdown_result)
 
+
+def markdown_preflight_passed(markdown_result: JsonDict) -> bool:
+    """Check the same required Markdown verdict before tests and in the receipt."""
     files_with_errors_obj = markdown_result.get("files_with_errors", 0)
     files_with_errors = (
         int(files_with_errors_obj)
@@ -34,4 +43,4 @@ def compute_preflight_passed(
     markdown_status = str(markdown_result.get("status", "success"))
     markdown_success = files_with_errors == 0 and error_message is None
     markdown_success = markdown_success and markdown_status != "error"
-    return exec_success and markdown_success
+    return markdown_success

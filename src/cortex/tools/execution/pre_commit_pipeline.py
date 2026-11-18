@@ -26,6 +26,7 @@ from cortex.tools.execution.pre_commit_pipeline_processors import (
     process_tests_check,
     process_type_check,
 )
+from cortex.tools.execution.pre_commit_preflight_helpers import swift_test_preflight
 
 
 def _run_non_test_checks(
@@ -120,6 +121,8 @@ def run_checks_pipeline(adapter: FrameworkAdapter, language: str, checks_to_perf
         timeout=timeout,
         **({"test_filter": test_filter} if test_filter is not None else {}),
     )
+    if _swift_markdown_blocks(language, checks_to_perform, test_filter):
+        return
     _run_tests_phase(
         adapter,
         checks_to_perform,
@@ -130,6 +133,20 @@ def run_checks_pipeline(adapter: FrameworkAdapter, language: str, checks_to_perf
         progress_callback,
         include_slow_tests,
         **({"test_filter": test_filter} if test_filter is not None else {}),
+    )
+
+
+def _swift_markdown_blocks(
+    language: str, checks: list[PreCommitCheck], test_filter: str | None
+) -> bool:
+    """Consult the detached gate's early check only for the full Swift suite."""
+    preflight = swift_test_preflight.get()
+    return (
+        language == "swift"
+        and test_filter is None
+        and PreCommitCheck.TESTS in checks
+        and preflight is not None
+        and not preflight()
     )
 
 
