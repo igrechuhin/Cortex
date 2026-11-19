@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -21,6 +22,7 @@ from cortex.tools.execution.pre_commit_helpers_models import (
 )
 from cortex.tools.execution.pre_commit_worker import (
     _run_worker_checks,  # pyright: ignore[reportPrivateUsage]
+    _write_success_result,  # pyright: ignore[reportPrivateUsage]
 )
 
 _RUN = "abcdef123456"
@@ -103,10 +105,8 @@ class GateFixture:
             "results": {key: value.model_dump() for key, value in results.items()},
         }
 
-    def run(
-        self, use: reuse.GateUse | None, *, test_filter: str | None = None
-    ) -> dict[str, object]:
-        """Execute the worker on the selected authoritative commit phase."""
+    def prepare_pipeline(self, use: reuse.GateUse | None) -> None:
+        """Publish the fixture's authoritative commit phase."""
         phases = {"preflight": _phase("complete")}
         if use is not reuse.GateUse.PHASE_A:
             phases.update(
@@ -118,8 +118,22 @@ class GateFixture:
         _ = path.write_text(
             json.dumps({"session_id": _RUN, "pipeline": "commit", "phases": phases})
         )
+
+    def run(
+        self,
+        use: reuse.GateUse | None,
+        *,
+        test_filter: str | None = None,
+        predecessors: tuple[int, ...] = (),
+    ) -> dict[str, object]:
+        """Execute the worker on the selected authoritative commit phase."""
+        self.prepare_pipeline(use)
         job_id = _PHASE_A_JOB if use is reuse.GateUse.PHASE_A else _FINAL_JOB
-        intent = reuse.GateTestIntent(use=use, run_id=_RUN) if use is not None else None
+        intent = (
+            reuse.GateTestIntent(use=use, run_id=_RUN, predecessors=predecessors)
+            if use is not None
+            else None
+        )
         args = argparse.Namespace(
             project_root=str(self.root),
             checks=["quality", "tests"],
@@ -202,3 +216,27 @@ def test_final_lane_rejects_inputs_changed_during_checks(
     assert final["success"] is False
     assert "reused_test_evidence" not in final
     assert fixture.tests_started == 1
+
+
+@pytest.mark.parametrize("scenario", ["valid", "drift", "foreign", "missing_receipt"])
+def test_phase_a_reconnect_reuses_only_verified_swift_tests(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, scenario: str
+) -> None:
+    """A prior terminal undelivered receipt can save only the expensive tests."""
+    fixture = GateFixture(tmp_path, monkeypatch)
+    monkeypatch.setattr(
+        "cortex.tools.execution.pre_commit_worker.worker_owner", lambda: fixture.owner
+    )
+    old = fixture.run(reuse.GateUse.PHASE_A)
+    if scenario != "missing_receipt":
+        receipt = fixture.state.parent.parent / f"pre_commit_result_{_PHASE_A_JOB}.json"
+        _write_success_result(receipt, 0.0, 987, old, dict(fixture.markdown), True)
+    predecessor = 0 if scenario == "foreign" else os.getppid()
+    fixture.owner = "b" * 64
+    if scenario == "drift":
+        fixture.fingerprint = "c" * 64
+    result = fixture.run(reuse.GateUse.PHASE_A, predecessors=(predecessor,))
+    assert result["success"] is True
+    assert fixture.non_test_checks == 2
+    assert fixture.tests_started == (1 if scenario == "valid" else 2)
+    assert ("reused_test_evidence" in result) is (scenario == "valid")

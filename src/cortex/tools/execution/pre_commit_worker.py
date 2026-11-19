@@ -504,7 +504,9 @@ def _run_worker_checks(
     intent = getattr(args, "gate_test_intent", None)
     if not quality_gate or filter_value is not None:
         intent = None
-    with worker_test_lane(Path(args.project_root).resolve(), intent) as lane:
+    with worker_test_lane(
+        Path(args.project_root).resolve(), intent, args.timeout
+    ) as lane:
         result, markdown = _run_checks_with_markdown(args, quality_gate, filter_value)
         if did_reused_inputs_drift(lane):
             return _swift_inputs_drift_error(), markdown

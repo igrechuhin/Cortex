@@ -359,6 +359,16 @@ def live_sibling_owner_ids(project_root: Path) -> frozenset[str]:
     )
 
 
+def recoverable_predecessors(project_root: Path, run_id: str) -> tuple[int, ...]:
+    """Return provably dead owners only after this server exclusively claims the run."""
+    registry = _prune_stale_entries(_load_run_registry(project_root))
+    entry = registry.get(run_id)
+    me = _current_owner()
+    if entry is None or me not in entry.owners or _has_live_foreign_owner(entry):
+        return ()
+    return tuple(owner.pid for owner in entry.owners if owner != me)
+
+
 def get_session_id(
     project_root: Path,
     *,

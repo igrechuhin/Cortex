@@ -16,6 +16,8 @@
 - **TradeWing scoped data root and reader adapters** - PENDING - Design explicit approved data-root and existing-reader adapters; verify chat binding and synthetic smoke tests before owner-authorized activation. Plan: .cortex/plans/tradewing-scoped-data-root-adapters.md
 
 ## Pending plans (from .cortex/plans)
+- **Report timings from quality logs** - PENDING - Read-only report from Cortex event logs and Swift test output. Plan: .cortex/plans/report-timings-from-quality-logs.md
+- **Recover completed quality receipts after MCP reconnect** - PENDING - Recover a verified full quality result for the same adopted commit pipeline after MCP reconnect. Plan: .cortex/plans/recover-completed-quality-receipts-after-mcp-reconnect.md
 
 ### Pipeline Infrastructure
 

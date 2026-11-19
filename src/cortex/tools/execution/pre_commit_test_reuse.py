@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import os
 import re
 import time
 from collections.abc import Iterator
@@ -36,6 +37,7 @@ class GateTestIntent(BaseModel):
     use: GateUse
     run_id: str = Field(pattern=r"^[a-f0-9]{12}$")
     swift_outputs: tuple[str, ...] = ()
+    predecessors: tuple[int, ...] = ()
 
 
 class TestEvidence(BaseModel):
@@ -48,6 +50,8 @@ class TestEvidence(BaseModel):
     completed_at: float = Field(allow_inf_nan=False)
     fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
     tests: TestResult
+    server_pid: int | None = None
+    test_timeout: int | None = None
 
 
 class _TestLane(BaseModel):
@@ -58,6 +62,8 @@ class _TestLane(BaseModel):
     fingerprint: str | None = None
     candidate: TestResult | None = None
     reused: TestEvidence | None = None
+    server_pid: int | None = None
+    test_timeout: int | None = None
 
 
 _GATE_INTENT: ContextVar[GateTestIntent | None] = ContextVar(
@@ -114,13 +120,19 @@ def derive_gate_intent(
     policy = load_quality_gate_config(root)
     if not policy.reuse_swiftpm_final_tests:
         return None
-    from cortex.tools.session.pipeline_handoff_session import get_session_id
+    from cortex.tools.session.pipeline_handoff_session import (
+        get_session_id,
+        recoverable_predecessors,
+    )
 
     active = get_session_id(root, mint=False, pipeline="commit")
     if not re.fullmatch(r"[a-f0-9]{12}", active):
         return None
     intent = GateTestIntent(
         use=GateUse(str(value)),
+        predecessors=(
+            recoverable_predecessors(root, active) if value == "phase-a" else ()
+        ),
         run_id=active,
         swift_outputs=tuple(
             sorted({item.value for item in policy.swiftpm_final_test_outputs})
@@ -150,7 +162,9 @@ def _evidence_path(root: Path, intent: GateTestIntent) -> Path:
 
 
 @contextmanager
-def worker_test_lane(root: Path, raw: str | None) -> Iterator[_TestLane | None]:
+def worker_test_lane(
+    root: Path, raw: str | None, test_timeout: int | None = None
+) -> Iterator[_TestLane | None]:
     """Enable evidence only under a real detached owner and verified run state."""
     lane = None
     if raw and worker_owner():
@@ -159,13 +173,18 @@ def worker_test_lane(root: Path, raw: str | None) -> Iterator[_TestLane | None]:
         except ValidationError:
             intent = None
         if intent is not None and _verified_context(root, intent):
-            lane = _TestLane(root=root, intent=intent)
+            lane = _TestLane(
+                root=root,
+                intent=intent,
+                server_pid=os.getppid(),
+                test_timeout=test_timeout,
+            )
     if lane is not None and lane.intent.use is GateUse.PHASE_A:
         path = _evidence_path(root, lane.intent)
         try:
             if path.resolve() != path:
                 lane = None
-            else:
+            elif not lane.intent.predecessors:
                 path.unlink(missing_ok=True)
         except (OSError, RuntimeError):
             lane = None
@@ -200,13 +219,15 @@ def begin_test_evidence(threshold: float) -> TestResult | None:
     lane.fingerprint = swift_test_input_fingerprint(
         lane.root, lane.intent.swift_outputs
     )
-    if lane.fingerprint is None or lane.intent.use is not GateUse.FINAL:
+    if lane.fingerprint is None:
+        return None
+    if lane.intent.use is GateUse.PHASE_A and not lane.intent.predecessors:
         return None
     evidence = _read_evidence(lane)
     if evidence is None:
         return None
     if (
-        evidence.owner != worker_owner()
+        not _matches_evidence_owner(lane, evidence)
         or evidence.run_id != lane.intent.run_id
         or evidence.fingerprint != lane.fingerprint
         or not 0 <= time.time() - evidence.completed_at <= _MAX_AGE_SECONDS
@@ -214,16 +235,56 @@ def begin_test_evidence(threshold: float) -> TestResult | None:
     ):
         return None
     lane.reused = evidence
-    return _reuse_result(evidence)
+    return _reuse_result(evidence, lane.intent.use)
 
 
-def _reuse_result(evidence: TestEvidence) -> TestResult:
+def _matches_evidence_owner(lane: _TestLane, evidence: TestEvidence) -> bool:
+    """Ordinary final reuse is private; reconnect requires the real terminal job."""
+    if lane.intent.use is GateUse.FINAL:
+        return evidence.owner == worker_owner()
+    if (
+        evidence.owner == worker_owner()
+        or evidence.server_pid not in lane.intent.predecessors
+        or lane.test_timeout is None
+        or evidence.test_timeout != lane.test_timeout
+    ):
+        return False
+    path = session_dir(lane.root) / f"pre_commit_result_{evidence.job_id}.json"
+    try:
+        if path.resolve() != path:
+            return False
+        terminal = _TerminalEvidence.model_validate_json(path.read_text())
+    except (OSError, RuntimeError, ValidationError):
+        return False
+    return terminal.eligible(evidence.owner)
+
+
+class _TerminalEvidence(BaseModel):
+    status: str
+    owner: str
+    quality_gate_pending: bool = False
+    result: dict[str, object]
+    markdown_result: dict[str, object]
+
+    def eligible(self, owner: str) -> bool:
+        return (
+            self.status == "completed"
+            and self.owner == owner
+            and self.quality_gate_pending
+            and self.result.get("success") is True
+            and not self.result.get("skipped_checks")
+            and self.markdown_result.get("status") == "success"
+            and self.markdown_result.get("files_with_errors") == 0
+        )
+
+
+def _reuse_result(evidence: TestEvidence, use: GateUse = GateUse.FINAL) -> TestResult:
     return evidence.tests.model_copy(
         deep=True,
         update={
             "output": (
                 "Full test results reused from observed green Phase A; "
-                "no final tests executed."
+                f"no {use.value} tests executed."
             ),
             "tests_run": 0,
             "tests_passed": 0,
@@ -283,7 +344,7 @@ def publish_test_evidence(
     if lane is None:
         return
     if lane.reused is not None:
-        _mark_reuse(lane.reused, result)
+        _mark_reuse(lane.reused, result, lane.intent.use)
         return
     if (
         lane.intent.use is not GateUse.PHASE_A
@@ -314,17 +375,25 @@ def _save_evidence(
         completed_at=time.time(),
         fingerprint=fingerprint,
         tests=candidate,
+        server_pid=lane.server_pid,
+        test_timeout=lane.test_timeout,
     )
     atomic_write(
         _evidence_path(lane.root, lane.intent), evidence.model_dump(mode="json")
     )
 
 
-def _mark_reuse(original: TestEvidence, result: dict[str, object]) -> None:
+def _mark_reuse(
+    original: TestEvidence, result: dict[str, object], use: GateUse
+) -> None:
     result["reused_test_evidence"] = {
         "source_job_id": original.job_id,
         "source_completed_at": original.completed_at,
-        "tests_executed_in_final": 0,
+        (
+            "tests_executed_in_final"
+            if use is GateUse.FINAL
+            else "tests_executed_after_reconnect"
+        ): 0,
         "tests_passed_in_phase_a": original.tests.tests_passed,
         "coverage": original.tests.coverage,
     }
