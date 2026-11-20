@@ -1,135 +1,5 @@
 # Cortex Operations Log
 
-## [2026-09-08T17:21] plan | Created plan: Demo Plan ·4
-
-## [2026-09-08T17:21] plan | Created plan: Mini ·2
-
-## [2026-09-08T17:21] plan | Created plan: Demo Plan ·5
-
-## [2026-09-08T17:21] plan | Created plan: Demo Plan ·6
-
-## [2026-09-08T17:21] plan | Created plan: Mini ·3
-
-## [2026-09-08T17:21] plan | Created plan: Mini ·4
-
-## [2026-09-08T17:26] plan | Created plan: Test Plan
-
-## [2026-09-08T17:31] plan | Created plan: Test Plan
-
-## [2026-09-08T17:34] plan | Created plan: Test Plan
-
-## [2026-09-08T17:45] plan | Created plan: Mini
-
-## [2026-09-08T17:45] plan | Created plan: Demo Plan
-
-## [2026-09-08T17:45] plan | Created plan: Mini ·2
-
-## [2026-09-08T17:45] plan | Created plan: Demo Plan ·2
-
-## [2026-09-08T17:45] plan | Created plan: Mini ·3
-
-## [2026-09-08T17:45] plan | Created plan: Demo Plan ·3
-
-## [2026-09-08T17:45] plan | Created plan: Mini ·4
-
-## [2026-09-08T17:45] plan | Created plan: Demo Plan ·4
-
-## [2026-09-08T17:45] plan | Created plan: Demo Plan ·5
-
-## [2026-09-08T17:45] plan | Created plan: Demo Plan ·6
-
-## [2026-09-08T17:52] plan | Created plan: Test Plan
-
-## [2026-09-08T17:52] plan | Created plan: Smoke Test Plan
-
-## [2026-09-08T17:52] plan | Created plan: Mini
-
-## [2026-09-08T17:52] plan | Created plan: Mini ·2
-
-## [2026-09-08T17:52] plan | Created plan: Demo Plan
-
-## [2026-09-08T17:52] plan | Created plan: Mini ·3
-
-## [2026-09-08T17:52] plan | Created plan: Demo Plan ·2
-
-## [2026-09-08T17:52] plan | Created plan: Demo Plan ·3
-
-## [2026-09-08T17:52] plan | Created plan: Demo Plan ·4
-
-## [2026-09-08T17:52] plan | Created plan: Demo Plan ·5
-
-## [2026-09-08T17:52] plan | Created plan: Demo Plan ·6
-
-## [2026-09-08T17:52] plan | Created plan: Mini ·4
-
-## [2026-09-08T17:53] lint | Quality gate failed
-
-## [2026-09-08T18:03] fix | Autofix completed
-
-status=success; changed_files=None
-
-## [2026-09-08T18:04] plan | Created plan: Mini
-
-## [2026-09-08T18:04] plan | Created plan: Mini ·2
-
-## [2026-09-08T18:04] plan | Created plan: Demo Plan
-
-## [2026-09-08T18:04] plan | Created plan: Demo Plan ·2
-
-## [2026-09-08T18:04] plan | Created plan: Demo Plan ·3
-
-## [2026-09-08T18:04] plan | Created plan: Mini ·3
-
-## [2026-09-08T18:04] plan | Created plan: Demo Plan ·4
-
-## [2026-09-08T18:04] plan | Created plan: Demo Plan ·5
-
-## [2026-09-08T18:04] plan | Created plan: Demo Plan ·6
-
-## [2026-09-08T18:04] plan | Created plan: Mini ·4
-
-## [2026-09-08T18:04] plan | Created plan: Test Plan
-
-## [2026-09-08T18:04] plan | Created plan: Smoke Test Plan
-
-## [2026-09-08T18:05] lint | Quality gate failed
-
-## [2026-09-08T18:08] plan | Created plan: Smoke Test Plan
-
-## [2026-09-08T18:08] plan | Created plan: Test Plan
-
-## [2026-09-08T18:08] plan | Created plan: Demo Plan
-
-## [2026-09-08T18:08] plan | Created plan: Mini
-
-## [2026-09-08T18:08] plan | Created plan: Demo Plan ·2
-
-## [2026-09-08T18:08] plan | Created plan: Mini ·2
-
-## [2026-09-08T18:08] plan | Created plan: Mini ·3
-
-## [2026-09-08T18:08] plan | Created plan: Demo Plan ·3
-
-## [2026-09-08T18:08] plan | Created plan: Demo Plan ·4
-
-## [2026-09-08T18:08] plan | Created plan: Demo Plan ·5
-
-## [2026-09-08T18:08] plan | Created plan: Mini ·4
-
-## [2026-09-08T18:08] plan | Created plan: Demo Plan ·6
-
-## [2026-09-08T18:09] fix | Autofix completed
-
-status=success; changed_files=None
-
-## [2026-09-08T18:10] plan | Created plan: Smoke Test Plan
-
-## [2026-09-08T18:11] fix | Autofix completed
-
-status=success; changed_files=None
-
-## [2026-09-08T18:12] plan | Created plan: Demo Plan
-
 ## [2026-09-08T18:12] plan | Created plan: Demo Plan ·2
 
 ## [2026-09-08T18:12] plan | Created plan: Mini
@@ -2233,3 +2103,155 @@ status=success; changed_files=None
 ## [2026-11-16T12:02] plan | Created plan: Project Access bootstrap and owned quality runs
 
 ## [2026-11-16T12:05] plan | Created plan: Project Access bootstrap and owned quality runs
+
+## [2026-11-16T17:57] lint | Quality gate passed
+
+## [2026-11-16T17:59] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-16T18:00] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-16T18:03] lint | Quality gate passed
+
+## [2026-11-17T10:15] lint | Quality gate passed
+
+## [2026-11-17T10:17] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-17T10:20] lint | Quality gate passed
+
+## [2026-11-17T14:15] lint | Quality gate failed
+
+## [2026-11-17T15:06] lint | Quality gate passed
+
+## [2026-11-17T15:07] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-17T15:12] lint | Quality gate passed
+
+## [2026-11-17T16:08] lint | Quality gate passed
+
+## [2026-11-17T16:09] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-17T16:14] lint | Quality gate passed
+
+## [2026-11-17T18:00] lint | Quality gate passed
+
+## [2026-11-17T18:01] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-17T18:05] lint | Quality gate passed
+
+## [2026-11-18T16:55] lint | Quality gate failed
+
+## [2026-11-18T16:58] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-18T16:59] lint | Quality gate failed
+
+## [2026-11-18T17:04] lint | Quality gate failed
+
+## [2026-11-18T17:06] lint | Quality gate failed
+
+## [2026-11-18T17:08] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-18T17:08] lint | Quality gate passed
+
+## [2026-11-18T17:21] lint | Quality gate passed
+
+## [2026-11-18T17:25] lint | Quality gate passed
+
+## [2026-11-18T17:26] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-18T17:31] lint | Quality gate passed
+
+## [2026-11-18T18:07] lint | Quality gate failed
+
+## [2026-11-18T18:08] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-18T18:09] lint | Quality gate passed
+
+## [2026-11-18T19:28] lint | Quality gate passed
+
+## [2026-11-18T21:05] lint | Quality gate passed
+
+## [2026-11-18T21:05] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-18T21:10] lint | Quality gate passed
+
+## [2026-11-18T21:11] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-18T21:15] lint | Quality gate passed
+
+## [2026-11-19T09:45] plan | Created plan: Report timings from quality logs
+
+## [2026-11-19T10:19] plan | Created plan: Recover completed quality receipts after MCP reconnect
+
+## [2026-11-19T18:49] plan | Created plan: Run commit SwiftPM tests once on the final staged tree
+
+## [2026-11-19T19:11] lint | Quality gate failed
+
+## [2026-11-19T19:12] lint | Quality gate failed
+
+## [2026-11-19T19:13] lint | Quality gate failed
+
+## [2026-11-19T19:14] lint | Quality gate failed
+
+## [2026-11-19T19:15] lint | Quality gate failed
+
+## [2026-11-19T19:16] lint | Quality gate failed
+
+## [2026-11-19T19:41] lint | Quality gate passed
+
+## [2026-11-19T19:49] lint | Quality gate failed
+
+## [2026-11-19T19:52] lint | Quality gate failed
+
+## [2026-11-19T19:53] lint | Quality gate passed
+
+## [2026-11-19T21:54] lint | Quality gate failed
+
+## [2026-11-20T18:14] lint | Quality gate failed
+
+## [2026-11-20T18:16] lint | Quality gate passed
+
+## [2026-11-20T19:07] plan | Created plan: Aggregate Swift runner summaries and reject incomplete test runs
+
+## [2026-11-20T19:12] lint | Quality gate failed
+
+## [2026-11-20T19:16] lint | Quality gate failed
+
+## [2026-11-20T19:19] lint | Quality gate passed
+
+## [2026-11-20T19:19] plan | Completed plan: Aggregate Swift runner summaries and reject incomplete test runs
+
+Aggregated independent Swift Testing and XCTest summaries; explicit failures and incomplete runners remain red. Kept only the documented SIGBUS teardown case and reported known issues separately. Cortex focused job 7bc0d0b00328 passed 96 tests; two existing logs replayed at 8 and 11,121 tests.
+
+## [2026-11-20T20:55] lint | Quality gate failed
+
+## [2026-11-20T21:01] lint | Quality gate passed
+
+## [2026-11-20T21:03] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-20T21:08] lint | Quality gate passed

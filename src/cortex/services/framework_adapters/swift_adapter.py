@@ -177,11 +177,9 @@ class SwiftAdapter(SwiftXcodebuildMixin, FrameworkAdapter):
     ) -> TestResult:
         """Run test suite via swift test (SPM) or xcodebuild test (Xcode).
 
-        Uses :func:`interpret_swift_test_output` as the authoritative
-        pass/fail classifier — the exit code is NOT trusted because
-        SwiftPM exits non-zero on post-run harness signals (e.g. SIGBUS
-        from XCTest teardown on Apple Silicon when stdio is piped), even
-        when every test passed. A full :file:`.cortex/.session/logs/swift-test-<ts>.log`
+        Uses :func:`interpret_swift_test_output` to reconcile the process
+        exit with each runner's terminal evidence and the narrow SwiftPM
+        SIGBUS teardown exception. A full :file:`.cortex/.session/logs/swift-test-<ts>.log`
         transcript is written for every invocation so users can share the
         exact failure shape with the maintainers.
         """

@@ -14,11 +14,9 @@ This module is the single authoritative interpreter of ``swift test`` output:
 2. :func:`build_swift_test_harness_errors` — decorates the gate-level error
    list when the harness crashed but tests themselves all passed.
 
-The rationale for output-based classification: when XCTest emits
-``Test Suite 'All tests' passed`` (legacy XCTest) or Swift Testing emits
-``Test run with N tests ... passed`` (Swift Testing 6.0+), **the tests ran
-to completion successfully**. Any non-zero exit afterwards is a harness /
-teardown issue, not a test failure, and must not block the gate.
+SwiftPM may emit multiple independent grand totals. A completed runner's
+output does not prove that later runners passed. The sole nonzero-exit
+exception is the known SwiftPM SIGBUS teardown signature on complete output.
 """
 
 from __future__ import annotations
@@ -39,7 +37,7 @@ _SWIFT_TESTING_RUN_PREFIX = (
     r"(?:[ \t]+in[ \t]+\d+[ \t]+suites?)?[ \t]+"
 )
 _SWIFT_TESTING_PASSED_RE = re.compile(
-    _SWIFT_TESTING_RUN_PREFIX + r"passed\b",
+    _SWIFT_TESTING_RUN_PREFIX + r"passed\b[^\r\n]*",
     re.IGNORECASE | re.MULTILINE,
 )
 _SWIFT_TESTING_FAILED_RE = re.compile(
@@ -47,75 +45,51 @@ _SWIFT_TESTING_FAILED_RE = re.compile(
     re.IGNORECASE | re.MULTILINE,
 )
 
-# XCTest legacy grand-total line: ``Test Suite 'All tests' passed at ...``.
-# This is the ONLY authoritative XCTest "every test in every target passed"
-# marker. Per-target suite summaries (e.g. ``Test Suite 'TargetATests' passed``)
-# are deliberately NOT trusted — a later target may crash mid-run before
-# emitting its own summary, leaving the earlier success line stale.
-_XCTEST_ALL_TESTS_PASSED_RE = re.compile(
-    r"Test Suite '(?:All tests|Selected tests)' passed",
-    re.IGNORECASE,
-)
-
 # SwiftPM's post-run error line when the test bundle crashes after reporting
-# success. This is the only stderr marker that SwiftPM emits for teardown
-# signals — the numeric code varies (10 = SIGBUS on Darwin, 11 = SIGSEGV).
+# success. Only the documented SwiftPM/Darwin SIGBUS case is accepted.
 _SPM_UNEXPECTED_SIGNAL_RE = re.compile(
     r"error:\s+Exited with unexpected signal code\s+(?P<sig>\d+)",
     re.IGNORECASE,
 )
 
 
-# XCTest summary line: ``Executed N tests, with M failures``.
-_XCTEST_SUMMARY_RE = re.compile(
-    r"Executed\s+(?P<total>\d+)\s+tests?,\s+with\s+(?P<failed>\d+)\s+failures?",
-    re.IGNORECASE,
+_XCTEST_COUNT = (
+    r"^[ \t]*Executed[ \t]+(?P<total>\d+)[ \t]+tests?,[ \t]+"
+    r"with[ \t]+(?P<failed>\d+)[ \t]+failures?\b"
 )
+_FLAGS = re.IGNORECASE | re.MULTILINE
+_XCTEST_SUMMARY_RE = re.compile(_XCTEST_COUNT, _FLAGS)
+_XCTEST_ROOT = r"^[ \t]*Test Suite '(?:All tests|Selected tests)' "
+_XCTEST_GRAND_TOTAL_RE = re.compile(
+    _XCTEST_ROOT + r"(?:passed|failed)\b[^\r\n]*\r?\n" + _XCTEST_COUNT, _FLAGS
+)
+_XCTEST_STARTED_RE = re.compile(_XCTEST_ROOT + r"started\b", _FLAGS)
+_XCTEST_FAILED_RE = re.compile(r"^[ \t]*Test Suite '[^\r\n]+' failed\b", _FLAGS)
+_SWIFT_STARTED_RE = re.compile(r"^[ \t]*(?:[^\w\s][ \t]+)?Test run started\.", _FLAGS)
+_KNOWN_ISSUE_COUNT_RE = re.compile(r"[ \t]with[ \t]+(\d+)[ \t]+known issues?\b")
 
 
 def extract_swift_test_counts(output: str) -> tuple[int, int]:
-    """Extract passed/failed counts from swift test output.
-
-    For mixed XCTest + Swift Testing suites, Swift Testing emits the
-    authoritative grand total: ``Test run with N tests ... passed``.
-    When that line is present it is used directly and XCTest per-suite
-    failure counts are summed separately (they are not included in the
-    Swift Testing summary line).
-
-    For XCTest-only suites the last ``Executed N tests, with M failures``
-    line is the grand-total aggregate.  When the run crashes before the
-    aggregate line is written we fall back to the last seen per-bundle
-    total, which is the best available partial count.
-
-    When no summary line was parsed the counts are honestly zero — no
-    rollup proves any test executed (REV-2026-10-02-33 removed the
-    keyword heuristic that fabricated a one-run pseudo-test).
-    """
-    # Prefer Swift Testing grand total when present (mixed suites).
-    swift_testing_match = _SWIFT_TESTING_PASSED_RE.search(output)
-    if swift_testing_match:
-        total = int(swift_testing_match.group("total"))
-        # XCTest failure lines still report individual bundle failures;
-        # sum them to get the overall failed count.
-        failed = sum(
-            int(m.group("failed")) for m in _XCTEST_SUMMARY_RE.finditer(output)
+    """Aggregate independent Swift Testing and XCTest grand totals."""
+    swift_passed = sum(
+        int(m.group("total")) for m in _SWIFT_TESTING_PASSED_RE.finditer(output)
+    )
+    xctest_runs = list(_XCTEST_GRAND_TOTAL_RE.finditer(output))
+    if xctest_runs:
+        passed = sum(
+            max(int(m.group("total")) - int(m.group("failed")), 0) for m in xctest_runs
         )
-        return max(total - failed, 0), failed
-
-    # XCTest-only: use the last summary line (grand-total aggregate).
-    last_total: int = 0
-    last_failed: int = 0
-    found_summary = False
-    for m in _XCTEST_SUMMARY_RE.finditer(output):
-        last_total, last_failed = int(m.group("total")), int(m.group("failed"))
-        found_summary = True
-
-    if found_summary:
-        passed = last_total - last_failed
-        return max(passed, 0), last_failed
-
-    # Fallback: no rollup was parsed — zero tests provably ran.
-    return 0, 0
+        return swift_passed + passed, sum(int(m.group("failed")) for m in xctest_runs)
+    # AI: Unframed XCTest rows can overlap, so only use a single partial count
+    # when no authoritative run totals are available.
+    partial = list(_XCTEST_SUMMARY_RE.finditer(output))
+    if not partial:
+        return swift_passed, 0
+    if swift_passed:
+        return swift_passed, max(int(m.group("failed")) for m in partial)
+    last = partial[-1]
+    failed = int(last.group("failed"))
+    return max(int(last.group("total")) - failed, 0), failed
 
 
 class SwiftTestStatus(StrEnum):
@@ -143,6 +117,7 @@ class SwiftTestOutcome:
         compiler_errors: Distinct ``error:`` diagnostic lines captured from the
             output when the run died on build/compile errors before any test
             executed. Empty for every other classification.
+        known_issues: Non-failing issues explicitly declared by Swift Testing.
     """
 
     status: SwiftTestStatus
@@ -150,6 +125,7 @@ class SwiftTestOutcome:
     teardown_signal: int | None = None
     tests_reported: int | None = None
     compiler_errors: tuple[str, ...] = ()
+    known_issues: int = 0
 
 
 def interpret_swift_test_output(
@@ -157,31 +133,24 @@ def interpret_swift_test_output(
     stderr: str,
     returncode: int,
 ) -> SwiftTestOutcome:
-    """Return an authoritative outcome from ``swift test`` output.
-
-    The output trumps the exit code: if the test summary line shows all tests
-    passed but the process exited non-zero, this is a post-success harness
-    crash (common on Apple Silicon when stdio is piped), and the outcome is
-    ``PASSED`` + a ``HARNESS_FAILURE``-flavoured diagnostic attached.
-
-    Priority order:
-    1. Explicit ``Test run ... failed`` / XCTest failure marker → ``FAILED``.
-    2. Explicit ``Test run ... passed`` / XCTest all-tests-passed → ``PASSED``
-       (regardless of returncode; teardown signal noted in ``diagnostic``).
-    3. Non-zero returncode with no success marker and ``error:`` diagnostic
-       lines in the output → ``COMPILE_FAILURE`` (zero tests ran).
-    4. Non-zero returncode with no success marker → ``HARNESS_FAILURE``.
-    5. Zero returncode with no markers → ``PASSED`` (short/filtered runs,
-       e.g. ``swift test --list-tests`` or empty ``--filter`` matches, emit
-       no summary line but the zero exit is trustworthy).
-    """
+    """Classify explicit failures, complete runner output, and the process exit."""
     combined = f"{stdout}\n{stderr}"
     failed = _failed_outcome_if_any(combined)
     if failed is not None:
         return failed
+    if _has_unclosed_runner(stdout) or _has_unclosed_runner(stderr):
+        return SwiftTestOutcome(
+            SwiftTestStatus.HARNESS_FAILURE,
+            f"swift test exited {returncode} with an incomplete test run",
+        )
     passed = _passed_outcome_if_any(combined, stderr, returncode)
     if passed is not None:
         return passed
+    if returncode == 0 and _SPM_UNEXPECTED_SIGNAL_RE.search(stderr):
+        return SwiftTestOutcome(
+            SwiftTestStatus.HARNESS_FAILURE,
+            "swift test reported an unexpected signal despite exiting 0",
+        )
     return _no_marker_outcome(returncode, combined)
 
 
@@ -212,16 +181,35 @@ def _no_marker_outcome(returncode: int, combined: str) -> SwiftTestOutcome:
 
 
 def _failed_outcome_if_any(combined: str) -> SwiftTestOutcome | None:
-    """Return a FAILED outcome when Swift Testing reports a failed run."""
+    """Any explicit test failure wins over another runner's passing summary."""
     fail_m = _SWIFT_TESTING_FAILED_RE.search(combined)
-    if fail_m is None:
-        return None
-    total = int(fail_m.group("total"))
-    return SwiftTestOutcome(
-        status=SwiftTestStatus.FAILED,
-        diagnostic=f"Swift Testing reported {total} tests with failures",
-        tests_reported=total,
-    )
+    if fail_m is not None:
+        total = int(fail_m.group("total"))
+        return SwiftTestOutcome(
+            SwiftTestStatus.FAILED,
+            f"Swift Testing reported {total} tests with failures",
+            tests_reported=total,
+        )
+    if _XCTEST_FAILED_RE.search(combined) or any(
+        int(m.group("failed")) > 0 for m in _XCTEST_SUMMARY_RE.finditer(combined)
+    ):
+        return SwiftTestOutcome(SwiftTestStatus.FAILED, "XCTest reported test failures")
+    return None
+
+
+def _has_unclosed_runner(output: str) -> bool:
+    """Do not treat a final start marker as covered by a preceding summary."""
+    for started, completed in (
+        (_SWIFT_STARTED_RE, _SWIFT_TESTING_PASSED_RE),
+        (_XCTEST_STARTED_RE, _XCTEST_GRAND_TOTAL_RE),
+    ):
+        starts = list(started.finditer(output))
+        ends = list(completed.finditer(output))
+        if starts and (
+            len(starts) > len(ends) or starts[-1].start() > ends[-1].start()
+        ):
+            return True
+    return False
 
 
 def _passed_outcome_if_any(
@@ -230,25 +218,52 @@ def _passed_outcome_if_any(
     returncode: int,
 ) -> SwiftTestOutcome | None:
     """Return a PASSED outcome when an authoritative success marker is present."""
-    passed_swift_testing = _SWIFT_TESTING_PASSED_RE.search(combined)
-    passed_xctest = _XCTEST_ALL_TESTS_PASSED_RE.search(combined)
-    if not (passed_swift_testing or passed_xctest):
+    swift_runs = list(_SWIFT_TESTING_PASSED_RE.finditer(combined))
+    xctest_runs = list(_XCTEST_GRAND_TOTAL_RE.finditer(combined))
+    if not (swift_runs or xctest_runs):
         return None
     signal_m = _SPM_UNEXPECTED_SIGNAL_RE.search(stderr)
     signal_n = int(signal_m.group("sig")) if signal_m else None
-    total = int(passed_swift_testing.group("total")) if passed_swift_testing else None
-    diag = "all tests passed"
+    passed, _ = extract_swift_test_counts(combined)
     if returncode != 0 or signal_n is not None:
-        signal_suffix = f" (post-run signal {signal_n})" if signal_n else ""
-        diag = (
-            f"all tests passed but test harness exited {returncode}"
-            f"{signal_suffix} — treating as success"
-        )
+        if not _is_proven_teardown(returncode, signal_n, swift_runs + xctest_runs):
+            return None
+        if extract_compiler_error_lines(combined):
+            return None
+    known_issues = sum(
+        int(n) for m in swift_runs for n in _KNOWN_ISSUE_COUNT_RE.findall(m.group(0))
+    )
     return SwiftTestOutcome(
         status=SwiftTestStatus.PASSED,
-        diagnostic=diag,
+        diagnostic=_success_diagnostic(returncode, signal_n, known_issues),
         teardown_signal=signal_n,
-        tests_reported=total,
+        tests_reported=passed,
+        known_issues=known_issues,
+    )
+
+
+def _success_diagnostic(returncode: int, signal: int | None, known_issues: int) -> str:
+    diagnostic = "all tests passed"
+    if signal is not None:
+        diagnostic += (
+            f" but test harness exited {returncode}"
+            f" (post-run signal {signal}) — treating as success"
+        )
+    if known_issues:
+        noun = "issue" if known_issues == 1 else "issues"
+        diagnostic += f" ({known_issues} known {noun})"
+    return diagnostic
+
+
+def _is_proven_teardown(
+    returncode: int, signal: int | None, completed: list[re.Match[str]]
+) -> bool:
+    # AI: In a multi-run transcript, a signal cannot be attributed to a
+    # previously completed nonempty run just because its summary is present.
+    return (
+        returncode == 1
+        and signal == 10
+        and sum(int(m.group("total")) > 0 for m in completed) == 1
     )
 
 

@@ -3,6 +3,7 @@
 import json
 import sys
 from contextlib import nullcontext
+from itertools import count
 from pathlib import Path
 from unittest.mock import patch
 
@@ -110,20 +111,23 @@ def _set_worker_argv(monkeypatch: pytest.MonkeyPatch, result_path: Path) -> None
 
 
 @pytest.mark.parametrize("outcome", ["success", "ignored", "blocked", "error"])
-def test_quality_gate_marker_survives_terminal_worker_writes(
+def test_quality_gate_identity_survives_terminal_worker_writes(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, outcome: str
 ) -> None:
     # Arrange
     result_path = tmp_path / "result.json"
     _set_worker_argv(monkeypatch, result_path)
+    running: dict[str, object] = {}
 
     def check_staging(_root: Path) -> list[str]:
-        assert json.loads(result_path.read_text())["quality_gate_pending"] is True
+        running.update(json.loads(result_path.read_text()))
         monkeypatch.setattr(sys, "argv", ["worker"])
         return ["ignored.py"] if outcome == "ignored" else []
 
     with (
         patch.object(worker, "worker_lease", return_value=nullcontext()),
+        patch.object(worker, "worker_owner", return_value="worker-owner"),
+        patch.object(worker, "time") as clock,
         patch.object(worker, "check_staged_gitignored", side_effect=check_staging),
         patch.object(
             worker,
@@ -138,12 +142,22 @@ def test_quality_gate_marker_survives_terminal_worker_writes(
         ),
     ):
         # Act
+        clock.time.side_effect = count(100.0)
         _invoke_worker(outcome)
 
-    # Assert
     envelope = json.loads(result_path.read_text())
-    assert envelope["quality_gate_pending"] is True
+    _assert_worker_identity(running, envelope, outcome)
+
+
+def _assert_worker_identity(
+    running: dict[str, object], envelope: dict[str, object], outcome: str
+) -> None:
+    assert running["status"] == "running"
     assert envelope["status"] == ("error" if outcome == "error" else "completed")
+    assert running["pid"] == envelope["pid"]
+    assert running["owner"] == envelope["owner"] == "worker-owner"
+    assert running["started_at"] == envelope["started_at"] == 100.0
+    assert running["quality_gate_pending"] is envelope["quality_gate_pending"] is True
 
 
 def _invoke_worker(outcome: str) -> None:

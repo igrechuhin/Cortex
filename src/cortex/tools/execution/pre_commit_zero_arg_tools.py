@@ -280,6 +280,7 @@ async def _spawn_and_poll_phase_a(
 _QUALITY_GATE_DEFAULTS: dict[str, object] = {
     "test_filter": None,
     "gate_intent": None,
+    "commit_message": None,
     "coverage_threshold": 0.90,
     "test_timeout": DEFAULT_TEST_TIMEOUT,
     "force_fresh": True,
@@ -345,6 +346,56 @@ async def run_quality_gate_inner(
         test_filter = validate_test_filter(cfg.get("test_filter"))
     except ValueError as exc:
         return {"status": "error", "error": str(exc), "preflight_passed": False}
+    intent = cfg.get("gate_intent")
+    if intent in ("staged-final", "verify-staged-final", "commit-staged-final"):
+        return await _run_staged_gate(
+            root, str(intent), timeout, coverage_threshold, test_filter, ctx, env, cfg
+        )
+    return await _run_regular_gate(
+        root, timeout, coverage_threshold, force_fresh, cfg, test_filter, ctx, env
+    )
+
+
+async def _run_staged_gate(
+    root: Path,
+    intent: str,
+    timeout: int,
+    coverage_threshold: float,
+    test_filter: str | None,
+    ctx: MCPContext | None,
+    env: ExecutionEnvironment,
+    cfg: Mapping[str, object],
+) -> ModelDict:
+    from cortex.tools.execution.pre_commit_final_adapter import staged_swift_gate
+
+    async def invoke_final() -> ModelDict:
+        return await _spawn_and_poll_phase_a(
+            root, timeout, coverage_threshold, True, ctx, env
+        )
+
+    message = cfg.get("commit_message")
+    return await staged_swift_gate(
+        root,
+        intent=intent,
+        ctx=ctx,
+        timeout=timeout,
+        threshold=coverage_threshold,
+        test_filter=test_filter,
+        invoke=invoke_final,
+        commit_message=message if isinstance(message, str) else None,
+    )
+
+
+async def _run_regular_gate(
+    root: Path,
+    timeout: int,
+    coverage_threshold: float,
+    force_fresh: bool,
+    cfg: dict[str, object],
+    test_filter: str | None,
+    ctx: MCPContext | None,
+    env: ExecutionEnvironment,
+) -> ModelDict:
     scope = str(root.resolve())
     _log_quality_gate_start(scope, timeout, coverage_threshold, force_fresh)
     with _gate_scope(root, cfg, force_fresh, test_filter):

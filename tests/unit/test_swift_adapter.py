@@ -669,7 +669,7 @@ class TestExtractTestCounts:
         assert failed == 0
 
     def test_swift_testing_grand_total_with_xctest_failures(self) -> None:
-        """XCTest failure count is summed when Swift Testing grand total present."""
+        """Unframed XCTest failures never subtract from passed Swift cases."""
         output = (
             "Executed 17 tests, with 2 failures\n"
             "Test run with 534 tests passed after 12.345 seconds\n"
@@ -677,7 +677,7 @@ class TestExtractTestCounts:
         adapter = self._adapter()
         passed, failed = adapter.extract_test_counts(output)
         assert failed == 2
-        assert passed == 532
+        assert passed == 534
 
     def test_xctest_only_uses_last_summary_line(self) -> None:
         """XCTest-only run uses last 'Executed N tests' line as grand total."""

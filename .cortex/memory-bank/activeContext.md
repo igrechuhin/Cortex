@@ -3,6 +3,13 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-11-20)
+
+- ✅ **Aggregate Swift runner summaries and reject incomplete test runs** - COMPLETE (2026-11-20) - Aggregated independent Swift Testing and XCTest summaries; explicit failures and incomplete runners remain red. Kept only the documented SIGBUS teardown case and reported known issues separately. Cortex focused job 7bc0d0b00328 passed 96 tests; two existing logs replayed at 8 and 11,121 tests.
+
+- ✅ **Verify local Cortex staged-final Swift and runner diagnostics** - COMPLETE (2026-11-20) - <!-- memory_type: status -->
+The opt-in staged-final adapter, worker identity and Swift summary fixes are validated locally. Default behavior remains off. A full local TradeWing pilot passed Swift and parity but did not complete its second same-owner check before the timestamp correction; the corrected real-project acceptance remains open.
+
 ## Completed Work (2026-11-18)
 
 - ✅ **SwiftPM final-gate test evidence** - COMPLETE (2026-11-18) - <!-- memory_type: status -->

@@ -71,13 +71,18 @@ logger = logging.getLogger(__name__)
 
 
 def write_status(
-    result_path: Path, status: str, pid: int, quality_gate: bool = False
+    result_path: Path,
+    status: str,
+    pid: int,
+    quality_gate: bool = False,
+    *,
+    started_at: float | None = None,
 ) -> None:
     """Write a running/error status marker atomically."""
     data: dict[str, object] = {
         "version": 1,
         "status": status,
-        "started_at": time.time(),
+        "started_at": time.time() if started_at is None else started_at,
         "pid": pid,
     }
     if quality_gate:
@@ -87,9 +92,12 @@ def write_status(
 
 def atomic_write(result_path: Path, data: dict[str, object]) -> None:
     """Write JSON atomically via tmp file + rename."""
+    from cortex.tools.execution.pre_commit_final_worker_proof import attach_worker_proof
+
     owner = worker_owner()
     if owner:
         data = {**data, "owner": owner}
+    attach_worker_proof(result_path, data)
     result_path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(
         dir=str(result_path.parent), suffix=".tmp", prefix=".worker_"
@@ -250,9 +258,10 @@ def _checks_to_run(
     project_root: str, checks: list[str], test_filter: str | None
 ) -> tuple[list[str], dict[str, str]]:
     """Skip fingerprint-unchanged checks; a selection never reuses fingerprints."""
+    from cortex.tools.execution.pre_commit_final_worker_proof import challenge_id
     from cortex.tools.execution.pre_commit_test_reuse import test_lane_active
 
-    if test_filter is not None or test_lane_active():
+    if test_filter is not None or test_lane_active() or challenge_id() is not None:
         return checks, {}
     from cortex.tools.execution.pre_commit_dirty_state import (
         partition_skippable_checks,
@@ -583,8 +592,16 @@ def _swift_inputs_drift_error() -> dict[str, object]:
 
 def main() -> None:
     """Entry point for detached worker."""
+    from cortex.tools.execution.pre_commit_final_worker_proof import (
+        final_worker_challenge,
+        receive_worker_challenge,
+    )
+
     args = _parse_worker_args()
-    with worker_lease(Path(args.project_root)):
+    with (
+        final_worker_challenge(receive_worker_challenge(), worker=True),
+        worker_lease(Path(args.project_root)),
+    ):
         if _execute_worker(args):
             sys.exit(1)
 
@@ -594,8 +611,9 @@ def _execute_worker(args: argparse.Namespace) -> bool:
     result_path = Path(args.result_file)
     pid = os.getpid()
     quality_gate = args.quality_gate
-    write_status(result_path, "running", pid, quality_gate)
+    # AI: Polling clients match the exact start time across atomic envelopes.
     started = time.time()
+    write_status(result_path, "running", pid, quality_gate, started_at=started)
     try:
         _run_worker_once(args, result_path, started, pid, quality_gate)
     except Exception as e:

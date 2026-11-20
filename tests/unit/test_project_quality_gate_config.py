@@ -37,6 +37,22 @@ def test_read_only_configuration_does_not_create_files(tmp_path: Path) -> None:
     assert not (tmp_path / ".cortex").exists()
 
 
+def test_staged_swift_command_opt_in_is_exact_and_read_only(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    root, other = tmp_path / "trade-wing", tmp_path / "other"
+    _ = configure_quality_gate(root, '{"test_timeout":5400}')
+    path = quality_gate_config_path(root)
+    before = path.read_bytes()
+    monkeypatch.setenv("CORTEX_STAGED_FINAL_SWIFTPM_PROJECT", str(root.resolve()))
+    config = json.loads(configure_quality_gate(root, None))["config"]
+    assert config == {"test_timeout": 5400, "staged_final_swiftpm_commit": True}
+    assert json.loads(configure_quality_gate(other, None))["config"] == {
+        "test_timeout": None
+    }
+    assert path.read_bytes() == before
+
+
 def test_project_timeout_survives_fresh_session_and_reload(tmp_path: Path) -> None:
     result = json.loads(configure_quality_gate(tmp_path, '{"test_timeout":10800}'))
     assert result["status"] == "ok"

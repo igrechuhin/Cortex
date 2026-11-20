@@ -19,6 +19,7 @@
 
 - **Report timings from quality logs** - PENDING - Read-only report from Cortex event logs and Swift test output. Plan: .cortex/plans/report-timings-from-quality-logs.md
 - **Recover completed quality receipts after MCP reconnect** - PENDING - Recover a verified full quality result for the same adopted commit pipeline after MCP reconnect. Plan: .cortex/plans/recover-completed-quality-receipts-after-mcp-reconnect.md
+- **Run commit SwiftPM tests once on the final staged tree** - PENDING - Opt-in fast guards before one mandatory full staged SwiftPM gate. Plan: .cortex/plans/run-commit-swiftpm-tests-once-on-the-final-staged-tree.md
 
 ### Pipeline Infrastructure
 

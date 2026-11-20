@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 
 DEFAULT_TEST_TIMEOUT = 900
+_STAGED_FINAL_PROJECT_ENV = "CORTEX_STAGED_FINAL_SWIFTPM_PROJECT"
 
 
 class SwiftTestOutput(StrEnum):
@@ -36,6 +37,7 @@ class ProjectQualityGateConfig(BaseModel):
 
     test_timeout: int | None = Field(gt=0)
     reuse_swiftpm_final_tests: bool = False
+    staged_final_swiftpm_commit: bool = False
     swiftpm_final_test_outputs: tuple[SwiftTestOutput, ...] = ()
 
 
@@ -56,6 +58,14 @@ def load_quality_gate_config(root: Path) -> ProjectQualityGateConfig:
         return ProjectQualityGateConfig(test_timeout=None)
     return ProjectQualityGateConfig.model_validate_json(
         path.read_text(encoding="utf-8")
+    )
+
+
+def staged_final_enabled(root: Path, config: ProjectQualityGateConfig) -> bool:
+    """Allow a native command to opt in only its exact, canonical project root."""
+    # AI: Do not change tracked policy or opt in a different checkout.
+    return config.staged_final_swiftpm_commit or (
+        os.environ.get(_STAGED_FINAL_PROJECT_ENV) == str(root.resolve())
     )
 
 
@@ -96,12 +106,15 @@ def configure_quality_gate(root: Path, data: str | None) -> str:
         )
     except (OSError, ValueError) as exc:
         return json.dumps({"status": "error", "error": str(exc)})
+    effective = config.model_dump(exclude_defaults=True)
+    if staged_final_enabled(root, config):
+        effective["staged_final_swiftpm_commit"] = True
     return json.dumps(
         {
             "status": "ok",
             "scope": "project",
             "config_file": str(path),
-            "config": config.model_dump(exclude_defaults=True),
+            "config": effective,
             "effective_default_test_timeout": config.test_timeout
             or DEFAULT_TEST_TIMEOUT,
             "timeout_semantics": "session override > project setting > global default",

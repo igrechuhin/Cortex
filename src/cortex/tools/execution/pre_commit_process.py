@@ -162,6 +162,10 @@ def spawn_detached_process(
     env: ExecutionEnvironment,
 ) -> int:
     """Start detached subprocess writing stdout/stderr and return its pid."""
+    from cortex.tools.execution.pre_commit_final_worker_proof import (
+        worker_challenge_env,
+    )
+
     _ = env  # Reserved for non-local dispatch adapters.
     reap_detached_workers()
     request_id = log_file.stem.rsplit("_", 1)[-1]
@@ -172,6 +176,7 @@ def spawn_detached_process(
         process_env = _build_worker_env(project_root)
         descriptors, lease_env = inherited_lease(project_root)
         process_env.update(lease_env)
+        process_env.update(worker_challenge_env())
         process = subprocess.Popen(
             cmd,
             stdin=subprocess.DEVNULL,

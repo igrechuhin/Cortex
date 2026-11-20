@@ -1,11 +1,8 @@
 """Tests for :mod:`cortex.services.framework_adapters.swift_test_diagnostics`.
 
-The diagnostics module is the single authoritative interpreter of
-``swift test`` output. The gate's pass/fail decision must NOT follow the
-exit code — SwiftPM exits non-zero on post-run harness signals (SIGBUS from
-XCTest teardown on Apple Silicon under piped stdio) even when every test
-passed. These tests lock in the output-based classification so a regression
-would re-break TradeWing's coverage gate.
+The gate combines the runner summaries and the process exit. Preserve the
+specific historical SwiftPM SIGBUS teardown exception without treating every
+earlier passing summary as proof that a later run completed.
 """
 
 from __future__ import annotations
@@ -38,13 +35,13 @@ class TestInterpretSwiftTestOutputPassed:
         assert "all tests passed" in outcome.diagnostic
         assert "treating as success" in outcome.diagnostic
 
-    def test_xctest_all_tests_passed_overrides_nonzero_returncode(self) -> None:
+    def test_xctest_all_tests_passed_does_not_override_unknown_exit(self) -> None:
         stdout = (
             "Test Suite 'All tests' passed at 2026-04-23 21:12:30.080\n"
             "Executed 300 tests, with 0 failures (0 unexpected) in 0.4 seconds\n"
         )
         outcome = interpret_swift_test_output(stdout, "", returncode=1)
-        assert outcome.status is SwiftTestStatus.PASSED
+        assert outcome.status is SwiftTestStatus.HARNESS_FAILURE
 
     def test_per_target_suite_passed_is_NOT_treated_as_grand_total(self) -> None:
         """Individual target summaries must NOT mark a non-zero run as passed.
@@ -80,8 +77,24 @@ class TestInterpretSwiftTestOutputPassed:
         outcome = interpret_swift_test_output(stdout, "", returncode=0)
 
         assert outcome.status is SwiftTestStatus.PASSED
-        assert outcome.tests_reported == 95
-        assert extract_swift_test_counts(stdout) == (95, 0)
+        assert outcome.tests_reported == 96
+        assert outcome.known_issues == 1
+        assert extract_swift_test_counts(stdout) == (96, 0)
+
+    def test_swift_and_xctest_count_only_independent_grand_totals(self) -> None:
+        stdout = (
+            "Test Suite 'All tests' started at 2026-11-20.\n"
+            "Test Suite 'TinyTests' passed at 2026-11-20.\n"
+            "Executed 5 tests, with 0 failures\n"
+            "Test Suite 'All tests' passed at 2026-11-20.\n"
+            "Executed 5 tests, with 0 failures\n"
+            "◇ Test run started.\n✔ Test run with 98 tests passed after 0.5 seconds.\n"
+            "◇ Test run started.\n✔ Test run with 4 tests passed after 0.5 seconds.\n"
+        )
+        outcome = interpret_swift_test_output(stdout, "", returncode=0)
+        assert outcome.status is SwiftTestStatus.PASSED
+        assert outcome.tests_reported == 107
+        assert extract_swift_test_counts(stdout) == (107, 0)
 
 
 class TestInterpretSwiftTestOutputFailed:
@@ -110,8 +123,46 @@ class TestInterpretSwiftTestOutputFailed:
         assert outcome.status is SwiftTestStatus.FAILED
         assert outcome.tests_reported == 534
 
+    def test_xctest_failure_wins_over_later_swift_and_xctest_success(self) -> None:
+        stdout = (
+            "Test Suite 'All tests' failed at 2026-11-20.\n"
+            "Executed 4 tests, with 1 failure (1 unexpected).\n"
+            "Test Suite 'All tests' passed at 2026-11-20.\n"
+            "Executed 4 tests, with 0 failures.\n"
+            "✔ Test run with 8 tests passed after 0.1 seconds.\n"
+        )
+        outcome = interpret_swift_test_output(stdout, "", returncode=0)
+        assert outcome.status is SwiftTestStatus.FAILED
+        assert extract_swift_test_counts(stdout) == (15, 1)
+
 
 class TestInterpretSwiftTestOutputHarnessFailure:
+    def test_truncated_later_runner_cannot_borrow_earlier_success(self) -> None:
+        stdout = (
+            "◇ Test run started.\n✔ Test run with 4 tests passed after 0.1 seconds.\n"
+            "◇ Test run started.\n◇ Suite LaterTests started.\n"
+        )
+        stderr = "error: Exited with unexpected signal code 10\n"
+        assert interpret_swift_test_output(stdout, stderr, 1).status is (
+            SwiftTestStatus.HARNESS_FAILURE
+        )
+
+    def test_multi_runner_signal_is_not_a_proven_teardown(self) -> None:
+        stdout = (
+            "✔ Test run with 4 tests passed after 0.1 seconds.\n"
+            "✔ Test run with 7 tests passed after 0.1 seconds.\n"
+        )
+        stderr = "error: Exited with unexpected signal code 10\n"
+        assert interpret_swift_test_output(stdout, stderr, 1).status is (
+            SwiftTestStatus.HARNESS_FAILURE
+        )
+
+    def test_passed_swift_summary_does_not_override_unrelated_nonzero(self) -> None:
+        stdout = "✔ Test run with 4 tests passed after 0.1 seconds.\n"
+        assert interpret_swift_test_output(stdout, "", 1).status is (
+            SwiftTestStatus.HARNESS_FAILURE
+        )
+
     def test_nonzero_with_no_success_marker_is_harness_failure(self) -> None:
         stderr = "ld: symbol(s) not found\nlinker command failed"
         outcome = interpret_swift_test_output("", stderr, returncode=1)
