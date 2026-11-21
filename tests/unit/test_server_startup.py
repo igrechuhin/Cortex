@@ -9,24 +9,6 @@ def test_import_cortex_server_does_not_raise() -> None:
     assert module is not None
 
 
-def test_roots_notification_handler_registered_at_startup() -> None:
-    """Startup wiring should install roots/list_changed invalidation handler."""
-    main_module = importlib.import_module("cortex.main")
-    server_module = importlib.import_module("cortex.server")
-    mcp = server_module.mcp
-    lowlevel = mcp._mcp_server  # type: ignore[attr-defined]
-    handlers = lowlevel.notification_handlers.copy()
-    try:
-        lowlevel.notification_handlers.clear()
-        main_module._register_roots_list_changed_notification_handler()
-        from mcp.types import RootsListChangedNotification
-
-        assert RootsListChangedNotification in lowlevel.notification_handlers
-    finally:
-        lowlevel.notification_handlers.clear()
-        lowlevel.notification_handlers.update(handlers)
-
-
 def test_server_registers_phase3_middlewares() -> None:
     """Server startup should include lazy, disconnect, and response-limit middleware."""
     server_module = importlib.import_module("cortex.server")
@@ -35,5 +17,6 @@ def test_server_registers_phase3_middlewares() -> None:
     ]
 
     assert "_LazyPromptsMiddleware" in middleware_names
+    assert "_RootsChangedMiddleware" in middleware_names
     assert "DisconnectMiddleware" in middleware_names
     assert "ResponseLimitingMiddleware" in middleware_names

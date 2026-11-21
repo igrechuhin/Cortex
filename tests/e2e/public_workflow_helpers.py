@@ -4,7 +4,7 @@ import importlib
 import json
 import shutil
 import textwrap
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import cast
@@ -34,11 +34,11 @@ def write_memory_bank(root: Path) -> Path:
 
 
 @asynccontextmanager
-async def public_tool_client() -> AsyncIterator[Client[FastMCPTransport]]:
+async def public_tool_client() -> AsyncGenerator[Client[FastMCPTransport]]:
     """Keep the negotiated MCP session alive across an owned job and its polls."""
     _ = importlib.import_module("cortex.tools")
     identity = Implementation(name="cortex-workflow-smoke", version="1")
-    async with Client(mcp, timeout=180, client_info=identity) as client:
+    async with Client(mcp, timeout=180, client_info=identity, mode="legacy") as client:
         yield client
 
 

@@ -3,10 +3,12 @@
 import hashlib
 import os
 import uuid
-from collections.abc import Iterator, Mapping
+from collections.abc import Generator, Mapping
 from contextlib import contextmanager
 from contextvars import ContextVar
 from functools import lru_cache
+
+from mcp.types.version import MODERN_PROTOCOL_VERSIONS
 
 from cortex.core.context_logging import MCPContext
 from cortex.core.session_logger import get_session_id
@@ -43,12 +45,20 @@ def envelope_owned(envelope: Mapping[str, object] | None) -> bool:
 
 
 @contextmanager
-def request_owner(ctx: MCPContext | None) -> Iterator[None]:
+def request_owner(ctx: MCPContext | None) -> Generator[None]:
     """Use the framework's session identity, never tool arguments or pipeline IDs."""
     if ctx is None:
         yield
         return
-    session = ctx.session_id
+    if ctx.session.protocol_version in MODERN_PROTOCOL_VERSIONS:
+        # AI: A stdio process has a single client, even without an MCP session.
+        if ctx.transport != "stdio":
+            raise ValueError(
+                "Quality jobs on shared transports require a legacy MCP session"
+            )
+        session = "stdio"
+    else:
+        session = ctx.session_id
     if not session:
         raise ValueError("Quality request requires an established MCP session")
     token = _REQUEST_SESSION.set(session)

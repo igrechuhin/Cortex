@@ -51,7 +51,7 @@ async def test_removed_project_access_keeps_file_contract(public_project: Path) 
     async with public_tool_client() as client:
         tools = await client.list_tools()
         manage = next(tool for tool in tools if tool.name == "manage_file")
-        assert "project_access" not in json.dumps(manage.inputSchema)
+        assert "project_access" not in json.dumps(manage.input_schema)
         with pytest.raises(ToolError, match="validation error for call"):
             _ = await call_public_tool(
                 "manage_file",

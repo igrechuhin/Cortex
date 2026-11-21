@@ -1,6 +1,11 @@
 <!-- memory_type: milestone -->
 # Progress Log
 
+## 2026-11-21
+
+- <!-- memory_type: status -->
+- **Migrate Cortex to FastMCP 4 and MCP SDK 2** - COMPLETE. Added regression coverage for both MCP protocol eras across stdio root discovery and the HTTP bridge. Synced the local environment from `uv.lock` and retained the approved rumdl version and compatible Black, Ruff, and Pyright pins. Phase A passed with 9,040 tests and 92.16% coverage.
+
 ## 2026-11-20
 
 - **Aggregate Swift runner summaries and reject incomplete test runs** - COMPLETE. Aggregated independent Swift Testing and XCTest summaries; explicit failures and incomplete runners remain red. Kept only the documented SIGBUS teardown case and reported known issues separately. Cortex focused job 7bc0d0b00328 passed 96 tests; two existing logs replayed at 8 and 11,121 tests.

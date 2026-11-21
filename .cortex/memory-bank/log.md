@@ -1,21 +1,5 @@
 # Cortex Operations Log
 
-## [2026-09-08T18:12] plan | Created plan: Mini
-
-## [2026-09-08T18:12] plan | Created plan: Mini ·2
-
-## [2026-09-08T18:12] plan | Created plan: Smoke Test Plan
-
-## [2026-09-08T18:12] plan | Created plan: Demo Plan ·3
-
-## [2026-09-08T18:12] plan | Created plan: Demo Plan ·4
-
-## [2026-09-08T18:12] plan | Created plan: Demo Plan ·5
-
-## [2026-09-08T18:12] plan | Created plan: Demo Plan ·6
-
-## [2026-09-08T18:12] plan | Created plan: Mini ·3
-
 ## [2026-09-08T18:12] plan | Created plan: Mini ·4
 
 ## [2026-09-08T18:12] plan | Created plan: Test Plan
@@ -2255,3 +2239,19 @@ status=success; changed_files=None
 ## [2026-11-20T21:08] lint | Quality gate passed
 
 ## [2026-11-21T12:08] lint | Quality gate failed
+
+## [2026-11-21T14:57] lint | Quality gate failed
+
+## [2026-11-21T15:14] lint | Quality gate failed
+
+## [2026-11-21T15:18] lint | Quality gate failed
+
+## [2026-11-21T16:34] lint | Quality gate failed
+
+## [2026-11-21T16:43] lint | Quality gate failed
+
+## [2026-11-21T16:49] lint | Quality gate passed
+
+## [2026-11-21T17:19] lint | Quality gate passed
+
+## [2026-11-21T17:30] lint | Quality gate passed

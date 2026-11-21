@@ -28,20 +28,20 @@ class TestReadOnlyAnnotations:
         """Default: readOnly True, idempotent True, openWorld False."""
         out = read_only_annotations("Get Stats")
         assert out.title == "Get Stats"
-        assert out.readOnlyHint is True
-        assert out.destructiveHint is False
-        assert out.idempotentHint is True
-        assert out.openWorldHint is False
+        assert out.read_only_hint is True
+        assert out.destructive_hint is False
+        assert out.idempotent_hint is True
+        assert out.open_world_hint is False
 
     def test_idempotent_false(self) -> None:
         """idempotent=False is reflected."""
         out = read_only_annotations("Check Health", idempotent=False)
-        assert out.idempotentHint is False
+        assert out.idempotent_hint is False
 
     def test_open_world_true(self) -> None:
-        """open_world=True sets openWorldHint True."""
+        """open_world=True sets open_world_hint True."""
         out = read_only_annotations("Get Rules", open_world=True)
-        assert out.openWorldHint is True
+        assert out.open_world_hint is True
 
 
 class TestSafeWriteAnnotations:
@@ -56,15 +56,15 @@ class TestSafeWriteAnnotations:
         """Safe write: readOnly False, destructive False, idempotent False."""
         out = safe_write_annotations("Manage File")
         assert out.title == "Manage File"
-        assert out.readOnlyHint is False
-        assert out.destructiveHint is False
-        assert out.idempotentHint is False
-        assert out.openWorldHint is False
+        assert out.read_only_hint is False
+        assert out.destructive_hint is False
+        assert out.idempotent_hint is False
+        assert out.open_world_hint is False
 
     def test_open_world_true(self) -> None:
-        """open_world=True sets openWorldHint True."""
+        """open_world=True sets open_world_hint True."""
         out = safe_write_annotations("Fix Quality", open_world=True)
-        assert out.openWorldHint is True
+        assert out.open_world_hint is True
 
 
 class TestDestructiveAnnotations:
@@ -79,10 +79,10 @@ class TestDestructiveAnnotations:
         """Destructive: readOnly False, destructive True, idempotent False."""
         out = destructive_annotations("Rollback Version")
         assert out.title == "Rollback Version"
-        assert out.readOnlyHint is False
-        assert out.destructiveHint is True
-        assert out.idempotentHint is False
-        assert out.openWorldHint is False
+        assert out.read_only_hint is False
+        assert out.destructive_hint is True
+        assert out.idempotent_hint is False
+        assert out.open_world_hint is False
 
 
 class TestExternalAnnotations:
@@ -94,13 +94,13 @@ class TestExternalAnnotations:
         assert isinstance(out, ToolAnnotations)
 
     def test_read_only_true(self) -> None:
-        """read_only=True sets readOnlyHint True, openWorldHint always True."""
+        """read_only=True sets read_only_hint True, open_world_hint always True."""
         out = external_annotations("Get Synapse Rules", read_only=True)
         assert out.title == "Get Synapse Rules"
-        assert out.readOnlyHint is True
-        assert out.openWorldHint is True
-        assert out.destructiveHint is False
-        assert out.idempotentHint is False
+        assert out.read_only_hint is True
+        assert out.open_world_hint is True
+        assert out.destructive_hint is False
+        assert out.idempotent_hint is False
 
     def test_read_only_false_destructive_false(self) -> None:
         """read_only=False, destructive=False for external write tools."""
@@ -110,7 +110,7 @@ class TestExternalAnnotations:
             destructive=False,
             idempotent=False,
         )
-        assert out.readOnlyHint is False
-        assert out.destructiveHint is False
-        assert out.idempotentHint is False
-        assert out.openWorldHint is True
+        assert out.read_only_hint is False
+        assert out.destructive_hint is False
+        assert out.idempotent_hint is False
+        assert out.open_world_hint is True

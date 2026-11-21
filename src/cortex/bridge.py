@@ -16,14 +16,26 @@ import os
 import subprocess
 import sys
 import time
+from collections.abc import AsyncIterable, Mapping
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Protocol, cast
 
 import anyio
-from anyio.streams.memory import (
-    MemoryObjectReceiveStream,
-    MemoryObjectSendStream,
+from mcp.shared.inbound import (
+    MCP_METHOD_HEADER,
+    MCP_NAME_HEADER,
+    MCP_PROTOCOL_VERSION_HEADER,
+    NAME_BEARING_METHODS,
+    encode_header_value,
 )
-from mcp.shared.message import SessionMessage
+from mcp.shared.message import ClientMessageMetadata, SessionMessage
+from mcp.types import (
+    PROTOCOL_VERSION_META_KEY,
+    JSONRPCRequest,
+    JSONRPCResponse,
+    RequestId,
+)
 
 logging.basicConfig(
     level=logging.WARNING,
@@ -62,10 +74,10 @@ def cortex_repo_root() -> Path:
 
 def require_server_deps() -> None:
     try:
-        import httpx  # noqa: F401
-        from mcp.client import streamable_http  # noqa: F401
+        import httpx2
+        from mcp.client import streamable_http
 
-        _ = (httpx, streamable_http)
+        _ = (httpx2, streamable_http)
     except ImportError as e:
         print(
             "Bridge requires server extra. Install with: uv sync --extra server",
@@ -79,7 +91,8 @@ def _start_cortex_subprocess(port: int) -> subprocess.Popen[bytes]:
     env["CORTEX_MCP_TRANSPORT"] = "streamable-http"
     env["CORTEX_MCP_PORT"] = str(port)
     cmd = [sys.executable, "-m", "cortex.main"]
-    cwd = cortex_repo_root()
+    # AI: The HTTP child needs the launch workspace when no roots are sent.
+    cwd = Path.cwd()
     return subprocess.Popen(
         cmd,
         env=env,
@@ -158,48 +171,102 @@ async def wait_for_url(url: str, proc: subprocess.Popen[bytes]) -> None:
     raise RuntimeError(f"Bridge: server at {url} did not become ready in time.{extra}")
 
 
+class _MessageWriter(Protocol):
+    async def send(self, message: SessionMessage, /) -> None: ...
+
+
+@dataclass
+class BridgeProtocol:
+    initialize_id: RequestId | None = None
+    legacy_version: str | None = None
+
+    def observe_http_response(self, message: SessionMessage) -> None:
+        response = message.message
+        if isinstance(response, JSONRPCResponse) and response.id == self.initialize_id:
+            self.initialize_id = None
+            version = response.result.get("protocolVersion")
+            if isinstance(version, str):
+                self.legacy_version = version
+
+    def for_http(self, message: SessionMessage) -> SessionMessage:
+        request = message.message
+        headers: dict[str, str] = {}
+        if isinstance(request, JSONRPCRequest):
+            if request.method == "initialize":
+                self.initialize_id = request.id
+                self.legacy_version = None
+                return message
+            params = request.params or {}
+            meta = params.get("_meta")
+            version = (
+                cast(Mapping[str, object], meta).get(PROTOCOL_VERSION_META_KEY)
+                if isinstance(meta, Mapping)
+                else None
+            )
+            if isinstance(version, str):
+                # AI: Modern HTTP mirrors the stdio request envelope into routing headers.
+                headers[MCP_PROTOCOL_VERSION_HEADER] = version
+                headers[MCP_METHOD_HEADER] = request.method
+                name_key = NAME_BEARING_METHODS.get(request.method)
+                name = params.get(name_key) if name_key is not None else None
+                if isinstance(name, str):
+                    headers[MCP_NAME_HEADER] = encode_header_value(name)
+        if not headers and self.legacy_version is not None:
+            # AI: The bridge forwards frames without an SDK ClientSession to stamp them.
+            headers[MCP_PROTOCOL_VERSION_HEADER] = self.legacy_version
+        if not headers:
+            return message
+        return SessionMessage(request, ClientMessageMetadata(headers=headers))
+
+
 async def _forward_stdio_to_http(
-    stdio_read: MemoryObjectReceiveStream[SessionMessage | Exception],
-    http_write: MemoryObjectSendStream[SessionMessage],
+    stdio_read: AsyncIterable[SessionMessage | Exception],
+    http_write: _MessageWriter,
+    protocol: BridgeProtocol,
 ) -> None:
-    async with stdio_read, http_write:
-        async for msg in stdio_read:
-            if isinstance(msg, SessionMessage):
-                await http_write.send(msg)
+    async for msg in stdio_read:
+        if isinstance(msg, SessionMessage):
+            await http_write.send(protocol.for_http(msg))
 
 
 async def _forward_http_to_stdio(
-    http_read: MemoryObjectReceiveStream[SessionMessage | Exception],
-    stdio_write: MemoryObjectSendStream[SessionMessage],
+    http_read: AsyncIterable[SessionMessage | Exception],
+    stdio_write: _MessageWriter,
+    protocol: BridgeProtocol,
 ) -> None:
-    async with http_read, stdio_write:
-        async for msg in http_read:
-            if isinstance(msg, SessionMessage):
-                await stdio_write.send(msg)
-            else:
-                logger.warning(
-                    "Dropping non-SessionMessage from HTTP: %s",
-                    type(msg).__name__,
-                )
+    async for msg in http_read:
+        if isinstance(msg, SessionMessage):
+            protocol.observe_http_response(msg)
+            await stdio_write.send(msg)
+        else:
+            logger.warning(
+                "Dropping non-SessionMessage from HTTP: %s",
+                type(msg).__name__,
+            )
 
 
-async def _run_bridge(url: str) -> None:
+async def run_bridge(url: str) -> None:
     from mcp.client.streamable_http import streamable_http_client
     from mcp.server.stdio import stdio_server
 
     async with (
         stdio_server() as (stdio_read, stdio_write),
-        streamable_http_client(url) as (http_read, http_write, _get_session_id),
+        streamable_http_client(url) as (http_read, http_write),
+        stdio_write,
+        http_write,
+        anyio.create_task_group() as tg,
     ):
-        async with anyio.create_task_group() as tg:
-            tg.start_soon(_forward_stdio_to_http, stdio_read, http_write)
-            tg.start_soon(_forward_http_to_stdio, http_read, stdio_write)
+        protocol = BridgeProtocol()
+        _ = tg.start_soon(_forward_http_to_stdio, http_read, stdio_write, protocol)
+        await _forward_stdio_to_http(stdio_read, http_write, protocol)
+        # AI: A legacy HTTP event stream may still be open when the stdio client exits.
+        tg.cancel_scope.cancel()
 
 
 async def _main(port: int, url: str, proc: subprocess.Popen[bytes]) -> None:
     await wait_for_url(url, proc)
     try:
-        await _run_bridge(url)
+        await run_bridge(url)
     finally:
         proc.terminate()
         try:

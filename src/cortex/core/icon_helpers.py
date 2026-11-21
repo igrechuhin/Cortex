@@ -43,7 +43,7 @@ def create_emoji_icon(
     data_uri = f"data:{mime_str};base64,{base64_svg}"
     return Icon(
         src=data_uri,
-        mimeType=mime_str,
+        mime_type=mime_str,
         sizes=[f"{size}x{size}"],
     )
 

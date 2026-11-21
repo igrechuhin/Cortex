@@ -18,11 +18,9 @@ import subprocess
 import sys
 import traceback
 from builtins import BaseExceptionGroup  # Python 3.11+
-from collections.abc import Awaitable, Callable
 from typing import cast
 
 import anyio
-from mcp.types import RootsListChangedNotification
 
 # Configure logging before FastMCP is created so root has our formatter first.
 # FastMCP.__init__ calls configure_logging() → basicConfig(); basicConfig() is a
@@ -44,11 +42,7 @@ from cortex.core.mcp_stability_semaphores import (  # noqa: E402
     get_semaphore,
     was_long_running_released_by_timeout,
 )
-from cortex.core.project_root_resolver import handle_roots_list_changed
 from cortex.server import mcp  # noqa: E402
-from cortex.setup.lazy_prompt_registration import (
-    refresh_setup_prompt_visibility,
-)  # noqa: E402
 from cortex.transport_config import (  # noqa: E402
     TRANSPORT_SSE,
     TRANSPORT_STREAMABLE_HTTP,
@@ -73,29 +67,6 @@ _ = cortex.tools
 _ = cortex.tools.synapse.prompts
 
 logger = logging.getLogger(__name__)
-
-
-def _register_roots_list_changed_notification_handler() -> None:
-    """Register roots/list_changed invalidation using MCP SDK notification handlers.
-
-    FastMCP v3 currently exposes no high-level decorator for arbitrary MCP
-    notifications like ``notifications/roots/list_changed``. Registering into
-    the low-level server notification handler map remains the supported path
-    until a public FastMCP notification API lands.
-    """
-    lowlevel = mcp._mcp_server  # type: ignore[attr-defined]
-    handlers = cast(
-        dict[type[object], Callable[[object], Awaitable[None]]],
-        lowlevel.notification_handlers,
-    )
-
-    async def _roots_list_changed_notification_handler(
-        _notification: object,
-    ) -> None:
-        await handle_roots_list_changed()
-        await refresh_setup_prompt_visibility(None)
-
-    handlers[RootsListChangedNotification] = _roots_list_changed_notification_handler
 
 
 def _log_broken_resource_group_diag(eg: BaseExceptionGroup, exc: BaseException) -> None:
@@ -289,7 +260,6 @@ def _run_mcp_with_transport_handlers(transport: str) -> None:
 
 def _run_server_once() -> None:
     """Run the MCP server once (stdio or HTTP). Exits on disconnect or error."""
-    _register_roots_list_changed_notification_handler()
     transport = get_effective_transport()
     if transport in (TRANSPORT_SSE, TRANSPORT_STREAMABLE_HTTP):
         _require_http_deps()

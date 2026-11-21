@@ -30,7 +30,7 @@ class TestCreateEmojiIcon:
     def test_mime_type_default(self) -> None:
         """Default mimeType is image/svg+xml."""
         icon = create_emoji_icon("✅")
-        assert icon.mimeType == "image/svg+xml"
+        assert icon.mime_type == "image/svg+xml"
 
     def test_sizes_default_24(self) -> None:
         """Default size 24 produces sizes [24x24]."""

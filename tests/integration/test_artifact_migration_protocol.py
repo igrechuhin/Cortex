@@ -22,7 +22,7 @@ from mcp.types import (
     TextContent,
     TextResourceContents,
 )
-from pydantic import AnyUrl, FileUrl
+from pydantic import FileUrl
 
 from tests.helpers.real_plugin_fixture import (
     PluginHost,
@@ -51,7 +51,7 @@ _PACKAGED_PREFIX = ("--verbose", "--refresh-package", "cortex", "--from")
 
 async def _manage(session: ClientSession, **arguments: object) -> dict[str, object]:
     result = await session.call_tool("manage_file", arguments)
-    assert not result.isError, result
+    assert not result.is_error, result
     text = "\n".join(
         item.text for item in result.content if isinstance(item, TextContent)
     )
@@ -168,7 +168,7 @@ async def _migrate_protocol(
 
 
 async def _context_text(session: ClientSession) -> str:
-    resource = await session.read_resource(AnyUrl("cortex://context"))
+    resource = await session.read_resource("cortex://context")
     return "\n".join(
         part.text
         for part in resource.contents
@@ -221,8 +221,8 @@ async def _reject_unsafe_requests(session: ClientSession) -> None:
 async def _assert_protocol_inventory(session: ClientSession) -> int:
     inventory = await session.list_tools()
     manage = next(tool for tool in inventory.tools if tool.name == "manage_file")
-    assert "migrate_artifacts" in json.dumps(manage.inputSchema)
-    assert "patch_document" in json.dumps(manage.inputSchema)
+    assert "migrate_artifacts" in json.dumps(manage.input_schema)
+    assert "patch_document" in json.dumps(manage.input_schema)
     return len(inventory.tools)
 
 
@@ -230,7 +230,7 @@ async def _exercise_protocol(
     session: ClientSession, root: Path, reports: dict[str, bytes]
 ) -> dict[str, object]:
     initialized = await session.initialize()
-    assert initialized.protocolVersion
+    assert initialized.protocol_version
     tools = await _assert_protocol_inventory(session)
     await _reject_unsafe_requests(session)
     digest = await _migrate_protocol(session, root, reports)
@@ -247,7 +247,7 @@ async def _exercise_protocol(
     _assert_generated_trees(root)
     await _patch_document_protocol(session, root)
     return {
-        "protocol": initialized.protocolVersion,
+        "protocol": initialized.protocol_version,
         "tools": tools,
         "migrated_reports": len(reports),
         "preview_digest": digest,

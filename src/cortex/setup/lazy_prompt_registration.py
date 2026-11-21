@@ -371,11 +371,8 @@ async def _notify_prompt_list_changed_if_needed(
 ) -> None:
     if not needs_notify or ctx is None:
         return
-    session = getattr(ctx, "session", None)
-    if session is None or not hasattr(session, "send_prompt_list_changed"):
-        return
     try:
-        await session.send_prompt_list_changed()
+        await ctx.session.send_prompt_list_changed()
         logger.debug("lazy_prompt_registration: sent prompt_list_changed notification")
     except Exception as exc:
         logger.debug(

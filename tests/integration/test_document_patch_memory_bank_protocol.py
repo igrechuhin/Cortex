@@ -1,16 +1,24 @@
 """Real sole-root SDK preview/apply/stale and consumer-visibility evidence."""
 
+import asyncio
 import hashlib
 import json
 import os
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from typing import cast
 
 import pytest
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
-from mcp.types import Implementation, ListRootsResult, Root, TextContent
+from mcp.types import (
+    Implementation,
+    ListRootsResult,
+    Root,
+    RootsListChangedNotification,
+    TextContent,
+)
 from pydantic import FileUrl
 
 _TARGETS = ("activeContext.md", "progress.md")
@@ -111,7 +119,7 @@ async def _exercise_protocol(
     initialized = await session.initialize()
     inventory = await session.list_tools()
     manage = next(tool for tool in inventory.tools if tool.name == "manage_file")
-    assert "patch_document" in json.dumps(manage.inputSchema)
+    assert "patch_document" in json.dumps(manage.input_schema)
     assert "activeContext,progress" in (manage.description or "")
     receipts = [
         await _exercise_target(session, root, target) for target in paths.values()
@@ -122,7 +130,7 @@ async def _exercise_protocol(
     print(
         json.dumps(
             {
-                "protocol": initialized.protocolVersion,
+                "protocol": initialized.protocol_version,
                 "sole_root": str(root),
                 "receipts": receipts,
             }
@@ -204,3 +212,72 @@ async def test_sdk_consumer_cannot_bypass_guarded_entry_patch(tmp_path: Path) ->
         ) as session:
             _ = await session.initialize()
             await _exercise_consumer_refusals(session, root, paths)
+
+
+@dataclass
+class _RootsProbe:
+    root: Path
+    calls: int = 0
+
+    async def list_roots(self, context: object) -> ListRootsResult:
+        self.calls += 1
+        return ListRootsResult(roots=[Root(uri=FileUrl(self.root.as_uri()))])
+
+
+async def _preview_workspace_root(session: ClientSession) -> dict[str, object]:
+    return await _call(
+        session,
+        ".cortex/memory-bank/progress.md",
+        {
+            "expected_sha256": hashlib.sha256(_BODY).hexdigest(),
+            "replacements": [{"old": _OLD, "new": _NEW, "count": 1}],
+            "dry_run": True,
+        },
+    )
+
+
+async def _exercise_legacy_root_change(
+    session: ClientSession, probe: _RootsProbe, next_root: Path
+) -> None:
+    _ = await session.initialize()
+    for _ in range(2):
+        receipt = await _preview_workspace_root(session)
+        assert receipt.get("project_root") == str(probe.root), receipt
+        assert probe.calls == 1
+
+    probe.root = next_root
+    await session.send_notification(RootsListChangedNotification())
+    # Notifications have no wire acknowledgment and may dispatch concurrently.
+    async with asyncio.timeout(5):
+        while True:
+            receipt = await _preview_workspace_root(session)
+            if receipt.get("project_root") == str(next_root):
+                break
+            await asyncio.sleep(0.05)
+    assert probe.calls == 2
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize("legacy", [True, False])
+async def test_stdio_project_root_protocol_eras(tmp_path: Path, legacy: bool) -> None:
+    """Legacy roots can change; modern requests resolve from the launch project."""
+    launch_root = tmp_path / "launch"
+    client_root = tmp_path / "client"
+    next_root = tmp_path / "next"
+    for directory in (launch_root, client_root, next_root):
+        _ = _prepare(directory)
+    probe = _RootsProbe(client_root)
+    async with stdio_client(_server(launch_root)) as (reader, writer):
+        async with ClientSession(
+            reader,
+            writer,
+            list_roots_callback=probe.list_roots,
+            client_info=Implementation(name="cortex-roots-regression", version="1"),
+        ) as session:
+            if legacy:
+                await _exercise_legacy_root_change(session, probe, next_root)
+                return
+            _ = await session.discover()
+            receipt = await _preview_workspace_root(session)
+            assert receipt.get("project_root") == str(launch_root), receipt
+            assert probe.calls == 0

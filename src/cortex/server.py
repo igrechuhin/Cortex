@@ -12,12 +12,12 @@ from typing import cast
 import mcp.types as mt
 from fastmcp import FastMCP
 from fastmcp.prompts.base import Prompt
-from fastmcp.server.auth.authorization import AuthContext
 from fastmcp.server.dependencies import get_context
 from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
 from fastmcp.server.transforms import Transform
 from fastmcp.server.transforms.prompts_as_tools import PromptsAsTools
 from fastmcp.server.transforms.resources_as_tools import ResourcesAsTools
+from fastmcp.utilities.authorization import AuthContext
 
 from cortex.server_middleware import create_server_middleware
 
@@ -30,7 +30,7 @@ def _extract_client_name(ctx: object) -> str:
             params = get_context().session.client_params
         except RuntimeError:
             return ""
-        return params.clientInfo.name.lower() if params is not None else ""
+        return params.client_info.name.lower() if params is not None else ""
     direct_client = getattr(ctx, "client_info", None)
     if direct_client is not None:
         direct_name = getattr(direct_client, "name", None)
@@ -121,10 +121,33 @@ class _LazyPromptsMiddleware(Middleware):
     ) -> Sequence[Prompt]:
         from cortex.setup.lazy_prompt_registration import ensure_prompts_registered
 
-        await ensure_prompts_registered(None)
+        await ensure_prompts_registered(context.fastmcp_context)
+        return await call_next(context)
+
+
+class _RootsChangedMiddleware(Middleware):
+    """Invalidate the workspace cache on the legacy roots notification."""
+
+    async def on_message(
+        self,
+        context: MiddlewareContext[object],
+        call_next: CallNext[object, object],
+    ) -> object:
+        if (
+            context.type == "notification"
+            and context.method == "notifications/roots/list_changed"
+        ):
+            from cortex.core.project_root_resolver import handle_roots_list_changed
+            from cortex.setup.lazy_prompt_registration import (
+                refresh_setup_prompt_visibility,
+            )
+
+            await handle_roots_list_changed()
+            await refresh_setup_prompt_visibility(None)
         return await call_next(context)
 
 
 mcp.add_middleware(_LazyPromptsMiddleware())
+mcp.add_middleware(_RootsChangedMiddleware())
 for middleware in create_server_middleware(Path.cwd()):
     mcp.add_middleware(middleware)

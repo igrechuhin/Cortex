@@ -4,8 +4,8 @@ version = "1.2.0"
 description = "Cortex - AI Memory & Context Management Server"
 requires-python = ">=3.13"
 dependencies = [
-    "fastmcp>=3.0,<4",
-    "mcp>=1.26.0",
+    "fastmcp>=4.2.4,<5",
+    "mcp>=2.3.0,<3",
     "pydantic>=2.0.0",
     "tiktoken>=0.5.0",
     "aiofiles>=23.0.0",
@@ -34,12 +34,12 @@ agentic-evals = [
     "anthropic>=0.40.0",
 ]
 server = [
-    "httpx",
+    "httpx2",
     "uvicorn",
     "starlette",
 ]
 all = [
-    "httpx",
+    "httpx2",
     "uvicorn",
     "starlette",
     "anthropic>=0.40.0",
@@ -51,9 +51,11 @@ cortex-bridge = "cortex.bridge:main"
 
 [dependency-groups]
 dev = [
-    "black>=25.12.0",
-    "ruff>=0.1.0",
-    "pyright>=1.1.400",  # Primary type checker (CI + local)
+    # Match the existing quality policy until the formatter, lint, and stub
+    # changes in newer releases can be adopted separately.
+    "black==25.12.0",
+    "ruff==0.14.10",
+    "pyright==1.1.407",
     "detect-secrets>=1.5.0",
     "rumdl==0.1.96",
     # PEP 517 build backend for this package; offline preflight checks it is importable in .venv.

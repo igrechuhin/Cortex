@@ -38,10 +38,10 @@ def read_only_annotations(
     """
     return ToolAnnotations(
         title=title,
-        readOnlyHint=_READ_ONLY_HINT,
-        destructiveHint=_NOT_DESTRUCTIVE,
-        idempotentHint=idempotent,
-        openWorldHint=open_world,
+        read_only_hint=_READ_ONLY_HINT,
+        destructive_hint=_NOT_DESTRUCTIVE,
+        idempotent_hint=idempotent,
+        open_world_hint=open_world,
     )
 
 
@@ -59,10 +59,10 @@ def safe_write_annotations(
     """
     return ToolAnnotations(
         title=title,
-        readOnlyHint=False,
-        destructiveHint=_NOT_DESTRUCTIVE,
-        idempotentHint=False,
-        openWorldHint=open_world,
+        read_only_hint=False,
+        destructive_hint=_NOT_DESTRUCTIVE,
+        idempotent_hint=False,
+        open_world_hint=open_world,
     )
 
 
@@ -78,10 +78,10 @@ def destructive_annotations(
     """
     return ToolAnnotations(
         title=title,
-        readOnlyHint=False,
-        destructiveHint=True,
-        idempotentHint=False,
-        openWorldHint=open_world,
+        read_only_hint=False,
+        destructive_hint=True,
+        idempotent_hint=False,
+        open_world_hint=open_world,
     )
 
 
@@ -96,13 +96,13 @@ def external_annotations(
 
     Use this helper for tools that rely on subprocesses, network
     access, or other out-of-process integrations. The behavioral flags
-    mirror the standard MCP hints while always setting ``openWorldHint``
+    mirror the standard MCP hints while always setting ``open_world_hint``
     to ``True``.
     """
     return ToolAnnotations(
         title=title,
-        readOnlyHint=read_only,
-        destructiveHint=destructive,
-        idempotentHint=idempotent,
-        openWorldHint=True,
+        read_only_hint=read_only,
+        destructive_hint=destructive,
+        idempotent_hint=idempotent,
+        open_world_hint=True,
     )

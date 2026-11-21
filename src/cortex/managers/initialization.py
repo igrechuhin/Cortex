@@ -146,6 +146,11 @@ def _find_root_from_cwd() -> Path | None:
     return None
 
 
+def get_project_root_from_cwd() -> Path:
+    """Resolve the launch workspace when the client cannot provide roots."""
+    return _find_root_from_cwd() or Path.cwd().resolve()
+
+
 def _has_language_markers(path: Path) -> bool:
     """Return True if path looks like a project (has language/build markers)."""
     return (

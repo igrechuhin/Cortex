@@ -31,11 +31,14 @@ import time
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 
-# AI: FastMCP v3 Context.session remains an MCP SDK ServerSession instance.
 from mcp.server.session import ServerSession
 from mcp.types import ClientCapabilities, RootsCapability
+from mcp.types.version import MODERN_PROTOCOL_VERSIONS
 
-from cortex.managers.initialization import get_project_root
+from cortex.managers.initialization import (
+    get_project_root,
+    get_project_root_from_cwd,
+)
 
 from .constants import MCP_ROOTS_LIST_TIMEOUT_SECONDS
 from .context_logging import MCPContext
@@ -74,12 +77,16 @@ async def handle_roots_list_changed() -> None:
     Called when the MCP server receives ``notifications/roots/list_changed``.
     The next :func:`resolve_project_root_async` call issues a new ``list_roots``.
     """
-    if cached_root is not None:
-        logger.info(
-            "project_root_resolver: roots/list_changed received, clearing cached root %s",
-            cached_root,
-        )
-    clear_cached_root()
+    global cached_root
+    # AI: The SDK can dispatch the notification while an earlier roots request is in flight.
+    async with _get_root_cache_lock():
+        if cached_root is not None:
+            logger.info(
+                "project_root_resolver: roots/list_changed received, clearing cached root %s",
+                cached_root,
+            )
+        cached_root = None
+        wiki_bootstrapped_roots.clear()
 
 
 def file_uri_to_path(uri: str) -> Path | None:
@@ -135,13 +142,13 @@ def _fallback_root() -> Path:
 _ROOTS_CAPABILITY = ClientCapabilities(roots=RootsCapability())
 
 
-def _client_supports_roots(ctx: MCPContext) -> bool:
+def _client_supports_roots(session: ServerSession) -> bool:
     """Return True if the client advertised roots capability.
 
     Clients that don't advertise it (e.g. some MCP client bridges) close the
     transport when they receive ListRootsRequest, crashing the server.
     """
-    return bool(ctx.session.check_client_capability(_ROOTS_CAPABILITY))
+    return session.check_client_capability(_ROOTS_CAPABILITY)
 
 
 async def _fetch_roots_path(session: ServerSession) -> Path | None:
@@ -149,7 +156,8 @@ async def _fetch_roots_path(session: ServerSession) -> Path | None:
     t0 = time.monotonic()
     try:
         async with asyncio.timeout(MCP_ROOTS_LIST_TIMEOUT_SECONDS):
-            result = await session.list_roots()
+            # AI: Established clients still use this capability on handshake-era MCP.
+            result = await session.list_roots()  # pyright: ignore[reportDeprecated]
         elapsed = time.monotonic() - t0
         logger.debug("project_root_resolver: list_roots() took %.3fs", elapsed)
         if elapsed > 1.0:
@@ -180,7 +188,7 @@ async def _fetch_roots_path(session: ServerSession) -> Path | None:
     return None
 
 
-async def _try_roots_from_ctx(ctx: MCPContext) -> Path | None:
+async def _try_roots_from_session(session: ServerSession) -> Path | None:
     """Request roots from client; return cached or freshly fetched file path.
 
     Uses a per-process cache so only the first call ever issues a
@@ -194,7 +202,7 @@ async def _try_roots_from_ctx(ctx: MCPContext) -> Path | None:
     if cached_root is not None:
         return cached_root
 
-    if not _client_supports_roots(ctx):
+    if not _client_supports_roots(session):
         logger.debug(
             "project_root_resolver: client did not advertise roots capability, skipping list_roots()"
         )
@@ -204,11 +212,27 @@ async def _try_roots_from_ctx(ctx: MCPContext) -> Path | None:
         # Re-check inside the lock (another coroutine may have populated it).
         if cached_root is not None:
             return cached_root
-        path = await _fetch_roots_path(ctx.session)
+        path = await _fetch_roots_path(session)
         if path is not None:
             cached_root = path
             logger.debug("project_root_resolver: cached resolved root %s", cached_root)
         return path
+
+
+async def _root_from_request(ctx: MCPContext) -> Path | None:
+    try:
+        session: ServerSession | None = getattr(ctx, "session", None)
+    except RuntimeError:
+        return None
+    if session is None:
+        return None
+    # AI: The new protocol cannot ask the client for roots. The launch workspace
+    # takes precedence over the directory where Cortex was installed.
+    if session.protocol_version in MODERN_PROTOCOL_VERSIONS:
+        return await asyncio.to_thread(get_project_root_from_cwd)
+    if session.can_send_request:
+        return await _try_roots_from_session(session)
+    return None
 
 
 async def resolve_project_root_async(
@@ -247,13 +271,11 @@ async def resolve_project_root_async(
         )
         root_fb = await asyncio.to_thread(_fallback_root)
         return await _return_root_with_wiki_bootstrap(root_fb)
-    # Fast path: if a previous list_roots() call already resolved the root,
-    # return it immediately even when ctx is None (e.g. inside list_prompts handler).
-    if cached_root is not None:
+    if ctx is None and cached_root is not None:
         return await _return_root_with_wiki_bootstrap(cached_root)
-    if ctx is not None and getattr(ctx, "session", None) is not None:
-        path = await _try_roots_from_ctx(ctx)
-        if path is not None:
-            return await _return_root_with_wiki_bootstrap(path)
-    root_fb2 = await asyncio.to_thread(_fallback_root)
-    return await _return_root_with_wiki_bootstrap(root_fb2)
+    if ctx is not None:
+        request_root = await _root_from_request(ctx)
+        if request_root is not None:
+            return await _return_root_with_wiki_bootstrap(request_root)
+    fallback_root = await asyncio.to_thread(_fallback_root)
+    return await _return_root_with_wiki_bootstrap(fallback_root)

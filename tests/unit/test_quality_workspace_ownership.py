@@ -22,7 +22,11 @@ from cortex.core.execution_env import LocalExecutionEnvironment
 from cortex.tools.execution.pre_commit_detached import (
     find_running_job,
 )
-from cortex.tools.execution.pre_commit_ownership import current_owner, owned_request_id
+from cortex.tools.execution.pre_commit_ownership import (
+    current_owner,
+    owned_request_id,
+    request_owner,
+)
 from cortex.tools.execution.pre_commit_quality_gate_job import run_bounded_phase_a
 from cortex.tools.execution.pre_commit_workspace import (
     LeaseState,
@@ -451,3 +455,30 @@ async def test_distinct_mcp_sessions_in_one_server_do_not_share_ownership(
             assert len((tmp_path / "executions.txt").read_text().splitlines()) == 1
         finally:
             _cleanup(tmp_path)
+
+
+def test_modern_stdio_quality_owner_survives_new_request_connections() -> None:
+    first = MagicMock(spec=MCPContext)
+    first.transport = "stdio"
+    first.session.protocol_version = "2026-07-28"
+    first.session_id = "first connection"
+    second = MagicMock(spec=MCPContext)
+    second.transport = "stdio"
+    second.session.protocol_version = "2026-07-28"
+    second.session_id = "second connection"
+
+    with request_owner(first):
+        owner = current_owner()
+    with request_owner(second):
+        assert current_owner() == owner
+
+
+def test_modern_http_quality_owner_requires_legacy_session() -> None:
+    ctx = MagicMock(spec=MCPContext)
+    ctx.transport = "streamable-http"
+    ctx.session.protocol_version = "2026-07-28"
+
+    with pytest.raises(ValueError, match="legacy MCP session"), request_owner(ctx):
+        pytest.fail(
+            "An HTTP request without a session cannot adopt a detached quality job"
+        )

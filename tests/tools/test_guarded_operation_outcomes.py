@@ -315,7 +315,7 @@ def consume() -> Callable[[CallToolResult, Path], None]:
 
 def _response(result: dict[str, object], is_error: bool = False) -> CallToolResult:
     return CallToolResult(
-        content=[TextContent(type="text", text=json.dumps(result))], isError=is_error
+        content=[TextContent(type="text", text=json.dumps(result))], is_error=is_error
     )
 
 

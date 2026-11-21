@@ -2,11 +2,31 @@
 
 import asyncio
 import subprocess
-from collections.abc import Mapping, Sequence
+from collections.abc import AsyncGenerator, Mapping, Sequence
+from contextlib import asynccontextmanager
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import anyio
+import httpx2
 import pytest
+from fastmcp import FastMCP
+from mcp import ClientSession
+from mcp.client.streamable_http import streamable_http_client
+from mcp.shared.inbound import (
+    MCP_METHOD_HEADER,
+    MCP_NAME_HEADER,
+    MCP_PROTOCOL_VERSION_HEADER,
+)
+from mcp.shared.message import ClientMessageMetadata, SessionMessage
+from mcp.types import (
+    PROTOCOL_VERSION_META_KEY,
+    JSONRPCNotification,
+    JSONRPCRequest,
+    JSONRPCResponse,
+    TextContent,
+)
+from starlette.applications import Starlette
 
 from cortex.bridge import (
     BRIDGE_PORT_DEFAULT,
@@ -14,11 +34,13 @@ from cortex.bridge import (
     CORTEX_BRIDGE_URL_ENV,
     DEFAULT_BRIDGE_URL,
     WAIT_TIMEOUT_SECONDS,
+    BridgeProtocol,
     cortex_repo_root,
     get_bridge_port,
     get_bridge_url,
     read_subprocess_stderr,
     require_server_deps,
+    run_bridge,
     tcp_connect,
     url_to_host_port,
     wait_for_url,
@@ -89,18 +111,18 @@ class TestRequireServerDeps:
 
         real_import = builtins.__import__
 
-        def fail_httpx(
+        def fail_httpx2(
             name: str,
             globals: Mapping[str, object] | None = None,
             locals: Mapping[str, object] | None = None,
             fromlist: Sequence[str] | None = (),
             level: int = 0,
         ) -> object:
-            if name == "httpx":
-                raise ImportError("No module named 'httpx'")
+            if name == "httpx2":
+                raise ImportError("No module named 'httpx2'")
             return real_import(name, globals, locals, fromlist, level)
 
-        with patch("builtins.__import__", side_effect=fail_httpx):
+        with patch("builtins.__import__", side_effect=fail_httpx2):
             with pytest.raises(SystemExit, match="1"):
                 require_server_deps()
 
@@ -241,3 +263,103 @@ class TestWaitForUrl:
             ):
                 with pytest.raises(RuntimeError, match="did not become ready in time"):
                     await wait_for_url("http://127.0.0.1:8000/mcp", proc)
+
+
+def test_legacy_http_headers_use_negotiated_version() -> None:
+    protocol = BridgeProtocol()
+    initialize = SessionMessage(
+        JSONRPCRequest(
+            jsonrpc="2.0",
+            id=1,
+            method="initialize",
+            params={"protocolVersion": "2025-11-25"},
+        )
+    )
+    assert protocol.for_http(initialize).metadata is None
+    protocol.observe_http_response(
+        SessionMessage(
+            JSONRPCResponse(
+                jsonrpc="2.0", id=1, result={"protocolVersion": "2025-06-18"}
+            )
+        )
+    )
+    initialized = SessionMessage(
+        JSONRPCNotification(jsonrpc="2.0", method="notifications/initialized")
+    )
+    metadata = protocol.for_http(initialized).metadata
+    assert isinstance(metadata, ClientMessageMetadata)
+    assert metadata.headers == {MCP_PROTOCOL_VERSION_HEADER: "2025-06-18"}
+
+
+def test_modern_http_headers_mirror_stdio_routing() -> None:
+    request = JSONRPCRequest(
+        jsonrpc="2.0",
+        id=1,
+        method="tools/call",
+        params={
+            "_meta": {PROTOCOL_VERSION_META_KEY: "2026-07-28"},
+            "name": "session",
+        },
+    )
+    outgoing = BridgeProtocol().for_http(SessionMessage(request))
+    assert outgoing.message == request
+    assert isinstance(outgoing.metadata, ClientMessageMetadata)
+    assert outgoing.metadata.headers == {
+        MCP_PROTOCOL_VERSION_HEADER: "2026-07-28",
+        MCP_METHOD_HEADER: "tools/call",
+        MCP_NAME_HEADER: "session",
+    }
+
+
+@asynccontextmanager
+async def _bridge_client(app: Starlette) -> AsyncGenerator[ClientSession]:
+    send_to_bridge, bridge_read = anyio.create_memory_object_stream[SessionMessage](0)
+    bridge_write, read_from_bridge = anyio.create_memory_object_stream[SessionMessage](
+        0
+    )
+
+    @asynccontextmanager
+    async def stdio() -> AsyncGenerator[object]:
+        yield bridge_read, bridge_write
+
+    @asynccontextmanager
+    async def transport(url: str) -> AsyncGenerator[object]:
+        async with httpx2.AsyncClient(
+            transport=httpx2.ASGITransport(app=app)
+        ) as client:
+            async with streamable_http_client(url, http_client=client) as streams:
+                yield streams
+
+    with (
+        patch("mcp.server.stdio.stdio_server", stdio),
+        patch("mcp.client.streamable_http.streamable_http_client", transport),
+        anyio.fail_after(10),
+    ):
+        async with anyio.create_task_group() as tasks:
+            _ = tasks.start_soon(run_bridge, "http://localhost/mcp")
+            async with send_to_bridge, read_from_bridge:
+                async with ClientSession(read_from_bridge, send_to_bridge) as session:
+                    yield session
+
+
+@pytest.mark.parametrize("legacy", [True, False])
+async def test_http_bridge_roundtrip_and_shutdown(legacy: bool) -> None:
+    """Exercise the SDK HTTP transport without opening a network listener."""
+    server = FastMCP("bridge-smoke")
+
+    def echo(text: str) -> str:
+        return text
+
+    _ = server.add_tool(echo)
+    app = server.http_app(json_response=True)
+    async with app.router.lifespan_context(app), _bridge_client(app) as session:
+        if legacy:
+            _ = await session.initialize()
+        else:
+            _ = await session.discover()
+        result = await session.call_tool("echo", {"text": "bridge verified"})
+        assert not result.is_error
+        assert any(
+            isinstance(item, TextContent) and item.text == "bridge verified"
+            for item in result.content
+        )
