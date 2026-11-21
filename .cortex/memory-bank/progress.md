@@ -5,6 +5,8 @@
 
 - <!-- memory_type: status -->
 - **Migrate Cortex to FastMCP 4 and MCP SDK 2** - COMPLETE. Added regression coverage for both MCP protocol eras across stdio root discovery and the HTTP bridge. Synced the local environment from `uv.lock` and retained the approved rumdl version and compatible Black, Ruff, and Pyright pins. Phase A passed with 9,040 tests and 92.16% coverage.
+- **Reuse verified Swift tests in the standard commit workflow** - COMPLETE. A native macOS fixture recorded one passing Phase A test with measured coverage, zero final executions after a declared documentation change, a blocking Markdown error, and a fresh suite after a Swift edit. The full Cortex quality gate passed with zero errors and warnings.
+- **Expose Cortex workflows as project Codex skills** - COMPLETE. Added the cortex-plan, cortex-do, and cortex-commit project skills. Each forwards to its canonical Synapse prompt through the configured Cortex MCP. Codex discovered all three from the Cortex checkout. Verified the links and passed Cortex Phase A and CI parity.
 
 ## 2026-11-20
 

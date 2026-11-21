@@ -238,15 +238,20 @@ also explicitly declare `swiftpm_final_test_outputs` from the narrow allowlist
 using their full repository-relative paths: specific Cortex memory-bank files,
 experience database and artifact output, Cortex write logs, the Markdown
 checker cache, and `.venv/`. Do not declare a path if a test consumes it. Partially staged inputs invalidate evidence; wholly unstaged
-files are hashed and must retain identical bytes. Other adapters,
-unknown ignored paths, and legacy callers run tests normally.
+files are hashed and must retain identical bytes. Other adapters and checkouts
+with unknown ignored paths run tests normally.
 
-The native commit consumer writes `gate_intent: "phase-a"` alongside
-`force_fresh: true` before Phase A, and `gate_intent: "final"` before Step 12.
-These values identify workflow position, not a public skip switch. The gate
-requires the same bound commit run, the same MCP session/server, matching inputs, and
-a green full Phase A worker result with measured coverage. A fresh final job
-still runs all independent checks. When it reuses the tests, its
+The standard commit workflow records evidence after preflight. Step 12 requests
+a fresh gate by marking `final-gate` running or writing `force_fresh: true`
+to the checks task after validation. The standard config-only `write` preserves
+the Phase A result and reaches the gate even through the zero-argument bridge.
+Native consumers may still supply `gate_intent: "phase-a"` or
+`gate_intent: "final"` for the corresponding phase.
+
+Reuse requires the same bound commit run and MCP owner, matching SwiftPM
+inputs, and a green full Phase A worker result with measured coverage.
+All independent checks, including Markdown lint, run in the fresh final
+gate. When it reuses the tests, its
 `reused_test_evidence` records the original job, time, coverage and zero tests
 executed in the final worker. Input uncertainty runs tests fresh; drift after
 choosing the evidence makes the final gate fail closed.
@@ -764,19 +769,24 @@ Returns comprehensive metadata including token counts, sections, version history
 
 Unified Memory Bank file management tool for read/write/metadata operations.
 
+With no arguments, the tool reads the Memory Bank file configured for the
+session, defaulting to `activeContext.md`. See
+[artifact filing and relocation](#artifact-filing-and-relocation) for report
+operations.
+
 **USE WHEN:**
 
 - You need a **single entry point** to read, write, or query metadata for Memory Bank files (instead of separate read/write/metadata tools).
 - You are building **automated workflows** (commit, roadmap, review) that must safely read/write `.cortex/memory-bank/*.md` with versioning and conflict detection.
 - You want **structured error responses** for missing/invalid parameters or file/path issues (safe path construction, conflict, lock, or Git conflicts).
 
-**REQUIRED PARAMETERS:**
+The target and operation are optional.
 
-- `file_name` (str) - Name of the file within the Memory Bank directory.
+- `file_name` (str | None) - Name of the file within the Memory Bank directory.
   - Examples: `"projectBrief.md"`, `"activeContext.md"`, `"systemPatterns.md"`.
-  - Must be a safe filename (no `..`, `/`, `\` or path traversal), except for
-    the closed workspace-relative targets of `patch_document` below.
-- `operation` (str enum) - Operation to perform:
+  - Pass only the file name for routine operations. See the scoped paths
+    for canonical artifact reads and `patch_document` below.
+- `operation` (str enum | None) - Defaults to `"read"`. Common operations include:
   - `"read"` - Read file content (optionally with metadata).
   - `"write"` - Write content with versioning and metadata updates.
   - `"metadata"` - Return metadata only (no file content).
@@ -788,6 +798,9 @@ Unified Memory Bank file management tool for read/write/metadata operations.
 - `content` (str | None) - Content to write (required when `operation="write"`).
 - `version` (int | None) - Version number to restore from (required when `operation="rollback"`).
 - `include_metadata` (bool) - When `operation="read"`, include metadata block.
+- `sections` (list[str] | None) - Select headings for `read`. For example,
+  `["## Overview", "## History/### Releases"]` selects a top-level section and
+  a subsection. The response joins matching sections with Markdown dividers.
 - `change_description` (str | None) - Human-friendly description stored in version history.
 - `source` (str) - `"local"` (default) or `"canonical"` for `operation="read"` only.
   `source="canonical"` reads the git-verified canonical main worktree when
@@ -877,8 +890,7 @@ decision/approval boundary; caller approval remains a prerequisite.
 
 - Resolves `.cortex/memory-bank/` via `get_cortex_path()` and validates `file_name` with safe path construction.
 - Provides **rich error responses** for:
-  - Missing required parameters (`file_name`, `operation`) with `details.missing`, `details.required`, and `details.operation_values`.
-  - Invalid operations (`operation` not in `["read", "write", "metadata", "rollback"]`) with `valid_operations` and a usage `hint`.
+  - Missing operation-specific inputs such as `content` for writes or `version` for rollbacks.
   - Invalid file names and path traversal attempts.
   - Non-existent files (including an `available_files` list for discovery).
   - Write-time conflicts (file conflict, lock timeout, Git conflict) with recovery suggestions.
@@ -888,33 +900,7 @@ decision/approval boundary; caller approval remains a prerequisite.
   - Creates a new version snapshot with metadata.
   - Updates the metadata index (sections, version history).
 
-**Error UX:**
-
-- Missing required parameters:
-
-  ```json
-  {
-    "status": "error",
-    "error": "Missing required parameters: file_name, operation",
-    "details": {
-      "missing": ["file_name", "operation"],
-      "required": ["file_name", "operation"],
-      "operation_values": ["read", "write", "metadata", "rollback"]
-    },
-    "hint": "Call manage_file(file_name=..., operation=...) for read/write/metadata operations. See docs/api/tools.md#manage_file."
-  }
-  ```
-
-- Invalid operation value:
-
-  ```json
-  {
-    "status": "error",
-    "error": "Invalid operation: delete",
-    "valid_operations": ["read", "write", "metadata", "rollback"],
-    "hint": "Use one of: 'read', 'write', 'metadata', or 'rollback' for the operation parameter."
-  }
-  ```
+#### Error example
 
 - Attempt to create a new Memory Bank file (disallowed):
 

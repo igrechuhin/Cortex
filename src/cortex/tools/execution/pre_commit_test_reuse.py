@@ -4,40 +4,25 @@ from __future__ import annotations
 
 import math
 import os
-import re
 import time
 from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
-from enum import StrEnum
 from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
-from cortex.core.quality_gate_config import load_quality_gate_config
 from cortex.services.framework_adapters.base import TestResult
+from cortex.tools.execution.pre_commit_test_gate_context import (
+    GateTestIntent,
+    GateUse,
+    verified_gate_context,
+)
 from cortex.tools.execution.pre_commit_test_reuse_inputs import (
     swift_test_input_fingerprint,
 )
 from cortex.tools.execution.pre_commit_workspace import worker_owner
 from cortex.tools.execution.session_paths import session_dir
-
-
-class GateUse(StrEnum):
-    """Authorized role inside the native commit workflow."""
-
-    PHASE_A = "phase-a"
-    FINAL = "final"
-
-
-class GateTestIntent(BaseModel):
-    """Server-derived workflow identity transported to the detached worker."""
-
-    model_config = ConfigDict(frozen=True)
-    use: GateUse
-    run_id: str = Field(pattern=r"^[a-f0-9]{12}$")
-    swift_outputs: tuple[str, ...] = ()
-    predecessors: tuple[int, ...] = ()
 
 
 class TestEvidence(BaseModel):
@@ -75,72 +60,6 @@ _TEST_LANE: ContextVar[_TestLane | None] = ContextVar(
 _MAX_AGE_SECONDS = 4 * 3600
 
 
-class _PipelinePhase(BaseModel):
-    status: str | None = None
-    phase_status: str | None = None
-
-    def completed(self) -> bool:
-        return self.phase_status == "completed" and self.status in (
-            "complete",
-            "completed",
-            "passed",
-        )
-
-
-class _CommitPipeline(BaseModel):
-    session_id: str
-    pipeline: str
-    phases: dict[str, _PipelinePhase]
-
-
-def _verified_context(root: Path, intent: GateTestIntent) -> bool:
-    path = session_dir(root) / intent.run_id / "commit" / "pipeline.json"
-    try:
-        if path.resolve() != path:
-            return False
-        value = _CommitPipeline.model_validate_json(path.read_text())
-    except (ValueError, OSError, RuntimeError):
-        return False
-    if value.session_id != intent.run_id or value.pipeline != "commit":
-        return False
-    complete = {name for name, phase in value.phases.items() if phase.completed()}
-    if "preflight" not in complete:
-        return False
-    if intent.use is GateUse.PHASE_A:
-        return "checks" not in complete
-    return {"checks", "docs", "validate"} <= complete
-
-
-def derive_gate_intent(
-    root: Path, value: object, fresh: bool, test_filter: str | None
-) -> GateTestIntent | None:
-    """Recognize only explicit, opted-in, unfiltered commit phases."""
-    if not fresh or test_filter is not None or value not in ("phase-a", "final"):
-        return None
-    policy = load_quality_gate_config(root)
-    if not policy.reuse_swiftpm_final_tests:
-        return None
-    from cortex.tools.session.pipeline_handoff_session import (
-        get_session_id,
-        recoverable_predecessors,
-    )
-
-    active = get_session_id(root, mint=False, pipeline="commit")
-    if not re.fullmatch(r"[a-f0-9]{12}", active):
-        return None
-    intent = GateTestIntent(
-        use=GateUse(str(value)),
-        predecessors=(
-            recoverable_predecessors(root, active) if value == "phase-a" else ()
-        ),
-        run_id=active,
-        swift_outputs=tuple(
-            sorted({item.value for item in policy.swiftpm_final_test_outputs})
-        ),
-    )
-    return intent if _verified_context(root, intent) else None
-
-
 @contextmanager
 def gate_intent_scope(intent: GateTestIntent | None) -> Iterator[None]:
     """Keep routing/identity bound to only this asynchronous request."""
@@ -172,7 +91,7 @@ def worker_test_lane(
             intent = GateTestIntent.model_validate_json(raw)
         except ValidationError:
             intent = None
-        if intent is not None and _verified_context(root, intent):
+        if intent is not None and verified_gate_context(root, intent):
             lane = _TestLane(
                 root=root,
                 intent=intent,

@@ -421,10 +421,8 @@ async def _run_regular_gate(
 def _gate_scope(
     root: Path, cfg: Mapping[str, object], force_fresh: bool, test_filter: str | None
 ) -> AbstractContextManager[object]:
-    from cortex.tools.execution.pre_commit_test_reuse import (
-        derive_gate_intent,
-        gate_intent_scope,
-    )
+    from cortex.tools.execution.pre_commit_test_gate_context import derive_gate_intent
+    from cortex.tools.execution.pre_commit_test_reuse import gate_intent_scope
 
     intent = derive_gate_intent(root, cfg.get("gate_intent"), force_fresh, test_filter)
     return gate_intent_scope(intent)

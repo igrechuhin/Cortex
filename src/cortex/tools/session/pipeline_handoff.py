@@ -58,6 +58,7 @@ from .pipeline_handoff_io import (
     op_rollback,
     op_snapshot,
     op_status,
+    op_write_commit_checks_config,
     op_write_result,
     op_write_task,
 )
@@ -128,7 +129,8 @@ def _resolve_zero_arg_defaults(
     operation: str,
     pipeline: str,
     phase: str | None,
-) -> tuple[str, str, str | None]:
+    data_str: str | None,
+) -> tuple[str, str, str | None, str | None]:
     """Fall back to session config when an MCP client strips all tool arguments.
 
     Some MCP client bridges send {} for every tool call, leaving all parameters
@@ -137,14 +139,13 @@ def _resolve_zero_arg_defaults(
     ``operation``, ``pipeline``, and ``phase`` from the session config file
     written by the orchestrator prompt before it called this tool.
 
-    If session config is absent or incomplete the original values are returned
-    unchanged, so unaffected callers see no behavior change.
+    Commit phase writes also recover their payload from that same snapshot.
     """
     if operation != PipelineHandoffOperation.READ_STATE.value or pipeline != "default":
         # At least one arg was explicitly set — not a zero-arg call.
-        return operation, pipeline, phase
+        return operation, pipeline, phase, data_str
 
-    from cortex.core.session_config import read_session_config
+    from cortex.core.session_config import SessionConfig, read_session_config
 
     cfg = read_session_config()
     resolved_op = str(cfg.get("operation", operation))
@@ -152,7 +153,18 @@ def _resolve_zero_arg_defaults(
     resolved_phase = phase or (
         str(cfg.get("phase")) if isinstance(cfg.get("phase"), str) else phase
     )
-    return resolved_op, resolved_pipeline, resolved_phase
+    if (
+        data_str is None
+        and resolved_pipeline == "commit"
+        and resolved_op == PipelineHandoffOperation.WRITE.value
+    ):
+        payload = {
+            key: value
+            for key, value in cfg.to_mapping().items()
+            if key not in SessionConfig.model_fields
+        }
+        data_str = json.dumps(payload) if payload else None
+    return resolved_op, resolved_pipeline, resolved_phase, data_str
 
 
 def _coerce_data(data: object) -> str | None:
@@ -346,6 +358,18 @@ def _dispatch_rule_provenance_operation(
 def _dispatch_phase_bound_operation(
     project_root: Path, operation: str, pipeline: str, phase: str, data_str: str | None
 ) -> str | None:
+    if (
+        pipeline == "commit"
+        and phase == "checks"
+        and operation
+        in (
+            PipelineHandoffOperation.WRITE.value,
+            PipelineHandoffOperation.WRITE_TASK.value,
+        )
+    ):
+        config = op_write_commit_checks_config(project_root, data_str)
+        if config is not None:
+            return config
     if operation == PipelineHandoffOperation.WRITE_TASK.value:
         return op_write_task(project_root, pipeline, phase, data_str)
     if operation in (
@@ -446,8 +470,7 @@ def _resolve_dispatch_routing(
         operation = routing["op"]
     pipeline = routing.get("pipeline", pipeline)
     phase = routing.get("phase", phase)
-    operation, pipeline, phase = _resolve_zero_arg_defaults(operation, pipeline, phase)
-    return operation, pipeline, phase, data_str
+    return _resolve_zero_arg_defaults(operation, pipeline, phase, data_str)
 
 
 async def _dispatch(

@@ -1,8 +1,4 @@
-"""CRUD entry points for Memory Bank: manage_file tool and get_file_resource.
-
-Thin layer that delegates to manage_file_helpers. Kept separate to meet
-file size limit while preserving full manage_file docstring.
-"""
+"""Memory Bank entry points that delegate to manage_file_helpers."""
 
 import json
 
@@ -139,204 +135,42 @@ async def manage_file(
     source: str = "local",
     ctx: MCPContext | None = None,
 ) -> str:
-    """Manage Memory Bank file operations: read, write, or get metadata.
+    """Manage versioned Memory Bank files and Cortex reports.
 
-    USE WHEN: User needs to read/write Memory Bank files, user requests file
-    content, user needs file metadata, user wants to update project context
-    files under .cortex/memory-bank/.
+    USE WHEN: Reading project context, checking versions, filing reports, or
+    repairing an existing Cortex document. Prefer `update_memory_bank` for targeted
+    roadmap changes and progress or activeContext entries. Pass only the file name
+    for routine Memory Bank operations. DO NOT use this tool for generic files.
 
-    DO NOT:
-    - Use routine read/write for generic project files (code, tests or workspace files).
-    - Pass absolute paths. Except for patch_document, file_name must be a Memory
-      Bank filename only (for example, "projectBrief.md", not a path).
-    - Perform full-file writes to roadmap.md, progress.md, or activeContext.md
-      when a targeted mutation via update_memory_bank would suffice.
+    PARAMETERS:
 
-    EXAMPLES: 'read projectBrief.md', 'update activeContext.md', 'get metadata
-    for roadmap.md', 'write new content to systemPatterns.md'.
+    - `read` accepts `include_metadata` and `sections` (Markdown headings or
+      parent/child heading paths). With no arguments, read activeContext.md or
+      the session-configured file. `source="canonical"` only supports reads of
+      approved Memory Bank files or closed reports from the canonical checkout.
+    - `metadata` returns metadata without loading file content. `write` requires
+      Markdown `content` and an existing file. `rollback` requires a `version`.
+    - `list_drafts` and `discard_draft` operate on `.cortex/plans/draft-*.md`.
+    - `file_artifact` takes `artifact_type`, `title`, and `content` to file a
+      report and reference it from activeContext.
+    - `migrate_artifacts` previews relocation of legacy reviews, analyses, and
+      queries. To apply, pass JSON in `content` with `apply: true` and
+      `expected_preview_digest` from the preview.
+    - `patch_document` requires operator approval for the specific repair. Pass
+      an existing workspace-relative Markdown path in `.cortex/{plans,analyses,reviews}/`
+      or `.cortex/memory-bank/{roadmap,activeContext,progress}.md` as `file_name`.
+      Pass JSON in `content` with `expected_sha256` (64 lowercase hex from the raw
+      file), unique literal `replacements` with `old`, `new`, and `count: 1`, and
+      `dry_run: true` to preview (default false). For activeContext and progress,
+      edit single-line entry prose only. Preserve titles, frontmatter, entry
+      labels, list syntax, and lifecycle markers.
 
-    RETURNS: JSON with file content (read), success status (write), or metadata
-    object (metadata operation).
+    EXAMPLES:
+    - manage_file(file_name="projectBrief.md", include_metadata=True)
+    - manage_file(file_name="roadmap.md", operation="metadata")
 
-    Routine file operations target the Memory Bank. ``file_artifact`` files reviews,
-    analyses and queries in their canonical directories under ``.cortex/``;
-    architectural findings remain in ``memory-bank/findings``.
-    When wiki is enabled, reviews and session analyses also get independently
-    named reference pages linking to the canonical report; bodies are not copied.
-    Existing wiki pages are not backfilled.
-
-    Supported operations include:
-    - read: Retrieve file content with optional metadata (size, tokens, hash, sections)
-    - write: Write file content with automatic versioning, conflict
-      detection, and metadata updates
-    - metadata: Query file metadata without reading full content
-    - rollback: Restore file from a version snapshot (requires version parameter)
-    - file_artifact: File a report and append its relative activeContext reference
-    - migrate_artifacts: Preview legacy report relocation by default. To apply,
-      pass content JSON with {"apply": true, "expected_preview_digest": "<digest>"}.
-      Only memory-bank/reviews, analyses and queries are eligible; arbitrary paths
-      are not accepted. Stale previews, symlinks and collisions fail without mutation.
-    - patch_document: Hash-guarded literal repair of an EXISTING workspace-relative
-      Markdown target under .cortex/plans/, .cortex/analyses/, .cortex/reviews/, or
-      exact .cortex/memory-bank/{roadmap,activeContext,progress}.md. For the last
-      two, repair only existing single-line entry prose; headings, entry labels
-      (first bold span), list/check-box syntax, comments and status/lifecycle
-      markers remain unchanged. No entry insertion, deletion, reordering or
-      block edits. Obtain operator approval for the specific repair first.
-      Pass content JSON with expected_sha256
-      (64 lowercase hex characters), replacements [{old, new, count: 1}], and
-      optional dry_run (default false). Each old literal must be unique/nonempty;
-      overlaps, no-ops, stale bytes, unsafe paths and symlinks are rejected.
-      Frontmatter and title stay unchanged, including archived DONE state. This
-      operation never creates documents, normalizes plans or adds wiki/context
-      artifacts. Returns project_root, target, before_sha256, after_sha256,
-      replacement_counts, dry_run and mutation_performed.
-
-    Args:
-        file_name: Name of the file within memory-bank/ directory.
-            For patch_document only, an existing workspace-relative .cortex path
-            in the closed roots documented above.
-            Examples: "projectBrief.md", "activeContext.md", "systemPatterns.md"
-            Must be a valid filename without path traversal characters.
-
-        operation: Operation to perform on the file.
-            - "read": Read file content, optionally with metadata
-            - "write": Write content with versioning and conflict detection
-            - "metadata": Get metadata only (size, tokens, hash, version history)
-            - "rollback": Restore file from version snapshot (requires version)
-
-        content: Content to write to the file (required for write operation).
-            Must be valid UTF-8 text. For Markdown files, the content should
-            include proper headings and formatting.
-            Example: "# Project Brief\n\n## Overview\n\nThis project..."
-
-        include_metadata: For read operation, include metadata in response.
-            When true, response includes size_bytes, token_count, content_hash,
-            sections, and version_history alongside content.
-            Default: False
-
-        change_description: Optional description for write operation.
-            Stored in version history for tracking changes.
-            Example: "Updated project goals and milestones"
-            Default: "Updated via MCP"
-
-        version: For rollback operation, version number to restore from (required).
-
-        sections: For read operation, extract one or more sections by heading.
-            Example: ["## Current Focus"] for single section
-            Example: ["## Current Focus", "## Next Steps"] for multiple sections
-            Supports nested headings using "/" separator (e.g., ["## Completed Work/### 2026-02-11"]).
-            If section not found, returns full file with warning.
-            Returns concatenated content of all requested sections (separated by "---").
-
-    Returns:
-        JSON string with operation result. Structure varies by operation:
-
-        Read operation (success):
-        {
-          "status": OperationStatus.SUCCESS.value,
-          "file_name": "projectBrief.md",
-          "content": "# Project Brief\\n\\n## Overview\\n...",
-          "metadata": {  // Only if include_metadata=true
-            "size_bytes": 1024,
-            "token_count": 256,
-            "content_hash": "abc123...",
-            "sections": [
-              {"heading": "## Overview", "level": 2},
-              {"heading": "## Goals", "level": 2}
-            ],
-            "version_history": [
-              {
-                "version": 1,
-                "timestamp": "2026-01-04T12:00:00Z",
-                "change_description": "Initial version"
-              }
-            ]
-          }
-        }
-
-        Write operation (success):
-        {
-          "status": OperationStatus.SUCCESS.value,
-          "file_name": "projectBrief.md",
-          "message": "File projectBrief.md written successfully",
-          "snapshot_id": "/path/to/snapshots/projectBrief.md.v2.snapshot",
-          "version": 2,
-          "tokens": 256
-        }
-
-        Metadata operation (success):
-        {
-          "status": OperationStatus.SUCCESS.value,
-          "file_name": "projectBrief.md",
-          "metadata": {
-            "size_bytes": 1024,
-            "token_count": 256,
-            "content_hash": "abc123...",
-            "sections": [
-              {"heading": "## Overview", "level": 2}
-            ],
-            "version_history": [...]
-          }
-        }
-
-        Error responses:
-        {
-          "status": OperationStatus.ERROR.value,
-          "error": "File projectBrief.md does not exist",
-          "available_files": ["activeContext.md", "systemPatterns.md"]
-        }
-
-    Examples:
-        Example 1: Read file with metadata
-        >>> await manage_file(
-        ...     file_name="projectBrief.md",
-        ...     operation="read",
-        ...     include_metadata=True
-        ... )
-
-        Example 2: Write file with version control
-        >>> await manage_file(
-        ...     file_name="activeContext.md",
-        ...     operation="write",
-        ...     content=(
-        ...         "# Active Context\\n\\n## Current Work\\n\\n"
-        ...         "Implementing DRY linking..."
-        ...     ),
-        ...     change_description="Updated current work focus"
-        ... )
-
-        Example 3: Get metadata only
-        >>> await manage_file(
-        ...     file_name="systemPatterns.md",
-        ...     operation="metadata"
-        ... )
-
-        Example 4: Rollback to previous version
-        >>> await manage_file(
-        ...     file_name="projectBrief.md",
-        ...     operation="rollback",
-        ...     version=3
-        ... )
-
-    Note:
-        - Routine read/write/metadata paths use ``.cortex/memory-bank/``; ``list_drafts``
-          and ``discard_draft`` list or delete ``.cortex/plans/draft-*.md`` instead.
-        - Write operations under the memory bank create versioned snapshots in
-          ``.cortex/history/``
-        - Conflict detection prevents concurrent modification
-          (uses content_hash)
-        - File locking prevents race conditions during write operations
-        - Token counts use tiktoken encoding (cl100k_base) for accurate
-          context sizing
-        - Section extraction is simplified (only extracts level 2 headings
-          starting with "##")
-        - Invalid file names with path traversal attempts (.., /, \\) are
-          rejected
-        - If file doesn't exist during read/metadata operations, returns
-          available files list
-        - Write operations update both the file content and metadata index
-          atomically
+    RETURNS: JSON with `status` and operation-specific results or error details.
+    See docs/api/tools.md#manage_file for payloads and repair safeguards.
     """
     file_name, operation = _resolve_manage_file_defaults(file_name, operation)
     payload = _build_file_artifact_payload(

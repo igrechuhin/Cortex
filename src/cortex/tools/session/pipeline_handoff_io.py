@@ -193,7 +193,8 @@ def op_write_task(
         except json.JSONDecodeError:
             payload["data"] = data
     tfile = task_path(pdir, phase)
-    _ = tfile.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    with pipeline_state_lock(tfile):
+        _atomic_write_json(tfile, payload)
     return json.dumps(
         {"status": "ok", "task_file": str(tfile), "phase": phase}, indent=2
     )
@@ -272,6 +273,24 @@ _ROUTING_KEYS: frozenset[str] = frozenset({"operation", "phase", "pipeline"})
 PHASE_CONFIG_KEYS: frozenset[str] = frozenset(
     {"force_fresh", "test_timeout", "test_filter", "gate_intent"}
 )
+
+
+# AI: Record final-gate intent when the orchestrator requests fresh checks
+# at that frontier, leaving the completed Phase A result intact.
+def op_write_commit_checks_config(project_root: Path, data: str | None) -> str | None:
+    """Save a standard commit's config-only checks write as a task."""
+    options = parse_result_data(data)
+    if not options or not PHASE_CONFIG_KEYS.issuperset(options):
+        return None
+    if options.get("force_fresh") is True and "gate_intent" not in options:
+        from cortex.tools.execution.pre_commit_test_gate_context import (
+            GateUse,
+            standard_commit_frontier,
+        )
+
+        if standard_commit_frontier(project_root) is GateUse.FINAL:
+            options["gate_intent"] = GateUse.FINAL.value
+    return op_write_task(project_root, "commit", "checks", json.dumps(options))
 
 
 def extract_routing_keys(

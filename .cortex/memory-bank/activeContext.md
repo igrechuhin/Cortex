@@ -8,6 +8,10 @@
 - ✅ **Migrate Cortex to FastMCP 4 and MCP SDK 2** - COMPLETE (2026-11-21) - <!-- memory_type: status -->
 Upgraded to FastMCP 4.2.4 and MCP SDK 2.3.0. Preserved root discovery and change notifications for legacy clients, used the launch directory for modern clients, and updated stdio, Streamable HTTP, and quality-worker ownership. Phase A and CI parity passed with 9,040 tests and 92.16% coverage.
 
+- ✅ **Reuse verified Swift tests in the standard commit workflow** - COMPLETE (2026-11-21) - The standard commit handoff now records Phase A SwiftPM evidence and preserves its result when Step 12 requests fresh checks. The final worker checks Markdown again and runs the full suite whenever the project input declaration or matching evidence is unavailable.
+
+- ✅ **Expose Cortex workflows as project Codex skills** - COMPLETE (2026-11-21) - Added the cortex-plan, cortex-do, and cortex-commit project skills. Each forwards to its canonical Synapse prompt through the configured Cortex MCP. Codex discovered all three from the Cortex checkout. Verified the links and passed Cortex Phase A and CI parity.
+
 ## Completed Work (2026-11-20)
 
 - ✅ **Aggregate Swift runner summaries and reject incomplete test runs** - COMPLETE (2026-11-20) - Aggregated independent Swift Testing and XCTest summaries; explicit failures and incomplete runners remain red. Kept only the documented SIGBUS teardown case and reported known issues separately. Cortex focused job 7bc0d0b00328 passed 96 tests; two existing logs replayed at 8 and 11,121 tests.

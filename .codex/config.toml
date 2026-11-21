@@ -1,6 +1,7 @@
 [mcp_servers.cortex]
-command = "uv"
+command = "uvx"
 args = [
-    "run",
+    "--from",
+    "git+https://github.com/igrechuhin/Cortex.git",
     "cortex",
 ]

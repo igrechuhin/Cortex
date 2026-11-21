@@ -1,35 +1,5 @@
 # Cortex Operations Log
 
-## [2026-09-08T18:12] plan | Created plan: Mini ·4
-
-## [2026-09-08T18:12] plan | Created plan: Test Plan
-
-## [2026-09-08T18:13] lint | Quality gate failed
-
-## [2026-09-08T18:16] fix | Autofix completed
-
-status=success; changed_files=None
-
-## [2026-09-08T18:17] plan | Created plan: Test Plan
-
-## [2026-09-08T18:17] plan | Created plan: Smoke Test Plan
-
-## [2026-09-08T18:17] plan | Created plan: Demo Plan
-
-## [2026-09-08T18:17] plan | Created plan: Mini
-
-## [2026-09-08T18:17] plan | Created plan: Demo Plan ·2
-
-## [2026-09-08T18:17] plan | Created plan: Demo Plan ·3
-
-## [2026-09-08T18:17] plan | Created plan: Demo Plan ·4
-
-## [2026-09-08T18:17] plan | Created plan: Demo Plan ·5
-
-## [2026-09-08T18:17] plan | Created plan: Demo Plan ·6
-
-## [2026-09-08T18:17] plan | Created plan: Mini ·2
-
 ## [2026-09-08T18:17] plan | Created plan: Mini ·3
 
 ## [2026-09-08T18:17] plan | Created plan: Mini ·4
@@ -2255,3 +2225,39 @@ status=success; changed_files=None
 ## [2026-11-21T17:19] lint | Quality gate passed
 
 ## [2026-11-21T17:30] lint | Quality gate passed
+
+## [2026-11-21T19:11] lint | Quality gate failed
+
+## [2026-11-21T19:16] lint | Quality gate passed
+
+## [2026-11-21T19:19] plan | Created plan: Reuse verified Swift tests in the standard commit workflow
+
+## [2026-11-21T19:27] lint | Quality gate failed
+
+## [2026-11-21T19:29] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-21T19:37] lint | Quality gate failed
+
+## [2026-11-21T19:43] lint | Quality gate passed
+
+## [2026-11-21T19:43] plan | Completed plan: Reuse verified Swift tests in the standard commit workflow
+
+The standard commit handoff now records Phase A SwiftPM evidence and preserves its result when Step 12 requests fresh checks. The final worker checks Markdown again and runs the full suite whenever the project input declaration or matching evidence is unavailable.
+
+## [2026-11-21T22:28] lint | Quality gate passed
+
+## [2026-11-21T23:03] plan | Created plan: Expose Cortex workflows as project Codex skills
+
+## [2026-11-21T23:36] lint | Quality gate passed
+
+## [2026-11-21T23:37] plan | Completed plan: Expose Cortex workflows as project Codex skills
+
+Added the cortex-plan, cortex-do, and cortex-commit project skills. Each forwards to its canonical Synapse prompt through the configured Cortex MCP. Codex discovered all three from the Cortex checkout. Verified the links and passed Cortex Phase A and CI parity.
+
+## [2026-11-21T23:39] fix | Autofix completed
+
+status=success; changed_files=None
+
+## [2026-11-21T23:46] lint | Quality gate passed
