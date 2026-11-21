@@ -96,6 +96,11 @@ def test_generated_do_skill_fails_closed_on_opaque_agent_handles(
         assert "const result = await agent(instruction, options)" in skill
         assert "await handle.wait(600)" in skill
         assert "opaque handles can serialize as\n`{}`" in skill
+        assert "launch once with the native spawn tool" in skill
+        assert "wait again\n" in skill
+        assert "for the same ID or report it pending" in skill
+        assert "Do not spawn a replacement or advance." in skill
+        assert "**same host call**" not in skill
         assert "SUBAGENT_HANDLE_INVALID" in skill
         assert "SUBAGENT_HANDLE_UNRECOVERABLE" in skill
         assert "wait([" not in skill

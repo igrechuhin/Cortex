@@ -1,7 +1,5 @@
 # Cortex Operations Log
 
-## [2026-09-08T18:12] plan | Created plan: Demo Plan ·2
-
 ## [2026-09-08T18:12] plan | Created plan: Mini
 
 ## [2026-09-08T18:12] plan | Created plan: Mini ·2
@@ -2255,3 +2253,5 @@ Aggregated independent Swift Testing and XCTest summaries; explicit failures and
 status=success; changed_files=None
 
 ## [2026-11-20T21:08] lint | Quality gate passed
+
+## [2026-11-21T12:08] lint | Quality gate failed

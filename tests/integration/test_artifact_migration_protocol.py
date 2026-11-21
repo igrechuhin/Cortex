@@ -340,7 +340,14 @@ async def _execute_launch_mode(
 @pytest.mark.integration
 @pytest.mark.timeout(120)
 @pytest.mark.parametrize(
-    "launch_mode", ["editable", "packaged", "plugin-claude", "plugin-codex"]
+    "launch_mode",
+    [
+        "editable",
+        # Each of these resolves dependencies from PyPI in a fresh uv cache.
+        pytest.param("packaged", marks=pytest.mark.slow),
+        pytest.param("plugin-claude", marks=pytest.mark.slow),
+        pytest.param("plugin-codex", marks=pytest.mark.slow),
+    ],
 )
 async def test_artifact_migration_stdio_protocol(
     tmp_path: Path, launch_mode: str

@@ -290,7 +290,7 @@ jobs:
           echo "::endgroup::"
         continue-on-error: false
 
-      # Keep the complete not-slow parity command below unchanged, including smoke.
+      # Cold installs with a fresh PyPI cache run in the scheduled/manual slow suite.
       - name: Run critical public workflow smoke
         id: public_smoke
         if: >-
@@ -305,7 +305,8 @@ jobs:
         run: >-
           uv run python -m pytest
           tests/e2e/test_public_workflow_smoke.py
-          'tests/integration/test_artifact_migration_protocol.py::test_artifact_migration_stdio_protocol[plugin-codex]'
+          tests/tools/test_plugin_package.py
+          'tests/integration/test_artifact_migration_protocol.py::test_artifact_migration_stdio_protocol[editable]'
           -m "not slow" -n 0 -v --no-cov --junitxml=test-results/public-workflow-smoke.xml
 
       - name: Require executed successful public workflow smoke
@@ -317,7 +318,7 @@ jobs:
             exit 1
           fi
           python scripts/check_junit.py test-results/public-workflow-smoke.xml \
-            --require-case 'test_artifact_migration_stdio_protocol[plugin-codex]'
+            --require-case 'test_artifact_migration_stdio_protocol[editable]'
 
       - name: Publish public workflow smoke results
         id: public_smoke_artifact

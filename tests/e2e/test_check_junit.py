@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-CASE = "test_artifact_migration_stdio_protocol[plugin-codex]"
+CASE = "test_artifact_migration_stdio_protocol[editable]"
 SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "check_junit.py"
 
 
