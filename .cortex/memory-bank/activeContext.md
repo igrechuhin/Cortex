@@ -3,6 +3,11 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-11-22)
+
+- ✅ **Fix the public cortex-do entry point** - COMPLETE (2026-11-22) - <!-- memory_type: status -->
+Updated the project Codex skill to open Synapse’s public `do-loop.md` prompt. Verified the target against the Synapse prompt manifest and confirmed that each iteration still runs the internal `do.md` prompt.
+
 ## Completed Work (2026-11-21)
 
 - ✅ **Migrate Cortex to FastMCP 4 and MCP SDK 2** - COMPLETE (2026-11-21) - <!-- memory_type: status -->

@@ -1,6 +1,11 @@
 <!-- memory_type: milestone -->
 # Progress Log
 
+## 2026-11-22
+
+- <!-- memory_type: status -->
+**Fix the public cortex-do entry point** - COMPLETE. The project Codex skill now opens the public Synapse loop prompt. Phase A passed with 9,056 tests and 92.18% coverage.
+
 ## 2026-11-21
 
 - <!-- memory_type: status -->
