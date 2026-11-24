@@ -1,6 +1,15 @@
 <!-- memory_type: milestone -->
 # Progress Log
 
+## 2026-11-24
+
+- <!-- memory_type: status -->
+- <!-- memory_type: status -->
+- <!-- memory_type: status -->
+**Stabilize quality gate regression fixtures** - COMPLETE. The SwiftPM teardown fixture waits for runner readiness and checks kernel identities for the processes it owns. The cached-result case uses a separate wait budget. The recovery tests now have their own module. Phase A and CI parity passed with 9,075 tests and 92.07% coverage.
+**Verify SwiftPM timeout teardown** - COMPLETE. On macOS, Cortex requests SwiftPM cancellation, reaps the launcher, and verifies descendant completion before publishing an exact-attempt completion receipt. The timed-out gate still fails. Regression cases retain the lease for live, escaped, and unverifiable descendants. A native XCTest timed out and the next detached gate passed. The full Cortex gate passed with 9,075 tests, four skipped, and 92.07% coverage.
+**Recover confirmed quality-worker leases** - COMPLETE. Cortex can reclaim a running lease after an interrupted exit when its exact attempt has a completion receipt and the process group is gone. Uncertain descendant completion retains ownership. Added eight regression cases. The full gate passed on retry with 9,064 tests, four skipped, and 92.18% coverage.
+
 ## 2026-11-22
 
 - <!-- memory_type: status -->

@@ -50,6 +50,7 @@ from .swift_test_diagnostics import (
     stderr_tail,
 )
 from .swift_test_logging import SwiftTestLogRecord, write_swift_test_log
+from .swift_test_process import SwiftTestTimeout, run_timed_swift_test
 from .swift_xcodebuild_mixin import SwiftXcodebuildMixin
 from .test_selection import (
     selected_swift_result,
@@ -64,6 +65,14 @@ _SWIFT_ERROR_LINE_RE = re.compile(r"error:\s+.*|\.swift:\d+:\d+:\s+error:", re.I
 _SwiftOutcomeDetails = tuple[
     bool, float | None, list[str], list[CoverageGap], list[str], list[CoverageGap]
 ]
+
+
+def _decode_timeout_output(output: str | bytes | None) -> str:
+    return (
+        output.decode("utf-8", errors="replace")
+        if isinstance(output, bytes)
+        else (output or "")
+    )
 
 
 class SwiftAdapter(SwiftXcodebuildMixin, FrameworkAdapter):
@@ -137,14 +146,16 @@ class SwiftAdapter(SwiftXcodebuildMixin, FrameworkAdapter):
         env: dict[str, str] | None = None
         if extra_env:
             env = {**os.environ, **extra_env}
-        raw = subprocess.run(
-            cmd,
-            cwd=self.project_root,
-            capture_output=True,
-            text=False,
-            timeout=timeout,
-            env=env,
-        )
+        if args[:1] == ["test"] and timeout is not None:
+            raw = run_timed_swift_test(cmd, self.project_root, timeout, env)
+        else:
+            raw = subprocess.run(
+                cmd,
+                cwd=self.project_root,
+                capture_output=True,
+                timeout=timeout,
+                env=env,
+            )
         stdout = raw.stdout.decode("utf-8", errors="replace") if raw.stdout else ""
         stderr = raw.stderr.decode("utf-8", errors="replace") if raw.stderr else ""
         return subprocess.CompletedProcess(
@@ -211,8 +222,7 @@ class SwiftAdapter(SwiftXcodebuildMixin, FrameworkAdapter):
                 extra_env=extra_env,
             )
         except subprocess.TimeoutExpired as exc:
-            self._handle_swift_test_timeout(exc, argv, extra_env, start)
-            return self._timeout_test_result()
+            return self._handle_swift_test_timeout(exc, argv, extra_env, start)
         except Exception as e:
             return self._error_test_result(str(e))
         return self._classify_and_finalize(
@@ -296,32 +306,24 @@ class SwiftAdapter(SwiftXcodebuildMixin, FrameworkAdapter):
         argv: list[str],
         extra_env: dict[str, str] | None,
         start: float,
-    ) -> None:
+    ) -> TestResult:
         """Log a timed-out ``swift test`` before returning the timeout result."""
-        elapsed = time.monotonic() - start
-        stdout = (
-            (exc.stdout or b"").decode("utf-8", errors="replace")
-            if isinstance(exc.stdout, bytes)
-            else (exc.stdout or "")
-        )
-        stderr = (
-            (exc.stderr or b"").decode("utf-8", errors="replace")
-            if isinstance(exc.stderr, bytes)
-            else (exc.stderr or "")
-        )
+        verified = isinstance(exc, SwiftTestTimeout) and exc.verified
         outcome = SwiftTestOutcome(
             status=SwiftTestStatus.HARNESS_FAILURE,
-            diagnostic=f"swift test exceeded timeout after {elapsed:.1f}s",
+            diagnostic=f"swift test exceeded timeout. Descendant completion verified: {verified}.",
         )
         self._log_swift_test_run(
             argv=argv,
             extra_env=extra_env,
             returncode=-1,
-            stdout=stdout,
-            stderr=stderr,
-            elapsed=elapsed,
+            stdout=_decode_timeout_output(exc.stdout),
+            stderr=_decode_timeout_output(exc.stderr),
+            elapsed=time.monotonic() - start,
             outcome=outcome,
+            resolve_bin_path=False,
         )
+        return self._timeout_test_result(verified)
 
     def _log_swift_test_run(  # noqa: PLR0913
         self,
@@ -332,19 +334,13 @@ class SwiftAdapter(SwiftXcodebuildMixin, FrameworkAdapter):
         stderr: str,
         elapsed: float,
         outcome: SwiftTestOutcome,
+        resolve_bin_path: bool = True,
     ) -> None:
         """Persist a comprehensive swift test transcript for user attachments.
 
         Best-effort: any subprocess failure during codecov-dir resolution is
         swallowed so logging never breaks the gate.
         """
-        codecov_dir: Path | None = None
-        try:
-            bin_path = self._resolve_swift_bin_path(None)
-            if bin_path is not None:
-                codecov_dir = bin_path / "codecov"
-        except Exception:
-            codecov_dir = None
         _ = write_swift_test_log(
             project_root=self.project_root,
             record=SwiftTestLogRecord(
@@ -356,9 +352,16 @@ class SwiftAdapter(SwiftXcodebuildMixin, FrameworkAdapter):
                 stderr=stderr,
                 outcome=outcome,
                 elapsed_seconds=elapsed,
-                codecov_dir=codecov_dir,
+                codecov_dir=self._log_codecov_dir() if resolve_bin_path else None,
             ),
         )
+
+    def _log_codecov_dir(self) -> Path | None:
+        try:
+            bin_path = self._resolve_swift_bin_path(None)
+        except Exception:
+            return None
+        return bin_path / "codecov" if bin_path is not None else None
 
     def _llvm_cov_report_argv(self, binary: Path, profdata: Path) -> list[str]:
         """Build argv for ``llvm-cov report`` (macOS uses ``xcrun``)."""
@@ -634,11 +637,11 @@ class SwiftAdapter(SwiftXcodebuildMixin, FrameworkAdapter):
         """Count passed and failed tests from swift test summary output."""
         return extract_swift_test_counts(output)
 
-    def _timeout_test_result(self) -> TestResult:
+    def _timeout_test_result(self, verified: bool = False) -> TestResult:
         """Build test result for timeout."""
         return TestResult(
             success=False,
-            execution_uncertain=True,
+            execution_uncertain=not verified,
             tests_run=0,
             tests_passed=0,
             tests_failed=0,

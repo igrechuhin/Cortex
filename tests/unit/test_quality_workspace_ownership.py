@@ -7,9 +7,6 @@ import json
 import multiprocessing
 import os
 import time
-from collections.abc import Iterator, Mapping, Sequence
-from multiprocessing.connection import Connection
-from multiprocessing.process import BaseProcess
 from pathlib import Path
 from typing import cast
 from unittest.mock import MagicMock, patch
@@ -39,109 +36,35 @@ from cortex.tools.execution.pre_commit_workspace import (
 from cortex.tools.execution.session_paths import session_dir
 from tests.helpers.quality_lease_fixtures import (
     Control,
-    finish_lifetimes,
     launch_stub_worker,
     lifetime_alive,
-    prepare_lifetimes,
     request_release,
     run_server,
     start_stub,
     wait_exit,
 )
-
-_OWNED_SERVERS: list[tuple[BaseProcess, tuple[Connection, Connection]]] = []
-
-
-@pytest.fixture(autouse=True)
-def cooperative_lifetimes(tmp_path: Path) -> Iterator[None]:
-    """Pytest attributes teardown failures separately from the test assertion."""
-    prepare_lifetimes(tmp_path)
-    yield
-    request_release(tmp_path)
-    failures = _finish_servers()
-    try:
-        finish_lifetimes(tmp_path)
-    except Exception as exc:
-        failures.append(exc)
-    if failures:
-        raise ExceptionGroup("Owned process fixture teardown failed", failures)
-
-
-def _finish_servers() -> list[Exception]:
-    failures: list[Exception] = []
-    for server, channels in _OWNED_SERVERS:
-        if server.pid is not None:
-            server.join(timeout=8)
-            if server.is_alive():
-                failures.append(
-                    AssertionError(
-                        "Fixture teardown: owned server did not exit cooperatively"
-                    )
-                )
-        for channel in channels:
-            channel.close()
-    _OWNED_SERVERS.clear()
-    return failures
-
-
-def _prepare(root: Path, mode: str = "normal") -> None:
-    _ = (root / "fixture-mode").write_text(mode)
-
-
-def _wait_json(path: Path) -> dict[str, int]:
-    deadline = time.monotonic() + 8
-    while time.monotonic() < deadline:
-        try:
-            return json.loads(path.read_text())
-        except (FileNotFoundError, json.JSONDecodeError):
-            time.sleep(0.01)
-    raise AssertionError(f"Synthetic process did not publish {path.name}")
+from tests.helpers.quality_workspace_fixtures import (
+    assert_foreign_busy,
+    assert_next_foreign_launch,
+    prepare_workspace,
+    start_foreign,
+    track_servers,
+    wait_for_fixture_json,
+)
+from tests.helpers.quality_workspace_fixtures import (
+    cooperative_lifetimes as cooperative_lifetimes,
+)
 
 
 def _cleanup(root: Path) -> None:
     request_release(root)
 
 
-def _assert_foreign_busy(result: Mapping[str, object]) -> None:
-    assert result["status"] == "running"
-    assert result["busy"] is True
-    assert result["reason"] == "workspace_occupied"
-    assert result["preflight_passed"] is False
-    assert "job_id" not in result and "result_file" not in result
-
-
-def _close_servers(
-    servers: Sequence[BaseProcess], channels: Sequence[tuple[Connection, Connection]]
-) -> None:
-    _OWNED_SERVERS.extend(zip(servers, channels, strict=True))
-
-
-def _foreign_start(root: Path) -> dict[str, object]:
-    context = multiprocessing.get_context("spawn")
-    parent, child = context.Pipe()
-    server = context.Process(target=run_server, args=(str(root), None, child))
-    try:
-        server.start()
-        assert parent.poll(8), "Foreign Cortex fixture did not return its request"
-        return cast(dict[str, object], parent.recv())
-    finally:
-        _close_servers([server], [(parent, child)])
-
-
-def _assert_next_foreign_launch(root: Path) -> None:
-    _ = (root / "fixture-mode").write_text("normal")
-    for name in (Control.RELEASE.value, Control.EXIT_SUPERVISOR.value, "worker.json"):
-        (root / name).unlink(missing_ok=True)
-    assert _foreign_start(root)["status"] == "started"
-    _ = _wait_json(root / "worker.json")
-    assert len((root / "executions.txt").read_text().splitlines()) == 2
-
-
 def test_same_owner_retry_returns_one_current_run(tmp_path: Path) -> None:
-    _prepare(tmp_path)
+    prepare_workspace(tmp_path)
     try:
         first = start_stub(tmp_path)
-        _ = _wait_json(tmp_path / "worker.json")
+        _ = wait_for_fixture_json(tmp_path / "worker.json")
         second = start_stub(tmp_path)
 
         assert first["status"] == "started"
@@ -167,12 +90,12 @@ def test_foreign_running_envelope_never_returns_private_handle(
     result = find_running_job(tmp_path, path)
 
     assert result is not None
-    _assert_foreign_busy(result)
+    assert_foreign_busy(result)
     assert "foreign" not in json.dumps(result)
 
 
 def test_two_server_processes_atomically_start_only_one_worker(tmp_path: Path) -> None:
-    _prepare(tmp_path)
+    prepare_workspace(tmp_path)
     context = multiprocessing.get_context("spawn")
     barrier = context.Barrier(2)
     channels = [context.Pipe() for _ in range(2)]
@@ -187,16 +110,16 @@ def test_two_server_processes_atomically_start_only_one_worker(tmp_path: Path) -
         for parent, _ in channels:
             assert parent.poll(10)
             outcomes.append(cast(dict[str, object], parent.recv()))
-        _ = _wait_json(tmp_path / "worker.json")
+        _ = wait_for_fixture_json(tmp_path / "worker.json")
 
         assert sum(result["status"] == "started" for result in outcomes) == 1
-        _assert_foreign_busy(
+        assert_foreign_busy(
             next(result for result in outcomes if result["status"] != "started")
         )
         assert len((tmp_path / "executions.txt").read_text().splitlines()) == 1
-        _assert_foreign_busy(start_stub(tmp_path))
+        assert_foreign_busy(start_stub(tmp_path))
     finally:
-        _close_servers(servers, channels)
+        track_servers(servers, channels)
         _cleanup(tmp_path)
 
 
@@ -204,49 +127,49 @@ def test_two_server_processes_atomically_start_only_one_worker(tmp_path: Path) -
 def test_worker_death_keeps_live_test_descendant_guarded(
     tmp_path: Path, mode: str
 ) -> None:
-    _prepare(tmp_path, mode)
+    prepare_workspace(tmp_path, mode)
     try:
         _ = start_stub(tmp_path)
-        _ = _wait_json(tmp_path / "worker.json")
-        _ = _wait_json(tmp_path / "descendant.json")
+        _ = wait_for_fixture_json(tmp_path / "worker.json")
+        _ = wait_for_fixture_json(tmp_path / "descendant.json")
         _ = (tmp_path / Control.EXIT_SUPERVISOR.value).write_text(
             "cooperative supervisor exit"
         )
         wait_exit(tmp_path, "worker", require_group_gone=False)
         assert lifetime_alive(tmp_path, "descendant")
 
-        _assert_foreign_busy(_foreign_start(tmp_path))
+        assert_foreign_busy(start_foreign(tmp_path))
         assert len((tmp_path / "executions.txt").read_text().splitlines()) == 1
         _ = (tmp_path / Control.RELEASE.value).write_text("release descendant")
         wait_exit(tmp_path, "descendant")
         # AI: Exited fixtures do not authorize clearing abnormal RUNNING uncertainty.
-        _assert_foreign_busy(_foreign_start(tmp_path))
+        assert_foreign_busy(start_foreign(tmp_path))
     finally:
         _cleanup(tmp_path)
 
 
 def test_terminal_result_does_not_release_live_group_descendant(tmp_path: Path) -> None:
-    _prepare(tmp_path, "terminal_descendant")
+    prepare_workspace(tmp_path, "terminal_descendant")
     try:
         _ = start_stub(tmp_path)
-        _ = _wait_json(tmp_path / "worker.json")
-        _ = _wait_json(tmp_path / "descendant.json")
+        _ = wait_for_fixture_json(tmp_path / "worker.json")
+        _ = wait_for_fixture_json(tmp_path / "descendant.json")
         wait_exit(tmp_path, "worker", require_group_gone=False)
 
         assert lifetime_alive(tmp_path, "descendant")
-        _assert_foreign_busy(_foreign_start(tmp_path))
+        assert_foreign_busy(start_foreign(tmp_path))
         assert len((tmp_path / "executions.txt").read_text().splitlines()) == 1
         _ = (tmp_path / Control.RELEASE.value).write_text("release descendant")
         wait_exit(tmp_path, "descendant")
         wait_exit(tmp_path, "worker")
-        _assert_next_foreign_launch(tmp_path)
+        assert_next_foreign_launch(tmp_path)
     finally:
         _cleanup(tmp_path)
 
 
 @pytest.mark.parametrize("mode", ["normal", "startup"])
 def test_server_death_does_not_release_worker_lease(tmp_path: Path, mode: str) -> None:
-    _prepare(tmp_path, mode)
+    prepare_workspace(tmp_path, mode)
     context = multiprocessing.get_context("spawn")
     parent, child = context.Pipe()
     server = context.Process(target=run_server, args=(str(tmp_path), None, child, True))
@@ -254,7 +177,7 @@ def test_server_death_does_not_release_worker_lease(tmp_path: Path, mode: str) -
         server.start()
         assert parent.poll(10)
         assert parent.recv()["status"] == "started"
-        _ = _wait_json(
+        _ = wait_for_fixture_json(
             tmp_path / ("startup.json" if mode == "startup" else "worker.json")
         )
         _ = (tmp_path / Control.RELEASE_SERVER.value).write_text(
@@ -263,13 +186,13 @@ def test_server_death_does_not_release_worker_lease(tmp_path: Path, mode: str) -
         server.join(timeout=8)
         assert not server.is_alive()
 
-        _assert_foreign_busy(_foreign_start(tmp_path))
+        assert_foreign_busy(start_foreign(tmp_path))
         if mode == "normal":
             assert len((tmp_path / "executions.txt").read_text().splitlines()) == 1
         else:
             assert not (tmp_path / "executions.txt").exists()
     finally:
-        _close_servers([server], [(parent, child)])
+        track_servers([server], [(parent, child)])
         _cleanup(tmp_path)
 
 
@@ -277,7 +200,7 @@ def test_server_death_does_not_release_worker_lease(tmp_path: Path, mode: str) -
 async def test_cancelled_waiter_does_not_release_detached_worker(
     tmp_path: Path,
 ) -> None:
-    _prepare(tmp_path)
+    prepare_workspace(tmp_path)
     with patch(
         "cortex.tools.execution.pre_commit_detached.spawn_detached_worker",
         side_effect=launch_stub_worker,
@@ -288,7 +211,7 @@ async def test_cancelled_waiter_does_not_release_detached_worker(
             )
         )
         try:
-            _ = await asyncio.to_thread(_wait_json, tmp_path / "worker.json")
+            _ = await asyncio.to_thread(wait_for_fixture_json, tmp_path / "worker.json")
             _ = waiter.cancel()
             with pytest.raises(asyncio.CancelledError):
                 await waiter
@@ -303,7 +226,7 @@ async def test_cancelled_waiter_does_not_release_detached_worker(
 
 
 def test_failed_spawn_leaves_startup_lease_reusable(tmp_path: Path) -> None:
-    _prepare(tmp_path)
+    prepare_workspace(tmp_path)
     with patch(
         "cortex.tools.execution.pre_commit_process.subprocess.Popen",
         side_effect=OSError("synthetic spawn failure"),
@@ -312,19 +235,19 @@ def test_failed_spawn_leaves_startup_lease_reusable(tmp_path: Path) -> None:
             _ = start_stub(tmp_path)
     try:
         result = start_stub(tmp_path)
-        _ = _wait_json(tmp_path / "worker.json")
+        _ = wait_for_fixture_json(tmp_path / "worker.json")
         assert result["status"] == "started"
     finally:
         _cleanup(tmp_path)
 
 
 def test_normal_terminal_exit_permits_next_request(tmp_path: Path) -> None:
-    _prepare(tmp_path)
+    prepare_workspace(tmp_path)
     try:
         # Exercise request-bound reaping if the background watcher could not start.
         with patch("cortex.tools.execution.pre_commit_process._watch_detached_worker"):
             _ = start_stub(tmp_path)
-        worker = _wait_json(tmp_path / "worker.json")
+        worker = wait_for_fixture_json(tmp_path / "worker.json")
         _ = (tmp_path / "release").write_text("released")
         # Observe the child exit without consuming it. A retry would hide the
         # bug because the unsuccessful first request reaps in its busy handler.
@@ -343,7 +266,7 @@ def test_normal_terminal_exit_permits_next_request(tmp_path: Path) -> None:
 
 
 def test_idle_owner_reaps_before_foreign_request(tmp_path: Path) -> None:
-    _prepare(tmp_path)
+    prepare_workspace(tmp_path)
     context = multiprocessing.get_context("spawn")
     parent, child = context.Pipe()
     server = context.Process(target=run_server, args=(str(tmp_path), None, child, True))
@@ -351,25 +274,25 @@ def test_idle_owner_reaps_before_foreign_request(tmp_path: Path) -> None:
         server.start()
         assert parent.poll(8), "Owner server did not launch the fixture worker"
         assert parent.recv()["status"] == "started"
-        _ = _wait_json(tmp_path / "worker.json")
+        _ = wait_for_fixture_json(tmp_path / "worker.json")
         _ = (tmp_path / Control.RELEASE.value).write_text("release worker only")
         # This process cannot reap the foreign server's child.
         wait_exit(tmp_path, "worker", require_group_gone=False)
         assert server.is_alive()
         wait_exit(tmp_path, "worker")
         assert server.is_alive()
-        _assert_next_foreign_launch(tmp_path)
+        assert_next_foreign_launch(tmp_path)
     finally:
-        _close_servers([server], [(parent, child)])
+        track_servers([server], [(parent, child)])
         _cleanup(tmp_path)
 
 
 def test_legacy_dead_supervisor_with_live_group_remains_busy(tmp_path: Path) -> None:
-    _prepare(tmp_path, "descendant")
+    prepare_workspace(tmp_path, "descendant")
     try:
         first = start_stub(tmp_path)
-        worker = _wait_json(tmp_path / "worker.json")
-        _ = _wait_json(tmp_path / "descendant.json")
+        worker = wait_for_fixture_json(tmp_path / "worker.json")
+        _ = wait_for_fixture_json(tmp_path / "descendant.json")
         _ = (tmp_path / Control.EXIT_SUPERVISOR.value).write_text(
             "cooperative supervisor exit"
         )
@@ -380,26 +303,26 @@ def test_legacy_dead_supervisor_with_live_group_remains_busy(tmp_path: Path) -> 
         _ = path.write_text(json.dumps({"status": "running", "pid": worker["pid"]}))
 
         assert lifetime_alive(tmp_path, "descendant")
-        _assert_foreign_busy(_foreign_start(tmp_path))
+        assert_foreign_busy(start_foreign(tmp_path))
         assert len((tmp_path / "executions.txt").read_text().splitlines()) == 1
         _ = (tmp_path / Control.RELEASE.value).write_text("release descendant")
         wait_exit(tmp_path, "descendant")
         wait_exit(tmp_path, "worker")
-        _assert_next_foreign_launch(tmp_path)
+        assert_next_foreign_launch(tmp_path)
     finally:
         _cleanup(tmp_path)
 
 
 def test_failed_publication_does_not_release_spawned_worker(tmp_path: Path) -> None:
-    _prepare(tmp_path)
+    prepare_workspace(tmp_path)
     try:
         with patch(
-            "tests.helpers.quality_lease_fixtures.publish_started_worker",
+            "cortex.tools.execution.pre_commit_process.publish_started_worker",
             side_effect=OSError("synthetic publication failure"),
         ):
             with pytest.raises(OSError, match="synthetic publication failure"):
                 _ = start_stub(tmp_path)
-        _ = _wait_json(tmp_path / "worker.json")
+        _ = wait_for_fixture_json(tmp_path / "worker.json")
 
         with pytest.raises(WorkspaceBusy):
             with workspace_lease(tmp_path, "a" * 12):
@@ -422,14 +345,14 @@ def test_malformed_durable_record_fails_closed(tmp_path: Path) -> None:
 
 
 def test_busy_response_never_claims_a_gate_verdict() -> None:
-    _assert_foreign_busy(busy_response())
+    assert_foreign_busy(busy_response())
 
 
 @pytest.mark.asyncio
 async def test_distinct_mcp_sessions_in_one_server_do_not_share_ownership(
     tmp_path: Path,
 ) -> None:
-    _prepare(tmp_path)
+    prepare_workspace(tmp_path)
     first_ctx = MagicMock(spec=MCPContext)
     first_ctx.session_id = "synthetic-first-session"
     second_ctx = MagicMock(spec=MCPContext)
@@ -442,7 +365,7 @@ async def test_distinct_mcp_sessions_in_one_server_do_not_share_ownership(
             first = await run_bounded_phase_a(
                 tmp_path, 30, 0.9, False, first_ctx, LocalExecutionEnvironment(), 0.03
             )
-            _ = await asyncio.to_thread(_wait_json, tmp_path / "worker.json")
+            _ = await asyncio.to_thread(wait_for_fixture_json, tmp_path / "worker.json")
             foreign = await run_bounded_phase_a(
                 tmp_path, 30, 0.9, False, second_ctx, LocalExecutionEnvironment(), 0.03
             )
@@ -451,7 +374,7 @@ async def test_distinct_mcp_sessions_in_one_server_do_not_share_ownership(
             )
 
             assert first["job_id"] == own_retry["job_id"]
-            _assert_foreign_busy(foreign)
+            assert_foreign_busy(foreign)
             assert len((tmp_path / "executions.txt").read_text().splitlines()) == 1
         finally:
             _cleanup(tmp_path)

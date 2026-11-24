@@ -60,7 +60,11 @@ from cortex.tools.execution.pre_commit_test_scope import (
 from cortex.tools.execution.pre_commit_tools_run_helpers import (
     build_pre_commit_response,
 )
-from cortex.tools.execution.pre_commit_workspace import worker_lease, worker_owner
+from cortex.tools.execution.pre_commit_workspace import (
+    worker_completion_attempt,
+    worker_lease,
+    worker_owner,
+)
 from cortex.tools.files.markdown_lint_core import get_all_markdown_files_for_lint
 
 logging.basicConfig(
@@ -97,6 +101,10 @@ def atomic_write(result_path: Path, data: dict[str, object]) -> None:
     owner = worker_owner()
     if owner:
         data = {**data, "owner": owner}
+        if data.get("status") == "completed":
+            attempt = worker_completion_attempt()
+            if attempt is not None:
+                data["workspace_completion_attempt"] = attempt
     attach_worker_proof(result_path, data)
     result_path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(

@@ -267,7 +267,7 @@ class TestSwiftAdapterRunTestsDiagnostics:
             assert result.tests_passed == 136
             assert result.tests_failed == 0
 
-    @patch("cortex.services.framework_adapters.swift_adapter.subprocess.run")
+    @patch("cortex.services.framework_adapters.swift_adapter.run_timed_swift_test")
     def test_run_tests_timeout(self, mock_run: MagicMock) -> None:
         """run_tests returns failure when execution times out."""
         with tempfile.TemporaryDirectory() as tmpdir:

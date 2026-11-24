@@ -431,12 +431,15 @@ async def test_plain_retry_serves_delivered_envelope_as_cached(
     result_file = _result_path(tmp_path)
     _write_envelope(result_file, envelope)
 
-    with patch.object(
-        gate,
-        "_read_quality_gate_config",
-        return_value=(DEFAULT_TEST_TIMEOUT, 0.9, False, {"force_fresh": False}),
+    with (
+        patch.object(
+            gate,
+            "_read_quality_gate_config",
+            return_value=(DEFAULT_TEST_TIMEOUT, 0.9, False, {"force_fresh": False}),
+        ),
+        patch.object(gate, "QUALITY_GATE_WAIT_SECONDS", 0.5),
     ):
-        result = await asyncio.wait_for(gate.run_quality_gate(), timeout=0.5)
+        result = await asyncio.wait_for(gate.run_quality_gate(), timeout=1.0)
 
     assert result["status"] == "error"
     assert result["cached_result"] is True

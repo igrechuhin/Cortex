@@ -4,34 +4,27 @@
 
 import json
 import os
+import shlex
+import signal
 import subprocess
 import sys
 import time
+from collections.abc import Iterator
+from contextlib import contextmanager
 from enum import Enum
 from multiprocessing.connection import Connection
 from multiprocessing.synchronize import Barrier
 from pathlib import Path
+from types import FrameType
 from unittest.mock import patch
 
 from pydantic import BaseModel, Field, ValidationError
 
 from cortex.core.execution_env import ExecutionEnvironment, LocalExecutionEnvironment
-from cortex.tools.execution.pre_commit_detached import start_pre_commit_job_impl
-from cortex.tools.execution.pre_commit_process import (
-    pre_commit_result_path,
-    publish_started_worker,
-    reap_detached_workers,
-    spawn_detached_process,
-)
-from cortex.tools.execution.pre_commit_worker import atomic_write, write_status
-from cortex.tools.execution.pre_commit_workspace import (
-    process_group_alive,
-    worker_lease,
-)
-from cortex.tools.execution.session_paths import session_dir
 
 _READERS: dict[tuple[Path, str], int] = {}
 _WAIT_SECONDS = 8.0
+_SWIFT_TEST_TIMEOUT = 3
 
 
 class ProcessIdentity(BaseModel):
@@ -46,6 +39,7 @@ class Control(str, Enum):
     EXIT_SUPERVISOR = "exit-supervisor"
     RELEASE_SERVER = "release-server"
     ALLOW_WORKER = "allow-worker"
+    SWIFT_INTERRUPT = "swift-interrupt"
 
 
 def prepare_lifetimes(root: Path) -> None:
@@ -118,6 +112,8 @@ def _identities(root: Path, role: str) -> tuple[list[ProcessIdentity], set[int]]
 
 
 def wait_exit(root: Path, role: str, require_group_gone: bool = True) -> None:
+    from cortex.tools.execution.pre_commit_process import reap_detached_workers
+
     deadline = time.monotonic() + _WAIT_SECONDS
     while time.monotonic() < deadline:
         reap_detached_workers()
@@ -138,6 +134,8 @@ def _observed_exit(
     snapshot: tuple[list[ProcessIdentity], set[int]],
     require_group_gone: bool,
 ) -> bool:
+    from cortex.tools.execution.pre_commit_workspace import process_group_alive
+
     identities, ready = snapshot
     if any(
         identity.pid not in ready and process_group_alive(identity.pgid)
@@ -180,14 +178,15 @@ def launch_stub_worker(
     test_filter: str | None = None,
 ) -> Path:
     """Keep the real guarded process launch and replace only the check payload."""
-    _ = (
-        checks,
-        timeout,
-        coverage_threshold,
-        strict_mode,
-        include_markdown_lint,
-        test_filter,
+    from cortex.tools.execution.pre_commit_process import (
+        pre_commit_result_path,
+        publish_started_worker,
+        spawn_detached_process,
     )
+    from cortex.tools.execution.session_paths import session_dir
+
+    _ = checks, timeout, coverage_threshold
+    _ = strict_mode, include_markdown_lint, test_filter
     result_path = pre_commit_result_path(session_dir(project_root), args_hash)
     command = _worker_command(project_root, result_path)
     log = session_dir(project_root) / f"pre_commit_worker_{args_hash}.log"
@@ -211,6 +210,8 @@ def _worker_command(root: Path, result_path: Path) -> list[str]:
 
 def start_stub(root: Path) -> dict[str, object]:
     """Exercise the actual Cortex start entry point without executing any check."""
+    from cortex.tools.execution.pre_commit_detached import start_pre_commit_job_impl
+
     with patch(
         "cortex.tools.execution.pre_commit_detached.spawn_detached_worker",
         side_effect=launch_stub_worker,
@@ -245,8 +246,8 @@ def _wait_release(root: Path) -> None:
 
 def _descendant(root: Path) -> None:
     claim_lifetime(root, "descendant")
-    _ = (root / "descendant.json").write_text(
-        json.dumps({"pid": os.getpid(), "pgid": os.getpgrp()})
+    _publish_identity(
+        root / "descendant.json", ProcessIdentity(pid=os.getpid(), pgid=os.getpgrp())
     )
     _wait_release(root)
 
@@ -264,23 +265,33 @@ def _wait_startup(root: Path, mode: str) -> None:
 
 
 def _spawn_descendant(root: Path, mode: str) -> subprocess.Popen[bytes] | None:
-    if mode not in {"descendant", "escaped_descendant", "terminal_descendant"}:
+    if mode not in {
+        "descendant",
+        "escaped_descendant",
+        "terminal_descendant",
+        "receipt_descendant",
+        "timeout_escaped_descendant",
+    }:
         return None
+    escaped = mode in {"escaped_descendant", "timeout_escaped_descendant"}
     child = subprocess.Popen(
         [sys.executable, "-P", str(Path(__file__).resolve()), "descendant", str(root)],
         close_fds=True,
-        start_new_session=mode == "escaped_descendant",
+        start_new_session=escaped,
     )
     publish_launch(
         root,
         "descendant",
         child.pid,
-        child.pid if mode == "escaped_descendant" else os.getpgrp(),
+        child.pid if escaped else os.getpgrp(),
     )
     return child
 
 
 def _worker(root: Path, result_path: Path) -> None:
+    from cortex.tools.execution.pre_commit_worker import write_status
+    from cortex.tools.execution.pre_commit_workspace import worker_lease
+
     claim_lifetime(root, "worker")
     mode = (root / "fixture-mode").read_text()
     _wait_startup(root, mode)
@@ -292,23 +303,175 @@ def _worker(root: Path, result_path: Path) -> None:
         _ = (root / "worker.json").write_text(
             json.dumps({"pid": os.getpid(), "pgid": os.getpgrp()})
         )
-        if mode != "terminal_descendant":
+        if mode.startswith("swift_timeout"):
+            _publish_swift_timeout(root, result_path, mode)
+            return
+        if mode not in {"terminal_descendant", "receipt_descendant"}:
             control = wait_control(root, (Control.RELEASE, Control.EXIT_SUPERVISOR))
             if control == Control.EXIT_SUPERVISOR:
-                os._exit(71)
-            if child is not None:
+                if mode not in {"receipt", "timeout_escaped_descendant"}:
+                    os._exit(71)
+            elif child is not None:
                 _ = child.wait(timeout=8)
-        atomic_write(
-            result_path,
-            {
-                "version": 1,
-                "status": "completed",
-                "quality_gate_pending": True,
-                "pid": os.getpid(),
-                "completed_at": time.time(),
-                "result": {"status": "success"},
-            },
+        _publish_worker_receipt(result_path, mode)
+
+
+def _publish_swift_timeout(root: Path, result_path: Path, mode: str) -> None:
+    from cortex.tools.execution.pre_commit_worker import atomic_write
+
+    swift = root / "swift"
+    command = shlex.join([sys.executable, "-P", str(Path(__file__).resolve())])
+    _ = swift.write_text(f'#!/bin/sh\nexec {command} "$@"\n')
+    swift.chmod(0o700)
+    _ = (root / "Package.swift").touch()
+    with patch.dict(os.environ, {"PATH": f"{root}{os.pathsep}{os.environ['PATH']}"}):
+        result = _execute_swift_timeout(root, mode)
+    atomic_write(
+        result_path,
+        {
+            "status": "completed",
+            "version": 1,
+            "pid": os.getpid(),
+            "completed_at": time.time(),
+            "quality_gate_pending": True,
+            "result": {"status": "error", "results": {"tests": result}},
+        },
+    )
+
+
+def _execute_swift_timeout(root: Path, mode: str) -> dict[str, object]:
+    from cortex.services.framework_adapters.base import CheckResult, TestResult
+    from cortex.services.framework_adapters.darwin_process_lineage import (
+        DarwinProcessLineage,
+    )
+    from cortex.services.framework_adapters.swift_adapter import SwiftAdapter
+    from cortex.tools.execution.pre_commit_helpers_models import (
+        CheckStats,
+        PreCommitCheck,
+        QualityCheckResult,
+    )
+    from cortex.tools.execution.pre_commit_pipeline_processors import (
+        process_tests_check,
+    )
+
+    results: dict[str, CheckResult | TestResult | QualityCheckResult] = {}
+
+    probe = patch.object(
+        DarwinProcessLineage,
+        "_live_pids",
+        side_effect=lambda: _swift_fixture_pids(root, mode),
+    )
+    with probe, _swift_timeout_after_runner_ready(root):
+        process_tests_check(
+            SwiftAdapter(str(root)),
+            [PreCommitCheck.TESTS],
+            _SWIFT_TEST_TIMEOUT,
+            0.9,
+            results,
+            CheckStats(total_errors=0, total_warnings=0),
+            test_filter="Synthetic",
         )
+    return results["tests"].model_dump()
+
+
+def _swift_fixture_pids(root: Path, mode: str) -> list[int]:
+    if mode == "swift_timeout_unavailable":
+        raise PermissionError
+    # AI: Keep kernel identity checks for the owned processes. Unrelated
+    # processes starting and exiting during parallel tests cannot affect
+    # the fixture's inventory.
+    pids = [os.getpid()]
+    runner = ProcessIdentity.model_validate_json(
+        (root / "descendant.json").read_bytes()
+    )
+    try:
+        os.kill(runner.pid, 0)
+    except ProcessLookupError:
+        return pids
+    return [*pids, runner.pid]
+
+
+@contextmanager
+def _swift_timeout_after_runner_ready(root: Path) -> Iterator[None]:
+    communicate = subprocess.Popen[bytes].communicate
+
+    def communicate_after_start(
+        process: subprocess.Popen[bytes],
+        input: bytes | None = None,
+        timeout: float | None = None,
+    ) -> tuple[bytes, bytes]:
+        if timeout == _SWIFT_TEST_TIMEOUT:
+            # AI: Deliver the real subprocess timeout after runner startup so
+            # scheduler delays cannot turn a teardown test into a startup test.
+            deadline = time.monotonic() + _WAIT_SECONDS
+            ready = root / "descendant.json"
+            while not ready.exists() and time.monotonic() < deadline:
+                time.sleep(0.01)
+            timeout = 0
+        return communicate(process, input, timeout)
+
+    with patch.object(subprocess.Popen, "communicate", communicate_after_start):
+        yield
+
+
+def _swift_test(root: Path) -> None:
+    def interrupt(_signum: int, _frame: FrameType | None) -> None:
+        (root / Control.SWIFT_INTERRUPT.value).touch()
+
+    _ = signal.signal(signal.SIGINT, interrupt)
+    mode = (root / "fixture-mode").read_text()
+    role = "swift-orphan" if mode == "swift_timeout_escaped" else "descendant"
+    child = _start_swift_fixture_child(root, role)
+    if role == "swift-orphan":
+        _ = child.wait(timeout=8)
+    _ = wait_control(root, (Control.SWIFT_INTERRUPT,))
+    if mode in {"swift_timeout", "swift_timeout_unavailable"}:
+        (root / Control.RELEASE.value).touch()
+        _ = child.wait(timeout=8)
+
+
+def _start_swift_fixture_child(
+    root: Path, role: str, *, detached: bool = False
+) -> subprocess.Popen[bytes]:
+    child = subprocess.Popen(
+        [sys.executable, "-P", str(Path(__file__).resolve()), role, str(root)],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=detached,
+    )
+    if role == "descendant":
+        publish_launch(root, role, child.pid, child.pid if detached else os.getpgrp())
+    return child
+
+
+def _publish_worker_receipt(result_path: Path, mode: str) -> None:
+    from cortex.tools.execution.pre_commit_worker import atomic_write
+    from cortex.tools.execution.pre_commit_workspace import mark_worker_uncertain
+
+    if mode == "timeout_escaped_descendant":
+        mark_worker_uncertain()
+    atomic_write(
+        result_path,
+        {
+            "version": 1,
+            "status": "completed",
+            "quality_gate_pending": True,
+            "pid": os.getpid(),
+            "completed_at": time.time(),
+            "result": (
+                {
+                    "status": "error",
+                    "results": {"tests": {"execution_uncertain": True}},
+                }
+                if mode == "timeout_escaped_descendant"
+                else {"status": "success"}
+            ),
+        },
+    )
+    if mode in {"receipt", "receipt_descendant", "timeout_escaped_descendant"}:
+        # AI: Reproduce a worker interrupted after publishing its result
+        # and before recording TERMINAL under the workspace mutex.
+        os._exit(71)
 
 
 if __name__ == "__main__":
@@ -316,6 +479,10 @@ if __name__ == "__main__":
         _worker(Path(sys.argv[2]), Path(sys.argv[3]))
     elif sys.argv[1] == "descendant":
         _descendant(Path(sys.argv[2]))
+    elif sys.argv[1] == "test":
+        _swift_test(Path.cwd())
+    elif sys.argv[1] == "swift-orphan":
+        _ = _start_swift_fixture_child(Path(sys.argv[2]), "descendant", detached=True)
     else:
         raise ValueError("Unknown synthetic fixture mode")
     os._exit(0)

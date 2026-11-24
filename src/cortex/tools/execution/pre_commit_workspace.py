@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import stat
 import tempfile
@@ -12,11 +13,14 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from enum import Enum
 from pathlib import Path
+from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from cortex.tools.execution.pre_commit_ownership import current_owner
 from cortex.tools.execution.session_paths import session_dir
+
+logger = logging.getLogger(__name__)
 
 LEASE_FD_ENV = "CORTEX_QUALITY_LEASE_FD"
 LEASE_OWNER_ENV = "CORTEX_QUALITY_LEASE_OWNER"
@@ -26,7 +30,7 @@ _RECORD_NAME = "quality-worker-lease.json"
 
 
 class LeaseState(str, Enum):
-    """An incomplete running lease never expires or proves its descendants dead."""
+    """A running lease needs positive completion evidence before reuse."""
 
     STARTING = "starting"
     RUNNING = "running"
@@ -37,9 +41,10 @@ class WorkspaceLease(BaseModel):
     """Private durable ownership metadata, never returned to another caller."""
 
     model_config = ConfigDict(extra="forbid")
-    version: int = Field(default=1, ge=1, le=1)
+    version: int = Field(default=1, ge=1, le=2)
     owner: str = Field(pattern=r"^[a-f0-9]{64}$")
     request_id: str = Field(pattern=r"^[a-f0-9]{12}$")
+    attempt_id: str | None = Field(default=None, pattern=r"^[a-f0-9]{32}$")
     state: LeaseState = LeaseState.STARTING
     pgid: int | None = Field(default=None, gt=0)
 
@@ -47,7 +52,19 @@ class WorkspaceLease(BaseModel):
     def require_process_group(self) -> WorkspaceLease:
         if self.state != LeaseState.STARTING and self.pgid is None:
             raise ValueError("A worker lease requires its process group")
+        if (self.version == 2) != (self.attempt_id is not None):
+            raise ValueError("Only a version 2 workspace lease has an attempt ID")
         return self
+
+
+class _CompletionReceipt(BaseModel):
+    """Only the identity and completion fields are relevant to the lease."""
+
+    owner: str
+    pid: int = Field(gt=0, strict=True)
+    status: str
+    completed_at: float = Field(gt=0, allow_inf_nan=False)
+    workspace_completion_attempt: str
 
 
 class WorkspaceBusy(RuntimeError):
@@ -64,7 +81,9 @@ class _HeldLease(BaseModel):
 _HELD: ContextVar[_HeldLease | None] = ContextVar(
     "quality_workspace_lease", default=None
 )
-_WORKER_OWNER: ContextVar[str | None] = ContextVar("quality_worker_owner", default=None)
+_WORKER_LEASE: ContextVar[WorkspaceLease | None] = ContextVar(
+    "quality_worker_record", default=None
+)
 _WORKER_UNCERTAIN: ContextVar[bool] = ContextVar(
     "quality_worker_uncertain", default=False
 )
@@ -77,7 +96,7 @@ def busy_response() -> dict[str, object]:
         "busy": True,
         "reason": "workspace_occupied",
         "preflight_passed": False,
-        "message": "Workspace checks or fixes are occupied; retry this request after they finish. An interrupted lease requires owner review.",
+        "message": "Workspace checks or fixes are occupied. Retry after they finish. An interrupted run with unconfirmed completion requires owner review.",
     }
 
 
@@ -97,7 +116,7 @@ def _write_record(root: Path, record: WorkspaceLease) -> None:
     fd, name = tempfile.mkstemp(prefix=".quality-lease-", dir=directory)
     try:
         with os.fdopen(fd, "w") as stream:
-            _ = stream.write(record.model_dump_json())
+            _ = stream.write(record.model_dump_json(exclude_none=True))
             stream.flush()
             os.fsync(stream.fileno())
         os.replace(name, directory / _RECORD_NAME)
@@ -117,21 +136,51 @@ def process_group_alive(pgid: int | None) -> bool:
         os.killpg(pgid, 0)
     except ProcessLookupError:
         return False
-    except OSError:
+    except (OSError, OverflowError):
         return True
     return True
 
 
-def _record_occupied(record: WorkspaceLease | None) -> bool:
+def _has_completion_receipt(root: Path, record: WorkspaceLease) -> bool:
+    from cortex.tools.execution.pre_commit_detached import fix_result_path
+    from cortex.tools.execution.pre_commit_process import pre_commit_result_path
+
+    if record.attempt_id is None:
+        return False
+    directory = session_dir(root)
+    for result_path in (
+        pre_commit_result_path(directory, record.request_id),
+        fix_result_path(directory, record.request_id),
+    ):
+        try:
+            receipt = _CompletionReceipt.model_validate_json(result_path.read_bytes())
+        except (OSError, ValidationError):
+            continue
+        if (
+            receipt.status == "completed"
+            and receipt.owner == record.owner
+            and receipt.pid == record.pgid
+            and receipt.workspace_completion_attempt == record.attempt_id
+        ):
+            return True
+    return False
+
+
+def _record_occupied(root: Path, record: WorkspaceLease | None) -> bool:
     if record is None or record.state == LeaseState.STARTING:
         # AI: Acquiring flock proves every startup holder closed its descriptor;
         # no checks may start until the worker durably enters RUNNING.
         return False
-    if record.state == LeaseState.RUNNING:
-        # AI: A killed worker can leave test descendants, including ones no longer
-        # observable by its PID. Abnormal loss therefore needs explicit review.
+    if process_group_alive(record.pgid):
         return True
-    return process_group_alive(record.pgid)
+    if record.state == LeaseState.TERMINAL:
+        return False
+    # AI: An empty group does not exclude escaped descendants. Require evidence
+    # from the exact worker attempt, including when the same request and PID recur.
+    if _has_completion_receipt(root, record):
+        return False
+    logger.debug("Unconfirmed quality worker completion: job_id=%s", record.request_id)
+    return True
 
 
 def _lock_fd(fd: int) -> None:
@@ -165,6 +214,26 @@ def _open_locked_fd(root: Path) -> int:
     return fd
 
 
+def _claim_record(root: Path, request_id: str) -> WorkspaceLease:
+    """Check and replace the previous record while holding its mutex."""
+    previous = _read_record(root)
+    if _record_occupied(root, previous):
+        raise WorkspaceBusy(
+            "Workspace worker or descendants require completion or review"
+        )
+    record = WorkspaceLease(
+        version=2, owner=current_owner(), request_id=request_id, attempt_id=uuid4().hex
+    )
+    _write_record(root, record)
+    if previous is not None and previous.state == LeaseState.RUNNING:
+        logger.info(
+            "Recovered quality worker lease from completion receipt: job_id=%s pgid=%s",
+            previous.request_id,
+            previous.pgid,
+        )
+    return record
+
+
 @contextmanager
 def workspace_lease(root: Path, request_id: str) -> Iterator[None]:
     """Atomically inspect, replace and hold a lease until spawn transfers it."""
@@ -178,12 +247,7 @@ def workspace_lease(root: Path, request_id: str) -> Iterator[None]:
     fd = _open_locked_fd(root)
     token = None
     try:
-        if _record_occupied(_read_record(root)):
-            raise WorkspaceBusy(
-                "Workspace worker or descendants require completion or review"
-            )
-        record = WorkspaceLease(owner=current_owner(), request_id=request_id)
-        _write_record(root, record)
+        record = _claim_record(root, request_id)
         token = _HELD.set(_HeldLease(root=root, fd=fd, record=record))
         yield
     finally:
@@ -208,12 +272,21 @@ def inherited_lease(root: Path) -> tuple[tuple[int, ...], dict[str, str]]:
 
 def worker_owner() -> str | None:
     """Inherited environment alone must not label a server's result as worker-owned."""
-    return _WORKER_OWNER.get()
+    lease = _WORKER_LEASE.get()
+    return lease.owner if lease is not None else None
+
+
+def worker_completion_attempt() -> str | None:
+    """Identify a worker attempt whose completed receipt can settle its lease."""
+    lease = _WORKER_LEASE.get()
+    if lease is None or _WORKER_UNCERTAIN.get():
+        return None
+    return lease.attempt_id
 
 
 def mark_worker_uncertain() -> None:
     """A validated worker must retain its lease after an interrupted test command."""
-    if _WORKER_OWNER.get() is not None:
+    if _WORKER_LEASE.get() is not None:
         _ = _WORKER_UNCERTAIN.set(True)
 
 
@@ -248,7 +321,7 @@ def worker_lease(root: Path) -> Iterator[None]:
         raise WorkspaceBusy("Start workers through the guarded Cortex entry point")
     fd = int(raw_fd)
     record = _adopt_worker_lease(root, fd)
-    token = _WORKER_OWNER.set(record.owner)
+    token = _WORKER_LEASE.set(record)
     uncertain_token = _WORKER_UNCERTAIN.set(False)
     try:
         yield
@@ -260,5 +333,5 @@ def worker_lease(root: Path) -> Iterator[None]:
             _write_record(root, record)
     finally:
         _WORKER_UNCERTAIN.reset(uncertain_token)
-        _WORKER_OWNER.reset(token)
+        _WORKER_LEASE.reset(token)
         os.close(fd)

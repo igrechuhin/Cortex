@@ -90,8 +90,13 @@ receives a bounded `status: running`, `busy: true`,
 `reason: workspace_occupied` response without another run's job or result-file
 handle. Retry the same Cortex entry point after that response; callers do not
 need to prove that the checkout is idle. A checkout lease serializes launch
-across processes and remains conservative after abnormal worker loss. A terminal
-receipt does not release occupancy while its process group still exists.
+across processes. After an interrupted exit, Cortex can recover a running
+lease when the worker recorded completion for that exact attempt and the
+process group is gone. On macOS, after `swift test` times out, Cortex lets
+SwiftPM cancel its runners, reaps the launcher, and checks kernel process
+lineage for survivors. The timed-out gate still fails. Cortex can launch a
+new gate after verified teardown, and retains the lease when teardown remains
+uncertain. Cortex logs automatic recoveries on the server.
 
 This coordination does not skip checks, grant project-data access, or authorize
 another test runner. If a required native check is unavailable or denied, report

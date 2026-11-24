@@ -3,6 +3,17 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-11-24)
+
+- ✅ **Recover confirmed quality-worker leases** - COMPLETE (2026-11-24) - <!-- memory_type: milestone -->
+Reconcile completed worker attempts under the existing workspace mutex and log successful recovery. The attempt identity prevents stale receipts from authorizing reuse after PID reuse. Legacy timeout receipts with uncertain descendant completion remain occupied. Full gate passed with 9,064 tests, four skipped, and 92.18% coverage.
+
+- ✅ **Verify SwiftPM timeout teardown** - COMPLETE (2026-11-24) - <!-- memory_type: problem -->
+A failed SwiftPM timeout on macOS now permits a fresh detached gate after verified process teardown. Completion remains tied to the exact worker attempt. Live descendants, escaped descendants, and unavailable lineage inspection keep the lease occupied. A native XCTest timeout and subsequent passing gate reproduced recovery. The full Cortex gate passed with 9,075 tests, four skipped, and 92.07% coverage.
+
+- ✅ **Stabilize quality gate regression fixtures** - COMPLETE (2026-11-24) - <!-- memory_type: status -->
+The SwiftPM teardown fixture waits for its runner and checks kernel identities for the processes it owns. The cached-result test uses a separate wait budget. Quality-worker recovery tests now have their own module. Phase A and CI parity passed with 9,075 tests and 92.07% coverage.
+
 ## Completed Work (2026-11-22)
 
 - ✅ **Fix the public cortex-do entry point** - COMPLETE (2026-11-22) - <!-- memory_type: status -->
