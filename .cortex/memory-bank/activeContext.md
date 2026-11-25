@@ -3,6 +3,11 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-11-25)
+
+- ✅ **Verify delayed SwiftPM runner teardown** - COMPLETE (2026-11-25) - <!-- memory_type: status -->
+On macOS, verify process lineage through the remaining SwiftPM cancellation window after the launcher exits. A detached runner that finishes cancellation can release the exact worker lease, while uncertain teardown continues to block reuse. The full Cortex gate passed with 9,076 tests and 92.06% coverage.
+
 ## Completed Work (2026-11-24)
 
 - ✅ **Recover confirmed quality-worker leases** - COMPLETE (2026-11-24) - <!-- memory_type: milestone -->

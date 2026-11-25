@@ -92,10 +92,18 @@ def test_uncertain_timeout_receipt_cannot_release_escaped_descendant(
 
 
 @pytest.mark.skipif(sys.platform != "darwin", reason="Requires Darwin process lineage")
-def test_swift_timeout_allows_next_foreign_gate(tmp_path: Path) -> None:
-    prepare_workspace(tmp_path, "swift_timeout")
+@pytest.mark.parametrize(
+    "separate_group", [False, True], ids=["same-group", "separate-group"]
+)
+def test_swift_timeout_allows_next_foreign_gate(
+    tmp_path: Path, separate_group: bool
+) -> None:
+    mode = "swift_timeout_separate_group" if separate_group else "swift_timeout"
+    prepare_workspace(tmp_path, mode)
     first = start_stub(tmp_path)
-    _ = wait_for_fixture_json(tmp_path / "descendant.json")
+    worker = wait_for_fixture_json(tmp_path / "worker.json")
+    descendant = wait_for_fixture_json(tmp_path / "descendant.json")
+    assert (worker["pgid"] != descendant["pgid"]) is separate_group
     wait_exit(tmp_path, "worker")
     attempt, uncertain = _swift_timeout_receipt(tmp_path, first["job_id"])
     lease_path = session_dir(tmp_path) / "quality-worker-lease.json"
@@ -113,7 +121,10 @@ def test_swift_timeout_allows_next_foreign_gate(tmp_path: Path) -> None:
 def test_unverified_swift_timeout_blocks_next_gate(tmp_path: Path, case: str) -> None:
     prepare_workspace(tmp_path, f"swift_timeout_{case}")
     first = start_stub(tmp_path)
-    _ = wait_for_fixture_json(tmp_path / "descendant.json")
+    descendant = wait_for_fixture_json(tmp_path / "descendant.json")
+    if case == "escaped":
+        worker = wait_for_fixture_json(tmp_path / "worker.json")
+        assert worker["pgid"] != descendant["pgid"]
     wait_exit(tmp_path, "worker", require_group_gone=case != "live")
     attempt, uncertain = _swift_timeout_receipt(tmp_path, first["job_id"])
 
@@ -124,6 +135,7 @@ def test_unverified_swift_timeout_blocks_next_gate(tmp_path: Path, case: str) ->
     request_release(tmp_path)
     wait_exit(tmp_path, "descendant")
     assert_foreign_busy(start_foreign(tmp_path))
+    assert len((tmp_path / "executions.txt").read_text().splitlines()) == 1
 
 
 def _swift_timeout_receipt(root: Path, job_id: object) -> tuple[str | None, bool]:

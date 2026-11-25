@@ -13,7 +13,6 @@ from typing import NamedTuple, cast
 # version survives reparenting and exec, when the parent unique ID can change.
 _PROC_PIDUNIQIDENTIFIERINFO = 17
 _IDENTITY = struct.Struct("=16xQQII16x")
-_VERIFY_SECONDS = 1.0
 
 
 class ProcessIdentity(NamedTuple):
@@ -92,9 +91,8 @@ class DarwinProcessLineage:
             identities.append(identity)
         return identities
 
-    def verify_after_reap(self, launcher_id: int) -> bool:
+    def verify_after_reap(self, launcher_id: int, deadline: float) -> bool:
         """Require an inventory in which every live process is provably unrelated."""
-        deadline = time.monotonic() + _VERIFY_SECONDS
         while True:
             try:
                 identities = self._stable_inventory()
@@ -102,9 +100,10 @@ class DarwinProcessLineage:
                 return False
             if identities and _exclude_descendants(identities, launcher_id):
                 return True
-            if time.monotonic() >= deadline:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
                 return False
-            time.sleep(0.05)
+            time.sleep(min(0.05, remaining))
 
 
 def _exclude_descendants(identities: list[ProcessIdentity], launcher_id: int) -> bool:

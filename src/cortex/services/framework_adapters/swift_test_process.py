@@ -3,6 +3,7 @@
 import logging
 import signal
 import subprocess
+import time
 from pathlib import Path
 
 from .darwin_process_lineage import DarwinProcessLineage
@@ -12,6 +13,7 @@ logger = logging.getLogger(__name__)
 # SwiftPM gives its registered cancellation handlers up to 30 seconds.
 _INTERRUPT_GRACE_SECONDS = 32
 _KILL_GRACE_SECONDS = 2
+_LINEAGE_GRACE_SECONDS = 1
 
 
 class SwiftTestTimeout(subprocess.TimeoutExpired):
@@ -41,11 +43,16 @@ def run_timed_swift_test(
         stdout, stderr = process.communicate(timeout=timeout)
         return subprocess.CompletedProcess(command, process.wait(), stdout, stderr)
     except subprocess.TimeoutExpired as exc:
-        latest, reaped = _interrupt_and_reap(process, exc)
+        cancellation_deadline = time.monotonic() + _INTERRUPT_GRACE_SECONDS
+        latest, reaped = _interrupt_and_reap(process, exc, cancellation_deadline)
+        # AI: Separate runner groups can finish cancellation after SwiftPM
+        # exits and closes its pipes. Use the remaining cancellation budget
+        # for proof, keeping a short minimum window after forced teardown.
+        deadline = max(cancellation_deadline, time.monotonic() + _LINEAGE_GRACE_SECONDS)
         verified = (
             reaped
             and launcher_id is not None
-            and lineage.verify_after_reap(launcher_id)
+            and lineage.verify_after_reap(launcher_id, deadline)
         )
         raise SwiftTestTimeout(latest, verified) from exc
     finally:
@@ -55,13 +62,16 @@ def run_timed_swift_test(
 
 
 def _interrupt_and_reap(
-    process: subprocess.Popen[bytes], expired: subprocess.TimeoutExpired
+    process: subprocess.Popen[bytes],
+    expired: subprocess.TimeoutExpired,
+    cancellation_deadline: float,
 ) -> tuple[subprocess.TimeoutExpired, bool]:
     # AI: SwiftPM owns runner groups and its SIGINT handler cancels them. Only
     # signal the direct child here. Its descendants may be in other groups.
     try:
         process.send_signal(signal.SIGINT)
-        stdout, stderr = process.communicate(timeout=_INTERRUPT_GRACE_SECONDS)
+        remaining = max(0.0, cancellation_deadline - time.monotonic())
+        stdout, stderr = process.communicate(timeout=remaining)
     except subprocess.TimeoutExpired as exc:
         # AI: An escaped process can retain a pipe after the launcher exits.
         # After escalation wait only for the child, without draining the pipes.

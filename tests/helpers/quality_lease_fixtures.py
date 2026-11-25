@@ -249,7 +249,14 @@ def _descendant(root: Path) -> None:
     _publish_identity(
         root / "descendant.json", ProcessIdentity(pid=os.getpid(), pgid=os.getpgrp())
     )
-    _wait_release(root)
+    if (root / "fixture-mode").read_text() == "swift_timeout_separate_group":
+        control = wait_control(root, (Control.SWIFT_INTERRUPT, Control.RELEASE))
+        if control is Control.SWIFT_INTERRUPT:
+            # AI: Finish cancellation after the original one-second lineage
+            # window. The launcher exits independently and has no pipes to drain.
+            time.sleep(1.5)
+    else:
+        _wait_release(root)
 
 
 def _wait_startup(root: Path, mode: str) -> None:
@@ -393,6 +400,8 @@ def _swift_fixture_pids(root: Path, mode: str) -> list[int]:
 
 @contextmanager
 def _swift_timeout_after_runner_ready(root: Path) -> Iterator[None]:
+    from cortex.services.framework_adapters import swift_test_process
+
     communicate = subprocess.Popen[bytes].communicate
 
     def communicate_after_start(
@@ -410,7 +419,10 @@ def _swift_timeout_after_runner_ready(root: Path) -> Iterator[None]:
             timeout = 0
         return communicate(process, input, timeout)
 
-    with patch.object(subprocess.Popen, "communicate", communicate_after_start):
+    with (
+        patch.object(subprocess.Popen, "communicate", communicate_after_start),
+        patch.object(swift_test_process, "_INTERRUPT_GRACE_SECONDS", 4),
+    ):
         yield
 
 
@@ -421,7 +433,9 @@ def _swift_test(root: Path) -> None:
     _ = signal.signal(signal.SIGINT, interrupt)
     mode = (root / "fixture-mode").read_text()
     role = "swift-orphan" if mode == "swift_timeout_escaped" else "descendant"
-    child = _start_swift_fixture_child(root, role)
+    child = _start_swift_fixture_child(
+        root, role, detached=mode == "swift_timeout_separate_group"
+    )
     if role == "swift-orphan":
         _ = child.wait(timeout=8)
     _ = wait_control(root, (Control.SWIFT_INTERRUPT,))

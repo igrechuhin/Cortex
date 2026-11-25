@@ -1,6 +1,11 @@
 <!-- memory_type: milestone -->
 # Progress Log
 
+## 2026-11-25
+
+- <!-- memory_type: status -->
+**Verify delayed SwiftPM runner teardown** - COMPLETE. SwiftPM timeout handling now uses the remaining cancellation window to confirm teardown when a runner outlives the launcher in a separate process group. Regression coverage verifies recovery after delayed exit and continued lease retention for escaped runners. Phase A and CI parity passed with 9,076 tests and 92.06% coverage.
+
 ## 2026-11-24
 
 - <!-- memory_type: status -->
