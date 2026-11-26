@@ -1271,6 +1271,39 @@ records requiring manual recovery are retained.
 
 ---
 
+### plan(operation="archive_cancelled")
+
+Archive one operator-cancelled or retired root-level plan. Pass its exact
+`slug` without `.md` and supply this JSON as the `content` string.
+
+```json
+{
+  "expected_sha256": "<64 lowercase hexadecimal characters from the raw plan bytes>",
+  "reason": "Operator cancelled the plan",
+  "dry_run": true
+}
+```
+
+All three fields are required. Preview reports the destination and any live
+roadmap registration to remove without writing plan, roadmap, or operation
+files. To apply, send the same slug, digest, and reason with `dry_run: false`.
+The plan moves to `.cortex/plans/archive/Cancelled/<slug>.md` with
+`status: CANCELLED`. The operation rebases the moved plan's project-local
+Markdown links, removes its live roadmap registration, and retargets
+preserved roadmap references, including historical decisions. It keeps
+declared dependencies and leaves them unsatisfied by the cancelled plan.
+
+The response includes the resolved project root, archive path, cancellation
+status, and any removed roadmap line. Apply uses the shared recoverable archive
+transaction and keeps the reason in its bounded receipt. An identical apply
+retry can recover an interrupted operation or confirm a retained successful
+receipt. A stale digest, conflicting retry, duplicate identity, completed
+plan, or occupied archive destination is rejected. Use
+`plan(operation="get", slug=..., response_format="metadata")` or
+`plan(operation="list", include_archive=True)` to find the archived record.
+
+---
+
 ### plan(operation="graph")
 
 Return the dependency graph for uniquely identified real plan documents. Archived
@@ -1279,6 +1312,10 @@ an active plan. Only active plans with recognized `PENDING` or `READY` status ar
 actionable; explicit `BLOCKED` plans remain blocked, and archived, in-progress,
 declined, custom-status, draft, and scaffolding documents are excluded from the
 ready queue.
+
+`cancelled` lists plans whose status is `CANCELLED` or a recognized alias
+(`CANCELED`, `RETIRED`). Their dependency edges remain visible and dependents
+continue to report them as blockers.
 
 Duplicate slugs are not selected by traversal order. They appear in the
 `ambiguous` mapping with plans-root-relative candidate paths and cannot satisfy
@@ -1356,7 +1393,8 @@ active, draft, scaffold, symlinked, missing, malformed, and conflicting-status
 targets, and uses the same completion lock with an expected-content atomic write.
 
 Only recognized `PENDING`, `READY`, and already-`DONE` source statuses are
-eligible. `BLOCKED`, `IN_PROGRESS`, declined, and custom statuses are preserved.
+eligible. `BLOCKED`, `IN_PROGRESS`, cancellation aliases, declined, and custom
+statuses are preserved. Records in `archive/Cancelled/` are ineligible.
 The operation never infers completion from archive location. It returns the
 project-relative resolved path, previous and current status, and `changed`; an
 already-`DONE` retry is an idempotent success.

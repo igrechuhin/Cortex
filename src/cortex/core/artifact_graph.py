@@ -323,7 +323,11 @@ def _partition_ready_blocked(
         node = nodes[slug]
         if node.archived or not node.status_recognized:
             continue
-        if node.status in {PlanStatus.DONE, PlanStatus.IN_PROGRESS}:
+        if node.status not in {
+            PlanStatus.PENDING,
+            PlanStatus.READY,
+            PlanStatus.BLOCKED,
+        }:
             continue
         if slug in cyclic_slugs:
             blocked.append(slug)

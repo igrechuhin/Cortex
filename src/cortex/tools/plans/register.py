@@ -14,7 +14,9 @@ from cortex.core.constants import (
 from cortex.core.context_logging import MCPContext, log_client
 from cortex.core.file_system import FileSystemManager
 from cortex.core.mcp_stability import ensure_usage_context, mcp_tool_wrapper
+from cortex.core.models import PlanStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.plan_metadata import resolve_plan_status_token
 from cortex.core.plan_utils import (
     PlanValidationError,
     find_clarification_markers,
@@ -36,7 +38,6 @@ from cortex.tools.plans.register_helpers import (
     SectionValidation,
     create_register_error_result,
     create_register_success_result,
-    is_completed_status,
     register_plan_entry,
     validate_registration_section,
 )
@@ -325,22 +326,30 @@ async def _execute_register_plan(params: _RegisterPlanExecParams) -> str:
         await manager.release_lock(lock)
 
 
+def _terminal_registration_error(status: str) -> str | None:
+    match resolve_plan_status_token(status):
+        case PlanStatus.CANCELLED:
+            return "Cancelled plans cannot be registered in roadmap"
+        case PlanStatus.DONE:
+            return _ROADMAP_COMPLETED_STATUS_MESSAGE
+        case _:
+            return None
+
+
 async def _check_status_and_section(
     status: str, section: str, ctx: MCPContext | None
 ) -> _SectionCheck:
     """Validate status and section."""
-    if is_completed_status(status):
+    if error := _terminal_registration_error(status):
         await log_client(
             ctx,
             "warning",
-            "register_plan_in_roadmap: rejected COMPLETED status",
+            f"register_plan_in_roadmap: {error}",
             logger_name=__name__,
         )
         return _SectionCheck(
             section_id=None,
-            error_json=create_register_error_result(
-                _ROADMAP_COMPLETED_STATUS_MESSAGE
-            ).model_dump_json(),
+            error_json=create_register_error_result(error).model_dump_json(),
         )
     sv: SectionValidation = validate_registration_section(section)
     if sv.error_message:

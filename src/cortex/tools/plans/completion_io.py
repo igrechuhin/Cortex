@@ -8,7 +8,13 @@ from pathlib import Path
 
 from cortex.core.constants import MemoryBankFile
 from cortex.core.exceptions import FileConflictError, FileLockTimeoutError
+from cortex.core.file_system import FileSystemManager
+from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.memory.wal import WalOperation
+from cortex.tools.plans.completion_transaction_io import (
+    hash_text,
+    validate_contained_path,
+)
 from cortex.tools.plans.corruption import fix_roadmap_content_if_needed
 
 
@@ -198,3 +204,46 @@ async def write_active_context(
         wal_operation,
         None,
     )
+
+
+async def write_owned_exact_text(
+    manager: FileSystemManager,
+    path: Path,
+    content: str,
+    expected_hash: str,
+    expected_exists: bool,
+) -> None:
+    """Use the byte-atomic document writer under the shared per-file lock."""
+    if not expected_exists:
+        raise ValueError("Cancellation writes require an existing file")
+    root = manager.project_root
+    lock = path.with_suffix(path.suffix + ".lock")
+    validate_contained_path(lock, root)
+    await manager.acquire_lock(lock)
+    try:
+        _replace_exact_text(root, path, content, expected_hash)
+    finally:
+        await manager.release_lock(lock)
+
+
+def _replace_exact_text(
+    root: Path, path: Path, content: str, expected_hash: str
+) -> None:
+    from cortex.tools.files.document_patch_operations import write_existing_document
+    from cortex.tools.files.guarded_mutation_evidence import GuardedMutationEvidence
+
+    validate_contained_path(path, root)
+    if not path.is_file():
+        raise ValueError(f"Cancellation target is no longer a regular file: {path}")
+    evidence = GuardedMutationEvidence()
+    before = evidence.observe(root, path)
+    before_text = before.decode("utf-8")
+    if hash_text(before_text) != expected_hash:
+        raise ValueError(f"Cancellation write conflict: content changed for {path}")
+    relative = path.relative_to(root).as_posix()
+    write_existing_document(root, relative, path, before, content.encode(), evidence)
+    memory = get_cortex_path(root, CortexResourceType.MEMORY_BANK)
+    if path == memory / MemoryBankFile.ROADMAP:
+        _wal_maybe(
+            root, path, WalOperation.WRITE, True, before_text, content, True, None
+        )

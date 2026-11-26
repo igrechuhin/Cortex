@@ -9,8 +9,8 @@ from cortex.core.artifact_graph import read_plan_status_from_content
 from cortex.core.constants import MemoryBankFile
 from cortex.core.models import PlanStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+from cortex.core.plan_metadata import has_cancelled_plan_status
 from cortex.core.security import InputValidator
-from cortex.tools.plans.completion_archive import archive_subdir_for_plan
 from cortex.tools.plans.completion_content import (
     append_progress_entry_content,
     create_section_and_append,
@@ -23,15 +23,18 @@ from cortex.tools.plans.completion_transaction_io import (
     persist_payload,
     read_required_text,
     request_fingerprint,
+    transaction_archive_subdir,
     utc_now_iso,
     validate_contained_path,
 )
 from cortex.tools.plans.completion_transaction_models import (
+    CancellationRequest,
     CompletionFileKey,
     CompletionFileRecord,
     CompletionOperationRecord,
     CompletionPhase,
     CompletionRequest,
+    PlanArchiveRequest,
     PreparedCompletionFile,
 )
 from cortex.tools.plans.register_artifact_graph import replace_plan_frontmatter_status
@@ -154,14 +157,15 @@ def _persist_file_record(
     )
 
 
-def _plan_paths(
-    project_root: Path, request: CompletionRequest
+def plan_archive_paths(
+    project_root: Path, request: PlanArchiveRequest
 ) -> tuple[Path | None, Path | None]:
+    """Resolve and contain the exact root source and canonical destination."""
     if request.plan_file_name is None:
         return None, None
     plans = get_cortex_path(project_root, CortexResourceType.PLANS)
     source = plans / request.plan_file_name
-    subdir = archive_subdir_for_plan(request.plan_file_name)
+    subdir = transaction_archive_subdir(request, request.plan_file_name)
     if subdir is None:
         raise ValueError("Cannot determine archive location")
     archive = get_cortex_path(project_root, CortexResourceType.PLANS_ARCHIVE)
@@ -176,12 +180,14 @@ def _append_plan_record(
     request: CompletionRequest,
     files: list[PreparedCompletionFile],
 ) -> tuple[Path | None, Path | None]:
-    source, destination = _plan_paths(project_root, request)
+    source, destination = plan_archive_paths(project_root, request)
     if source is None:
         return source, destination
     plan_before = read_required_text(
         source, get_cortex_path(project_root, CortexResourceType.PLANS)
     )
+    if has_cancelled_plan_status(plan_before):
+        raise ValueError("Cancelled plans cannot be completed")
     _validate_plan_identity(plan_before, request)
     assert destination is not None
     if destination.exists():
@@ -255,11 +261,11 @@ def _append_progress_record(
 
 def _new_operation_record(
     project_root: Path,
-    request: CompletionRequest,
+    request: PlanArchiveRequest,
     files: list[CompletionFileRecord],
     source: Path | None,
     destination: Path | None,
-    line_numbers: tuple[int, int | None, int | None],
+    line_numbers: tuple[int | None, int | None, int | None],
 ) -> CompletionOperationRecord:
     timestamp = utc_now_iso()
     roadmap_line, active_line, progress_line = line_numbers
@@ -284,12 +290,21 @@ def _new_operation_record(
 def prepare_record(
     project_root: Path,
     operations_root: Path,
-    request: CompletionRequest,
+    request: PlanArchiveRequest,
 ) -> CompletionOperationRecord:
     """Prevalidate every input/read/destination and persist immutable payloads."""
-    prepared_files: list[PreparedCompletionFile] = []
-    source, destination = _append_plan_record(project_root, request, prepared_files)
-    line_numbers = _append_memory_records(project_root, request, prepared_files)
+    prepared_files: list[PreparedCompletionFile]
+    if isinstance(request, CancellationRequest):
+        from cortex.tools.plans.cancellation_prepare import prepare_cancellation
+
+        prepared = prepare_cancellation(project_root, request)
+        source, destination = prepared.source, prepared.destination
+        prepared_files = prepared.files
+        line_numbers = (prepared.roadmap_line_removed, None, None)
+    else:
+        prepared_files = []
+        source, destination = _append_plan_record(project_root, request, prepared_files)
+        line_numbers = _append_memory_records(project_root, request, prepared_files)
     op_id = operation_id(request)
     files = [
         _persist_file_record(project_root, operations_root, op_id, prepared)

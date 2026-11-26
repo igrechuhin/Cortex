@@ -1,6 +1,11 @@
 <!-- memory_type: milestone -->
 # Progress Log
 
+## 2026-11-26
+
+- <!-- memory_type: status -->
+**Archive cancelled plans** - COMPLETE. Added recoverable archival with a distinct cancellation status, preserved historical references and dependency edges, and verified the MCP operation and 9,096 passing tests.
+
 ## 2026-11-25
 
 - <!-- memory_type: status -->

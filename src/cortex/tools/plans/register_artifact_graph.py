@@ -127,7 +127,7 @@ def _target_plan_status_after_completion_resync(
     slug: str, graph: ArtifactGraph, current: PlanStatus
 ) -> PlanStatus:
     # AI: Match register defaults for never-blocked plans; promote BLOCKED→READY when deps clear.
-    if current in {PlanStatus.DONE, PlanStatus.IN_PROGRESS}:
+    if current in {PlanStatus.DONE, PlanStatus.IN_PROGRESS, PlanStatus.CANCELLED}:
         return current
     node = graph.nodes.get(slug)
     if node is None:
@@ -247,6 +247,8 @@ def resolve_registration_status(
         raise ValueError(
             "Completed plans cannot be registered in roadmap; use activeContext.md"
         )
+    if metadata.status == PlanStatus.CANCELLED:
+        raise ValueError("Cancelled plans cannot be registered in roadmap")
     if not metadata.recognized and metadata.raw_token is not None:
         return metadata.raw_token, raw
     if metadata.status in {

@@ -96,6 +96,7 @@ class PlanStatus(str, Enum):
     BLOCKED = "BLOCKED"
     DONE = "DONE"
     READY = "READY"
+    CANCELLED = "CANCELLED"
 
 
 class PlanExecutionMode(str, Enum):
@@ -139,6 +140,7 @@ class PlanToolOperation(str, Enum):
     ENRICH = "enrich"
     GRAPH = "graph"
     ARCHIVE_COMPLETED = "archive_completed"
+    ARCHIVE_CANCELLED = "archive_cancelled"
     CONTINUE_STEP = "continue_step"
     APPROVE_STEP = "approve_step"
     FINALIZE_STEP = "finalize_step"

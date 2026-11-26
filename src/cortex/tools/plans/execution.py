@@ -147,7 +147,10 @@ def _execution_bytes(before: bytes, request: PlanExecutionRequest) -> tuple[byte
         )
     text = before.decode("utf-8-sig")
     metadata = read_plan_status_metadata(text)
-    if not metadata.recognized or metadata.status == PlanStatus.DONE:
+    if not metadata.recognized or metadata.status in {
+        PlanStatus.DONE,
+        PlanStatus.CANCELLED,
+    }:
         raise GuardedOperationRefusal(
             "Plan must have a recognized nonterminal, nonconflicting status"
         )

@@ -17,13 +17,17 @@ from cortex.core.constants import MemoryBankFile
 from cortex.core.file_system import FileSystemManager
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.memory.wal import WalOperation
-from cortex.tools.plans.completion_archive import archive_subdir_for_plan
+from cortex.tools.plans.completion_archive import (
+    CANCELLED_ARCHIVE_SUBDIR,
+    archive_subdir_for_plan,
+)
 from cortex.tools.plans.completion_transaction_models import (
+    CancellationRequest,
     CompletionFileKey,
     CompletionFileRecord,
     CompletionOperationRecord,
     CompletionPhase,
-    CompletionRequest,
+    PlanArchiveRequest,
 )
 
 _MAX_COMPLETED_RECORDS = 32
@@ -40,19 +44,24 @@ def hash_text(content: str) -> str:
     return "sha256:" + hashlib.sha256(content.encode("utf-8")).hexdigest()
 
 
-def request_fingerprint(request: CompletionRequest) -> str:
+def request_fingerprint(request: PlanArchiveRequest) -> str:
     """Return stable identity for an exact completion request."""
     encoded = request.model_dump_json(exclude_none=False)
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
 
-def operation_id(request: CompletionRequest) -> str:
+def operation_id(request: PlanArchiveRequest) -> str:
     """Return stable per-plan operation key, independent of retry payload."""
-    identity = request.plan_file_name or request.plan_title.casefold()
+    identity = request.plan_file_name
+    if identity is None:
+        assert not isinstance(request, CancellationRequest)
+        identity = request.plan_title.casefold()
     return hashlib.sha256(identity.encode("utf-8")).hexdigest()[:24]
 
 
-def _required_file_keys(request: CompletionRequest) -> set[CompletionFileKey]:
+def _required_file_keys(request: PlanArchiveRequest) -> set[CompletionFileKey]:
+    if isinstance(request, CancellationRequest):
+        return {CompletionFileKey.PLAN, CompletionFileKey.ROADMAP}
     keys = {CompletionFileKey.ROADMAP, CompletionFileKey.ACTIVE_CONTEXT}
     if request.plan_file_name is not None:
         keys.add(CompletionFileKey.PLAN)
@@ -110,7 +119,10 @@ def validate_record_consistency(
     """Reject a truncated or tampered record before replay or rollback."""
     if path != record_path(path.parent, expected_op_id):
         raise ValueError("Completion operation record path does not match request")
-    if record.operation_id != expected_op_id:
+    if (
+        record.operation_id != expected_op_id
+        or operation_id(record.request) != expected_op_id
+    ):
         raise ValueError(
             "Completion operation record identifier does not match request"
         )
@@ -146,13 +158,20 @@ def validate_contained_path(path: Path, anchor: Path) -> None:
         raise ValueError(f"Completion path escapes its allowed root: {path}")
 
 
-def read_required_text(path: Path, anchor: Path) -> str:
+def read_required_text(path: Path, anchor: Path, *, exact: bool = False) -> str:
     """Read one contained regular UTF-8 file or raise a precise error."""
     validate_contained_path(path, anchor)
     if not path.exists():
         raise FileNotFoundError(f"File not found: {path}")
     if not path.is_file():
         raise ValueError(f"Completion input is not a regular file: {path}")
+    return read_transaction_text(path, exact)
+
+
+def read_transaction_text(path: Path, exact: bool) -> str:
+    """Read content without newline conversion for byte-guarded cancellation."""
+    if exact:
+        return path.read_bytes().decode("utf-8")
     return path.read_text(encoding="utf-8")
 
 
@@ -215,7 +234,7 @@ def save_record_phase(
 def persist_payload(path: Path, content: str) -> None:
     """Persist immutable before/after payload, accepting identical replay."""
     if path.exists():
-        if path.read_text(encoding="utf-8") != content:
+        if read_transaction_text(path, True) != content:
             raise ValueError(f"Completion payload collision: {path.name}")
         return
     _atomic_write_text(path, content)
@@ -225,7 +244,7 @@ def read_payload(operations_root: Path, name: str) -> str:
     """Read an operation-owned payload by validated flat filename."""
     if Path(name).name != name or not name:
         raise ValueError(f"Invalid completion payload name: {name}")
-    return read_required_text(operations_root / name, operations_root)
+    return read_required_text(operations_root / name, operations_root, exact=True)
 
 
 def cleanup_operation_payloads(operations_root: Path, op_id: str) -> None:
@@ -266,10 +285,13 @@ def resolve_archive_paths(
     archive = get_cortex_path(project_root, CortexResourceType.PLANS_ARCHIVE)
     validate_contained_path(source, plans)
     validate_contained_path(destination, archive)
+    if isinstance(record.request, CancellationRequest):
+        validate_contained_path(source, project_root)
+        validate_contained_path(destination, project_root)
     name = record.request.plan_file_name
     if name is None:
         raise ValueError("Completion archive record has no plan filename")
-    subdir = archive_subdir_for_plan(name)
+    subdir = transaction_archive_subdir(record.request, name)
     if (
         source != plans / name
         or subdir is None
@@ -277,6 +299,13 @@ def resolve_archive_paths(
     ):
         raise ValueError("Completion archive record paths do not match its plan")
     return source, destination
+
+
+def transaction_archive_subdir(request: PlanArchiveRequest, name: str) -> str | None:
+    """Keep cancelled records in their own directory within the canonical archive."""
+    if isinstance(request, CancellationRequest):
+        return CANCELLED_ARCHIVE_SUBDIR
+    return archive_subdir_for_plan(name)
 
 
 async def write_owned_text(

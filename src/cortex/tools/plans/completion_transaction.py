@@ -11,6 +11,7 @@ from cortex.core.exceptions import (
 )
 from cortex.core.file_system import FileSystemManager
 from cortex.core.models import OperationStatus
+from cortex.tools.plans.completion_io import write_owned_exact_text
 from cortex.tools.plans.completion_models import CompletePlanResult
 from cortex.tools.plans.completion_transaction_io import (
     cleanup_completed_records,
@@ -22,6 +23,7 @@ from cortex.tools.plans.completion_transaction_io import (
     persist_record,
     read_payload,
     read_record,
+    read_transaction_text,
     record_path,
     request_fingerprint,
     resolve_archive_paths,
@@ -31,10 +33,11 @@ from cortex.tools.plans.completion_transaction_io import (
     write_owned_text,
 )
 from cortex.tools.plans.completion_transaction_models import (
+    CancellationRequest,
     CompletionFileKey,
     CompletionOperationRecord,
     CompletionPhase,
-    CompletionRequest,
+    PlanArchiveRequest,
 )
 from cortex.tools.plans.completion_transaction_prepare import prepare_record
 from cortex.tools.plans.completion_transaction_recovery import (
@@ -64,6 +67,12 @@ def _success_result(
     message = "Plan completion committed atomically."
     if replay:
         message = "Plan already completed; identical retry made no changes."
+    if isinstance(record.request, CancellationRequest):
+        message = (
+            "Plan already archived as cancelled; identical retry made no changes."
+            if replay
+            else "Plan archived as cancelled."
+        )
     return CompletePlanResult(
         status=OperationStatus.SUCCESS,
         message=message,
@@ -96,14 +105,17 @@ async def _write_record_files(
     path: Path,
     record: CompletionOperationRecord,
 ) -> None:
+    writer = (
+        write_owned_exact_text
+        if isinstance(record.request, CancellationRequest)
+        else write_owned_text
+    )
     for item in record.files:
         before = read_payload(operations_root, item.before_payload)
         after = read_payload(operations_root, item.after_payload)
         if before != after:
             target = resolve_record_file(project_root, item)
-            await write_owned_text(
-                manager, target, after, item.before_hash, item.before_exists
-            )
+            await writer(manager, target, after, item.before_hash, item.before_exists)
         save_record_phase(path, record, _phase_for_file(item.key))
 
 
@@ -121,12 +133,18 @@ def _archive(project_root: Path, record: CompletionOperationRecord) -> None:
     plan_state = next(
         item for item in record.files if item.key == CompletionFileKey.PLAN
     )
+    exact = isinstance(record.request, CancellationRequest)
     if (
         not source.is_file()
-        or hash_text(source.read_text(encoding="utf-8")) != plan_state.after_hash
+        or hash_text(read_transaction_text(source, exact)) != plan_state.after_hash
     ):
         raise ValueError("Plan changed before archive move")
-    _ = source.replace(destination)
+    if exact:
+        # AI: An exclusive link refuses a destination created after prevalidation.
+        destination.hardlink_to(source)
+        source.unlink()
+    else:
+        _ = source.replace(destination)
 
 
 async def _execute_prepared(
@@ -243,7 +261,7 @@ def _prepare_new_record(
     project_root: Path,
     operations_root: Path,
     path: Path,
-    request: CompletionRequest,
+    request: PlanArchiveRequest,
     op_id: str,
 ) -> CompletionOperationRecord:
     cleanup_operation_payloads(operations_root, op_id)
@@ -258,7 +276,7 @@ def _prepare_new_record(
 
 async def _run_locked_transaction(
     project_root: Path,
-    request: CompletionRequest,
+    request: PlanArchiveRequest,
     manager: FileSystemManager,
     operations_root: Path,
     op_id: str,
@@ -331,9 +349,9 @@ def _invalid_record_result(
 
 
 async def run_completion_transaction(
-    project_root: Path, request: CompletionRequest
+    project_root: Path, request: PlanArchiveRequest
 ) -> CompletePlanResult:
-    """Complete a plan exactly once or recover its interrupted prior attempt."""
+    """Finish a plan archive transaction or recover its interrupted prior attempt."""
     op_id = operation_id(request)
     try:
         async with completion_lock(project_root) as (manager, operations_root):

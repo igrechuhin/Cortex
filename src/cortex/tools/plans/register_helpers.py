@@ -23,6 +23,7 @@ _REFERENCE_HEADINGS: frozenset[str] = frozenset(
         "Recent Findings",
         "Completed Milestones",
         "Planned Phases",
+        "Historical Operator Decisions",
     )
 )
 
@@ -146,10 +147,9 @@ def _registration_plan_path(line: str) -> str | None:
     return extract_plan_path_from_bullet(line)
 
 
-def _registration_lines(lines: list[str]) -> Iterator[tuple[int, str]]:
-    """Ignore fenced examples and the established archive/reference section."""
+def unfenced_roadmap_lines(lines: list[str]) -> Iterator[tuple[int, str]]:
+    """Yield indexed roadmap lines outside fenced examples."""
     fence: str | None = None
-    reference_level: int | None = None
     for index, line in enumerate(lines):
         marker = re.match(r"^ {0,3}(`{3,}|~{3,})(.*)$", line)
         if fence is not None:
@@ -164,6 +164,13 @@ def _registration_lines(lines: list[str]) -> Iterator[tuple[int, str]]:
         if marker:
             fence = marker.group(1)
             continue
+        yield index, line
+
+
+def _registration_lines(lines: list[str]) -> Iterator[tuple[int, str]]:
+    """Ignore fenced examples and established historical sections."""
+    reference_level: int | None = None
+    for index, line in unfenced_roadmap_lines(lines):
         heading = re.match(r"^(#{1,6})\s+(.+?)\s*$", line)
         if heading:
             level = len(heading.group(1))
@@ -189,6 +196,12 @@ def _find_existing_plan_line(
     if len(matches) > 1:
         raise ValueError(f"Multiple canonical roadmap registrations for {plan_path}")
     return matches[0] if matches else None
+
+
+def find_live_plan_registration_line(content: str, relative_path: str) -> int | None:
+    """Find the one-based live roadmap registration by its exact plan path."""
+    index = _find_existing_plan_line(content.split("\n"), relative_path, "")
+    return None if index is None else index + 1
 
 
 def _ensure_section_exists(

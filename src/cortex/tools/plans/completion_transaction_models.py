@@ -5,7 +5,14 @@ from __future__ import annotations
 from enum import Enum
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StrictBool,
+    field_validator,
+    model_validator,
+)
 
 from cortex.core.pydantic_extra import EXTRA_FORBID
 
@@ -45,6 +52,38 @@ class CompletionRequest(BaseModel):
     plan_file_name: str | None
 
 
+class CancellationInput(BaseModel):
+    """Explicit operator intent and raw-byte guard supplied to archive_cancelled."""
+
+    model_config = ConfigDict(extra=EXTRA_FORBID, strict=True)
+
+    expected_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    reason: str = Field(min_length=1, max_length=1000)
+    dry_run: StrictBool
+
+    @field_validator("reason")
+    @classmethod
+    def validated_reason(cls, value: str) -> str:
+        """Keep the request reason meaningful and suitable for a receipt."""
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("Cancellation reason must be nonempty")
+        return stripped
+
+
+class CancellationRequest(BaseModel):
+    """Persisted identity of an approved cancellation, independent of preview."""
+
+    model_config = ConfigDict(extra=EXTRA_FORBID)
+
+    plan_file_name: str
+    expected_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    reason: str = Field(min_length=1, max_length=1000)
+
+
+PlanArchiveRequest = CompletionRequest | CancellationRequest
+
+
 class CompletionFileRecord(BaseModel):
     """Hashes and payload references for one transaction-owned file."""
 
@@ -78,7 +117,7 @@ class CompletionOperationRecord(BaseModel):
     schema_version: int = Field(default=1, ge=1, le=1)
     operation_id: str
     request_fingerprint: str
-    request: CompletionRequest
+    request: PlanArchiveRequest
     phase: CompletionPhase
     files: list[CompletionFileRecord] = Field(max_length=4)
     archive_source: str | None = None
@@ -102,4 +141,6 @@ class CompletionOperationRecord(BaseModel):
             raise ValueError("Completion archive paths must be present together")
         if has_source and CompletionFileKey.PLAN not in keys:
             raise ValueError("Completion archive record is missing plan state")
+        if isinstance(self.request, CancellationRequest) and not has_source:
+            raise ValueError("Cancellation record is missing archive paths")
         return self

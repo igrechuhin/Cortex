@@ -30,6 +30,7 @@ class PlanGraphResult(StrictBaseModel):
     blocked: dict[str, list[str]] = Field(default_factory=dict)
     in_progress: list[str] = Field(default_factory=_empty_str_list)
     done: list[str] = Field(default_factory=_empty_str_list)
+    cancelled: list[str] = Field(default_factory=_empty_str_list)
     cycles: list[list[str]] = Field(default_factory=_empty_cycle_rows)
     ambiguous: dict[str, list[str]] = Field(default_factory=dict)
     ascii_dag: str = ""
@@ -122,6 +123,7 @@ async def plan_graph_json(ctx: MCPContext | None, *, include_archive: bool) -> s
         blocked=_blocked_by_map(graph),
         in_progress=_slugs_with_status(graph, PlanStatus.IN_PROGRESS, active_only=True),
         done=_slugs_with_status(graph, PlanStatus.DONE, active_only=False),
+        cancelled=_slugs_with_status(graph, PlanStatus.CANCELLED, active_only=False),
         cycles=[list(c) for c in graph.cycles],
         ambiguous=dict(graph.ambiguous_slugs),
         ascii_dag=ascii_dag,

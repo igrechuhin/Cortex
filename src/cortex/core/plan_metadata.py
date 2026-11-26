@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from codecs import BOM_UTF8
 
 from pydantic import BaseModel, ConfigDict
 
@@ -10,12 +11,15 @@ from cortex.core.models._enums import PlanExecutionMode, PlanStatus
 from cortex.core.pydantic_extra import EXTRA_FORBID
 
 _FIELD_RE_TEMPLATE = r"^{field}[ \t]*:[ \t]*(.*)$"
+_UTF8_BOM = BOM_UTF8.decode()
 _LEGACY_STATUS_RE = re.compile(
     r"^\*\*Status\*\*\s*:\s*([^\n.]+)", re.IGNORECASE | re.MULTILINE
 )
 _STATUS_ALIASES: dict[str, PlanStatus] = {
     "COMPLETE": PlanStatus.DONE,
     "COMPLETED": PlanStatus.DONE,
+    "CANCELED": PlanStatus.CANCELLED,
+    "RETIRED": PlanStatus.CANCELLED,
 }
 
 
@@ -33,7 +37,7 @@ class PlanStatusMetadata(BaseModel):
 def first_frontmatter_block(content: str) -> str | None:
     """Return the first YAML frontmatter body when it is well formed."""
     lines = content.splitlines()
-    if not lines or lines[0].strip() != "---":
+    if not lines or lines[0].removeprefix(_UTF8_BOM).strip() != "---":
         return None
     for index in range(1, len(lines)):
         if lines[index].strip() == "---":
@@ -120,6 +124,16 @@ def read_plan_status_metadata(content: str) -> PlanStatusMetadata:
         raw_token=" | ".join(raw_values) if raw_values else None,
         recognized=selected is not None and not conflicting,
         conflicting=conflicting,
+    )
+
+
+def has_cancelled_plan_status(content: str) -> bool:
+    """Detect cancellation even when another frontmatter field conflicts with it."""
+    fields = read_frontmatter_fields(content, "status")
+    if not fields:
+        return read_plan_status_metadata(content).status == PlanStatus.CANCELLED
+    return any(
+        resolve_plan_status_token(value) == PlanStatus.CANCELLED for value in fields
     )
 
 

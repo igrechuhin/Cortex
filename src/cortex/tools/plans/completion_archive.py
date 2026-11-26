@@ -11,6 +11,8 @@ from pathlib import Path
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
 from cortex.tools.plans.entries_content import extract_plan_path_from_bullet
 
+CANCELLED_ARCHIVE_SUBDIR = "Cancelled"
+
 
 def archive_subdir_for_plan(filename: str) -> str | None:
     """Return archive subdir relative to plans/archive/ from plan filename, or None if unknown."""

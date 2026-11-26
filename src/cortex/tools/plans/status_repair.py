@@ -18,6 +18,7 @@ from cortex.core.plan_identity import build_plan_identity_index
 from cortex.core.plan_metadata import read_plan_status_metadata
 from cortex.core.usage_context import get_or_resolve_project_root
 from cortex.tools.models_base import StrictBaseModel
+from cortex.tools.plans.completion_archive import CANCELLED_ARCHIVE_SUBDIR
 from cortex.tools.plans.completion_transaction_io import (
     completion_lock,
     hash_text,
@@ -68,6 +69,8 @@ def _validate_repair_target(root: Path, path: Path) -> str | None:
     archive_root = get_cortex_path(root, CortexResourceType.PLANS_ARCHIVE)
     if not path.is_relative_to(archive_root):
         return "Status repair is restricted to archived plans"
+    if path.relative_to(archive_root).parts[0] == CANCELLED_ARCHIVE_SUBDIR:
+        return "Cancelled archive records cannot be repaired to DONE"
     validate_contained_path(path, archive_root)
     if not path.is_file():
         return "Status repair target is not a regular file"

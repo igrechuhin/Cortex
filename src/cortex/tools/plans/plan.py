@@ -85,7 +85,7 @@ def _plan_error_invalid_operation(operation: str) -> str:
             "Invalid operation "
             f"'{operation}'. Use create, list, get, complete, register, enrich, "
             "graph, archive_completed, repair_status, continue_step, approve_step, "
-            "finalize_step, or set_execution."
+            "finalize_step, set_execution, or archive_cancelled."
         ),
         error="Invalid operation",
     ).model_dump_json()
@@ -281,8 +281,10 @@ async def _plan_handle_archive_completed(ctx: MCPContext | None) -> str:
     import re
 
     from cortex.core.path_resolver import CortexResourceType, get_cortex_path
+    from cortex.core.plan_metadata import has_cancelled_plan_status
     from cortex.core.usage_context import get_or_resolve_project_root
     from cortex.tools.plans.completion_archive import archive_plan_file
+    from cortex.tools.plans.completion_transaction_io import completion_lock
 
     root_str = await get_or_resolve_project_root(ctx)
     from pathlib import Path
@@ -291,17 +293,20 @@ async def _plan_handle_archive_completed(ctx: MCPContext | None) -> str:
     plans_dir = get_cortex_path(root, CortexResourceType.PLANS)
     archived: list[str] = []
     errors: list[str] = []
-    for plan_path in sorted(plans_dir.glob("*.md")):
-        try:
-            head = plan_path.read_text(encoding="utf-8")[:500]
-        except OSError:
-            continue
-        if re.search(r'status:\s*["\']?COMPLETE', head, re.IGNORECASE):
-            dest, err = archive_plan_file(root, plan_path.name)
-            if err:
-                errors.append(f"{plan_path.name}: {err}")
-            elif dest:
-                archived.append(plan_path.name)
+    async with completion_lock(root):
+        for plan_path in sorted(plans_dir.glob("*.md")):
+            try:
+                content = plan_path.read_text(encoding="utf-8")
+            except (OSError, UnicodeError):
+                continue
+            if has_cancelled_plan_status(content):
+                continue
+            if re.search(r'status:\s*["\']?COMPLETE', content[:500], re.IGNORECASE):
+                dest, err = archive_plan_file(root, plan_path.name)
+                if err:
+                    errors.append(f"{plan_path.name}: {err}")
+                elif dest:
+                    archived.append(plan_path.name)
     return json.dumps(
         {"status": "ok", "archived": archived, "errors": errors, "count": len(archived)}
     )
@@ -516,6 +521,10 @@ async def _handle_special_plan_operations(
         return await set_plan_execution(request.slug, request.content, ctx)
     if op == PlanToolOperation.ARCHIVE_COMPLETED:
         return await _plan_handle_archive_completed(ctx)
+    if op == PlanToolOperation.ARCHIVE_CANCELLED:
+        from cortex.tools.plans.cancellation import archive_cancelled_plan
+
+        return await archive_cancelled_plan(request.slug, request.content, ctx)
     if op == PlanToolOperation.REPAIR_STATUS:
         from cortex.tools.plans.status_repair import repair_archived_plan_status
 
@@ -652,6 +661,10 @@ async def plan(
     and dry_run (boolean). It changes only a unique scalar frontmatter owner;
     status, identity and body remain unchanged. This explicit metadata correction
     is neither completion nor implicit authority to perform plan actions.
+    ``archive_cancelled`` requires an exact root active slug and content JSON
+    with expected_sha256 (raw-byte digest), reason (nonempty), and dry_run
+    (boolean). It archives the plan as CANCELLED, retires its live roadmap
+    registration, and preserves historical roadmap references and dependencies.
     ``source='canonical'`` (read-only) resolves list/get content from the
     git-verified canonical main worktree when this root is a linked worktree;
     every other operation and all writes stay bound to the local root and
