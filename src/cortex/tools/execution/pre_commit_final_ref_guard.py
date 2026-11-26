@@ -12,7 +12,6 @@ import sys
 from pathlib import Path
 
 _HOOK = "cortex-staged-candidate"
-_MODULE = "cortex.tools.execution.pre_commit_final_ref_guard"
 
 
 def _git(root: Path, *args: str) -> str:
@@ -29,7 +28,11 @@ def commit_verified_tree(
         raise ValueError("A commit message and a local branch are required")
     if _git(root, "symbolic-ref", "HEAD") != branch:
         raise ValueError("Staged candidate branch changed")
-    command = shlex.join((sys.executable, "-m", _MODULE, branch, head, tree))
+    # AI: Git can invoke the hook several times. Run its standard-library
+    # entry point directly to avoid loading the Cortex tool registry each time.
+    command = shlex.join(
+        (sys.executable, str(Path(__file__).resolve()), branch, head, tree)
+    )
     config = (
         "-c",
         f"hook.{_HOOK}.event=reference-transaction",

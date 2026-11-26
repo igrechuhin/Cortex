@@ -8,6 +8,9 @@
 - ✅ **Archive cancelled plans** - COMPLETE (2026-11-26) - <!-- memory_type: status -->
 Added digest-guarded preview and archival for operator-cancelled plans. Historical roadmap references and dependency blockers survive the move. Verified with a fresh MCP server and the full quality gate.
 
+- ✅ **Reuse verified SwiftPM final tests** - COMPLETE (2026-11-26) - <!-- memory_type: status -->
+Standard SwiftPM commits reuse verified, complete Phase A tests by default when inputs and coverage still qualify. A trusted local opt-in caches SHA-256 for regular-file symlink targets and rejects directory links. The staged-commit reference hook runs directly while preserving branch and tree validation.
+
 ## Completed Work (2026-11-25)
 
 - ✅ **Verify delayed SwiftPM runner teardown** - COMPLETE (2026-11-25) - <!-- memory_type: status -->

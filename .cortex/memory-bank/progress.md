@@ -4,6 +4,8 @@
 ## 2026-11-26
 
 - <!-- memory_type: status -->
+- <!-- memory_type: status -->
+**Reuse verified SwiftPM final tests** - COMPLETE. Standard commits reuse qualifying test evidence by default and support an explicit opt-out. A local opt-in caches SHA-256 for regular-file symlink targets, with fresh tests for uncertain inputs. The staged-commit Git hook starts without loading the tool registry and still rejects index drift. Phase A and CI parity passed with 9,123 tests and 92.11% coverage.
 **Archive cancelled plans** - COMPLETE. Added recoverable archival with a distinct cancellation status, preserved historical references and dependency edges, and verified the MCP operation and 9,096 passing tests.
 
 ## 2026-11-25

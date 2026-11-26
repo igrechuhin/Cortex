@@ -30,6 +30,7 @@ class GateTestIntent(BaseModel):
     run_id: str = Field(pattern=r"^[a-f0-9]{12}$")
     swift_outputs: tuple[str, ...] = ()
     predecessors: tuple[int, ...] = ()
+    trust_swiftpm_symlink_metadata: bool = False
 
 
 class _PipelinePhase(BaseModel):
@@ -100,8 +101,10 @@ def verified_gate_context(root: Path, intent: GateTestIntent) -> bool:
 def derive_gate_intent(
     root: Path, value: object, fresh: bool, test_filter: str | None
 ) -> GateTestIntent | None:
-    """Route fresh full gates inside a verified commit and opted-in project."""
+    """Route fresh, full SwiftPM gates inside a verified commit."""
     if not fresh or test_filter is not None or value not in (None, "phase-a", "final"):
+        return None
+    if not (root / "Package.swift").is_file():
         return None
     policy = load_quality_gate_config(root)
     if not policy.reuse_swiftpm_final_tests:
@@ -123,7 +126,6 @@ def derive_gate_intent(
             recoverable_predecessors(root, active) if use is GateUse.PHASE_A else ()
         ),
         run_id=active,
-        swift_outputs=tuple(
-            sorted({item.value for item in policy.swiftpm_final_test_outputs})
-        ),
+        swift_outputs=tuple(sorted(set(policy.swiftpm_final_test_outputs))),
+        trust_swiftpm_symlink_metadata=policy.trust_swiftpm_symlink_metadata,
     )

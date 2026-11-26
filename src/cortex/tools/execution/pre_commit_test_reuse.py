@@ -50,6 +50,14 @@ class _TestLane(BaseModel):
     server_pid: int | None = None
     test_timeout: int | None = None
 
+    def observe_inputs(self) -> str | None:
+        """Recheck the same input policy at each worker boundary."""
+        return swift_test_input_fingerprint(
+            self.root,
+            self.intent.swift_outputs,
+            trust_symlink_metadata=self.intent.trust_swiftpm_symlink_metadata,
+        )
+
 
 _GATE_INTENT: ContextVar[GateTestIntent | None] = ContextVar(
     "quality_gate_test_intent", default=None
@@ -120,8 +128,9 @@ def _eligible(tests: TestResult, threshold: float) -> bool:
         tests.success
         and not tests.execution_uncertain
         and tests.tests_run > 0
-        and tests.tests_passed > 0
+        and tests.tests_passed == tests.tests_run
         and tests.tests_failed == 0
+        and tests.skipped_tests == 0
         and not tests.errors
         and measured is not None
         and math.isfinite(measured)
@@ -135,9 +144,7 @@ def begin_test_evidence(threshold: float) -> TestResult | None:
     lane = _TEST_LANE.get()
     if lane is None:
         return None
-    lane.fingerprint = swift_test_input_fingerprint(
-        lane.root, lane.intent.swift_outputs
-    )
+    lane.fingerprint = lane.observe_inputs()
     if lane.fingerprint is None:
         return None
     if lane.intent.use is GateUse.PHASE_A and not lane.intent.predecessors:
@@ -216,7 +223,7 @@ def _read_evidence(lane: _TestLane) -> TestEvidence | None:
     try:
         path = _evidence_path(lane.root, lane.intent)
         return (
-            TestEvidence.model_validate_json(path.read_text())
+            TestEvidence.model_validate_json(path.read_bytes(), strict=True)
             if path.resolve() == path
             else None
         )
@@ -232,8 +239,7 @@ def finish_test_evidence(tests: TestResult, threshold: float) -> None:
         and lane.intent.use is GateUse.PHASE_A
         and lane.fingerprint is not None
         and _eligible(tests, threshold)
-        and swift_test_input_fingerprint(lane.root, lane.intent.swift_outputs)
-        == lane.fingerprint
+        and lane.observe_inputs() == lane.fingerprint
     ):
         lane.candidate = tests.model_copy(deep=True)
 
@@ -248,8 +254,7 @@ def did_reused_inputs_drift(lane: _TestLane | None) -> bool:
     return (
         lane is not None
         and lane.reused is not None
-        and swift_test_input_fingerprint(lane.root, lane.intent.swift_outputs)
-        != lane.fingerprint
+        and lane.observe_inputs() != lane.fingerprint
     )
 
 
@@ -274,8 +279,7 @@ def publish_test_evidence(
         or markdown is None
         or markdown.get("files_with_errors") != 0
         or markdown.get("status") != "success"
-        or swift_test_input_fingerprint(lane.root, lane.intent.swift_outputs)
-        != lane.fingerprint
+        or lane.observe_inputs() != lane.fingerprint
         or (owner := worker_owner()) is None
     ):
         return

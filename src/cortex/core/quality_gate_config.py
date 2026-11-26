@@ -1,4 +1,4 @@
-"""Persistent, opt-in project defaults for the quality gate."""
+"""Persistent project policy for the quality gate."""
 
 from __future__ import annotations
 
@@ -31,14 +31,15 @@ class SwiftTestOutput(StrEnum):
 
 
 class ProjectQualityGateConfig(BaseModel):
-    """A project timeout default, independent of pipeline sessions."""
+    """Project policy independent of pipeline sessions."""
 
     model_config = ConfigDict(extra="forbid", strict=True)
 
     test_timeout: int | None = Field(gt=0)
-    reuse_swiftpm_final_tests: bool = False
+    reuse_swiftpm_final_tests: bool = True
     staged_final_swiftpm_commit: bool = False
     swiftpm_final_test_outputs: tuple[SwiftTestOutput, ...] = ()
+    trust_swiftpm_symlink_metadata: bool = False
 
 
 def quality_gate_config_path(root: Path) -> Path:

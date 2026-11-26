@@ -162,7 +162,9 @@ async def test_transition_rejects_worker_crash_or_candidate_drift(repo: Path) ->
 
 
 @pytest.mark.parametrize("drift", [False, True])
-def test_atomic_commit_checks_after_native_git_hooks(repo: Path, drift: bool) -> None:
+def test_atomic_commit_checks_after_native_git_hooks(
+    repo: Path, drift: bool, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Reject a normal pre-commit hook that changes the tested index before the ref moves."""
     _require_reference_hook(repo)
     _run_git(repo, "config", "user.name", "Test")
@@ -172,6 +174,10 @@ def test_atomic_commit_checks_after_native_git_hooks(repo: Path, drift: bool) ->
     _run_git(repo, "add", "--", "input.swift")
     candidate = capture_staged_candidate(repo)
     assert candidate.branch and candidate.tree
+    import_path = repo / ".git" / "hook-import-check"
+    import_path.mkdir()
+    _ = (import_path / "cortex.py").write_text('raise RuntimeError("Cortex imported")')
+    monkeypatch.setenv("PYTHONPATH", str(import_path))
     if drift:
         _install_index_changing_hook(repo)
         with pytest.raises(subprocess.CalledProcessError):

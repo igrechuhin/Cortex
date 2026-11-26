@@ -11,6 +11,7 @@ import pytest
 from cortex.core.quality_gate_config import (
     configure_quality_gate,
     effective_test_timeout,
+    load_quality_gate_config,
     quality_gate_config_path,
 )
 
@@ -26,6 +27,7 @@ from cortex.tools.session.pipeline_handoff import (
 
 def test_unconfigured_project_uses_fifteen_minute_default(tmp_path: Path) -> None:
     assert effective_test_timeout(tmp_path) == 900
+    assert load_quality_gate_config(tmp_path).reuse_swiftpm_final_tests is True
     assert not quality_gate_config_path(tmp_path).exists()
 
 
@@ -35,6 +37,18 @@ def test_read_only_configuration_does_not_create_files(tmp_path: Path) -> None:
     assert result["effective_default_test_timeout"] == 900
     assert result["mutation_performed"] is False
     assert not (tmp_path / ".cortex").exists()
+
+
+def test_swiftpm_reuse_explicit_opt_out_survives_config_round_trip(
+    tmp_path: Path,
+) -> None:
+    payload = '{"test_timeout":5400,"reuse_swiftpm_final_tests":false}'
+    result = json.loads(configure_quality_gate(tmp_path, payload))
+    assert result["status"] == "ok"
+    assert json.loads(configure_quality_gate(tmp_path, None))["config"] == json.loads(
+        payload
+    )
+    assert load_quality_gate_config(tmp_path).reuse_swiftpm_final_tests is False
 
 
 def test_staged_swift_command_opt_in_is_exact_and_read_only(

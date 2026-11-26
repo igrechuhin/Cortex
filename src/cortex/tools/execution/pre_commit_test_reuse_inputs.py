@@ -1,4 +1,4 @@
-"""Fingerprint the opt-in SwiftPM input boundary for final test reuse."""
+"""Fingerprint the SwiftPM input boundary for final test reuse."""
 
 from __future__ import annotations
 
@@ -10,6 +10,11 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import Protocol
+
+from cortex.tools.execution.pre_commit_swift_symlink_inputs import (
+    SWIFT_SYMLINK_CACHE_FILENAME,
+    TrustedSymlinkInputs,
+)
 
 # AI: Only passive Cortex output agreed by the project can be excluded. Never
 # infer that a Markdown file, or even a Cortex-owned file, is not a test input.
@@ -68,14 +73,15 @@ def _hash_file(digest: _Digest, root: Path, relative: str) -> int:
     return before.st_size
 
 
-def _git_inputs(root: Path, outputs: tuple[str, ...]) -> tuple[bytes, list[str]]:
-    # AI: Normal Phase A can test wholly unstaged paths, but a partially
-    # staged path represents two different proposed versions of one input.
-    excluded = _generated_paths(outputs)
-    _reject_partial_staging(root, excluded)
+def _git_index_entries(
+    root: Path, excluded: set[str], trust_symlink_metadata: bool
+) -> tuple[list[bytes], set[str]]:
     entries = _command(root, "git", "ls-files", "--stage", "-z").split(b"\0")
     stage: list[bytes] = []
     submodules: set[str] = set()
+    file_modes = {b"100644", b"100755"}
+    if trust_symlink_metadata:
+        file_modes.add(b"120000")
     # AI: Submodules, sparse/staged conflicts and symlinks need their own input
     # policy. Their index entries alone do not identify checked-out bytes.
     for entry in entries:
@@ -89,16 +95,29 @@ def _git_inputs(root: Path, outputs: tuple[str, ...]) -> tuple[bytes, list[str]]
         if mode == b"160000" and name == ".cortex/synapse":
             stage.append(_clean_checkout_fingerprint(root / name, sha))
             submodules.add(name)
-        elif mode not in {b"100644", b"100755"}:
+        elif mode not in file_modes:
             raise ValueError("Unsupported Git index input")
         if not _generated(name, excluded):
             stage.append(entry)
+    return stage, submodules
+
+
+def _git_inputs(
+    root: Path, outputs: tuple[str, ...], trust_symlink_metadata: bool
+) -> tuple[bytes, list[str]]:
+    # AI: Normal Phase A can test wholly unstaged paths, but a partially
+    # staged path represents two different proposed versions of one input.
+    excluded = _generated_paths(outputs)
+    if trust_symlink_metadata:
+        excluded.add(f"{_SESSION_PREFIX}{SWIFT_SYMLINK_CACHE_FILENAME}")
+    _reject_partial_staging(root, excluded)
+    stage, submodules = _git_index_entries(root, excluded, trust_symlink_metadata)
     _validate_ignored(root, excluded)
     paths = _command(
         root, "git", "ls-files", "--cached", "--others", "--exclude-standard", "-z"
     )
-    # The scoped opt-in declaration covers the ephemeral log; all other docs
-    # and project artifacts remain material, including the contents of the index.
+    # The ephemeral log is excluded by default. Other docs, project artifacts,
+    # and index contents are included unless the project declares them as outputs.
     return b"\0".join(stage), sorted(
         name
         for name in set(paths.decode().split("\0")) - {""} - submodules
@@ -223,14 +242,15 @@ def _dependency_fingerprints(root: Path) -> tuple[bytes, ...]:
 
 
 def swift_test_input_fingerprint(
-    root: Path, outputs: tuple[str, ...] = ()
+    root: Path, outputs: tuple[str, ...] = (), *, trust_symlink_metadata: bool = False
 ) -> str | None:
-    """Hash exact SwiftPM project bytes, index and runner, or reject this input."""
+    """Identify the SwiftPM checkout, index and runner, or reject its inputs."""
     root = root.resolve()
     try:
         if not (root / "Package.swift").is_file():
             return None
-        stage, paths = _git_inputs(root, outputs)
+        trust_symlink_metadata = trust_symlink_metadata and "CI" not in os.environ
+        stage, paths = _git_inputs(root, outputs, trust_symlink_metadata)
         digest = hashlib.sha256()
         _hash_field(digest, str(root).encode())
         _hash_field(digest, _command(root, "git", "rev-parse", "--verify", "HEAD"))
@@ -238,11 +258,7 @@ def swift_test_input_fingerprint(
         _hash_field(digest, json.dumps(outputs).encode())
         for field in (*_runtime_identity(root), *_dependency_fingerprints(root)):
             _hash_field(digest, field)
-        total = 0
-        for relative in paths:
-            total += _hash_file(digest, root, relative)
-            if total > _MAX_INPUT_BYTES:
-                return None
+        _hash_project_files(digest, root, paths, trust_symlink_metadata)
         return digest.hexdigest()
     except (
         OSError,
@@ -252,3 +268,23 @@ def swift_test_input_fingerprint(
         subprocess.SubprocessError,
     ):
         return None
+
+
+def _hash_project_files(
+    digest: _Digest, root: Path, paths: list[str], trust_symlink_metadata: bool
+) -> None:
+    # AI: Classify all link targets before opening any archive bodies. A single
+    # unsupported link makes the entire evidence boundary unknown.
+    links = TrustedSymlinkInputs(root, paths) if trust_symlink_metadata else None
+    total = 0
+    for relative in paths:
+        link_fields = links.fingerprint_fields(relative) if links is not None else None
+        if link_fields is not None:
+            for field in link_fields:
+                _hash_field(digest, field)
+        else:
+            total += _hash_file(digest, root, relative)
+            if total > _MAX_INPUT_BYTES:
+                raise ValueError("SwiftPM input exceeds fingerprint budget")
+    if links is not None:
+        links.save()

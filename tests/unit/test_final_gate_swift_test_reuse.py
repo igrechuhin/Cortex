@@ -63,6 +63,7 @@ class GateFixture:
         self.markdown_checks = 0
         self.owner = "a" * 64
         self.fingerprint: str | None = "b" * 64
+        self.trust_symlink_metadata = False
         self.drift_on_markdown = False
         self.coverage: float | None = 0.92
         self.markdown = {"status": "success", "files_with_errors": 0}
@@ -83,8 +84,11 @@ class GateFixture:
             self.fingerprint = "e" * 64
         return self.markdown
 
-    def inputs(self, _root: Path, _outputs: tuple[str, ...]) -> str | None:
+    def inputs(
+        self, _root: Path, _outputs: tuple[str, ...], *, trust_symlink_metadata: bool
+    ) -> str | None:
         """Return current simulated checkout fingerprint."""
+        self.trust_symlink_metadata = trust_symlink_metadata
         return self.fingerprint
 
     def execute_tests(self, *_args: object, **_kwargs: object) -> SuiteResult:
@@ -195,7 +199,16 @@ def test_final_lane_runs_fresh_checks_and_reuses_only_tests(
 
 
 @pytest.mark.parametrize(
-    "scenario", ["generic", "drift", "foreign", "missing_coverage", "filtered", "lint"]
+    "scenario",
+    [
+        "generic",
+        "drift",
+        "foreign",
+        "missing_coverage",
+        "below_threshold",
+        "filtered",
+        "lint",
+    ],
 )
 def test_unproven_evidence_executes_tests_fresh(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, scenario: str
@@ -204,6 +217,8 @@ def test_unproven_evidence_executes_tests_fresh(
     fixture = GateFixture(tmp_path, monkeypatch)
     if scenario == "missing_coverage":
         fixture.coverage = None
+    elif scenario == "below_threshold":
+        fixture.coverage = 0.89
     if scenario == "lint":
         fixture.markdown = {"status": "error", "files_with_errors": 1}
     _ = fixture.run(
@@ -283,7 +298,11 @@ async def _commit_write(
 
 
 async def _configure_standard_commit(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, reuse_enabled: bool
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    reuse_enabled: bool | None,
+    trust_symlink_metadata: bool = False,
 ) -> GateFixture:
     monkeypatch.delenv("CORTEX_PIPELINE_SESSION_ID", raising=False)
     patch_pipeline_handoff_project_root(monkeypatch, tmp_path)
@@ -295,12 +314,12 @@ async def _configure_standard_commit(
         await pipeline_handoff(operation="init", pipeline="commit")
     )
     fixture = GateFixture(tmp_path, monkeypatch, initialized["session_id"])
-    _ = save_quality_gate_config(
-        tmp_path,
-        ProjectQualityGateConfig(
-            test_timeout=5400, reuse_swiftpm_final_tests=reuse_enabled
-        ),
+    policy = ProjectQualityGateConfig(
+        test_timeout=5400, trust_swiftpm_symlink_metadata=trust_symlink_metadata
     )
+    if reuse_enabled is not None:
+        policy.reuse_swiftpm_final_tests = reuse_enabled
+    _ = save_quality_gate_config(tmp_path, policy)
 
     async def spawn(*_args: object, **kwargs: object) -> ModelDict:
         assert kwargs["force_fresh"] is True
@@ -335,13 +354,19 @@ async def _prepare_standard_final_gate(caller: str) -> None:
 
 
 @pytest.mark.parametrize("caller", ["native", "bridge", "marked", "task"])
-@pytest.mark.parametrize("scenario", ["same", "changed", "unknown", "disabled"])
+@pytest.mark.parametrize(
+    "scenario", ["same", "default", "changed", "unknown", "disabled", "symlink_cache"]
+)
 async def test_standard_commit_gate_routes_and_validates_evidence(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caller: str, scenario: str
 ) -> None:
     """Standard handoffs record the full suite and always recheck Markdown."""
+    enabled = None if scenario == "default" else scenario != "disabled"
     fixture = await _configure_standard_commit(
-        tmp_path, monkeypatch, reuse_enabled=scenario != "disabled"
+        tmp_path,
+        monkeypatch,
+        reuse_enabled=enabled,
+        trust_symlink_metadata=scenario == "symlink_cache",
     )
     _ = await _commit_write(caller, "preflight", {"status": "complete"})
     environment = LocalExecutionEnvironment()
@@ -352,6 +377,39 @@ async def test_standard_commit_gate_routes_and_validates_evidence(
     final = await gate.run_quality_gate_inner(None, environment)
 
     assert final["success"] is True
+    assert fixture.non_test_checks == 2
     assert fixture.markdown_checks == 2
-    assert fixture.tests_started == (1 if scenario == "same" else 2)
-    assert ("reused_test_evidence" in final) is (scenario == "same")
+    reuse_expected = scenario in {"same", "default", "symlink_cache"}
+    assert fixture.tests_started == (1 if reuse_expected else 2)
+    assert ("reused_test_evidence" in final) is reuse_expected
+    assert fixture.trust_symlink_metadata is (scenario == "symlink_cache")
+
+
+@pytest.mark.parametrize("scenario", ["missing", "invalid_encoding", "incomplete"])
+async def test_standard_final_reruns_when_phase_a_evidence_is_unusable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, scenario: str
+) -> None:
+    """The completed handoff alone cannot authorize using Phase A tests."""
+    fixture = await _configure_standard_commit(
+        tmp_path, monkeypatch, reuse_enabled=True
+    )
+    _ = await _commit_write("native", "preflight", {"status": "complete"})
+    environment = LocalExecutionEnvironment()
+    assert (await gate.run_quality_gate_inner(None, environment))["success"] is True
+    await _prepare_standard_final_gate("native")
+    path = fixture.state / "phase-a-test-evidence.json"
+    evidence = reuse.TestEvidence.model_validate_json(path.read_bytes())
+    if scenario == "missing":
+        path.unlink()
+    elif scenario == "invalid_encoding":
+        _ = path.write_bytes(b"\xff")
+    else:
+        evidence.tests.tests_run += 1
+        _ = path.write_text(evidence.model_dump_json())
+
+    final = await gate.run_quality_gate_inner(None, environment)
+    assert final["success"] is True
+    assert fixture.tests_started == 2
+    assert fixture.non_test_checks == 2
+    assert fixture.markdown_checks == 2
+    assert "reused_test_evidence" not in final
