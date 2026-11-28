@@ -3,7 +3,6 @@
 import hashlib
 import json
 import re
-import stat
 from collections.abc import Callable
 from pathlib import Path
 from typing import cast
@@ -16,8 +15,6 @@ from cortex.core.context_logging import MCPContext
 from cortex.core.exceptions import FileLockTimeoutError
 from cortex.core.file_system import FileSystemManager
 from cortex.core.models import PlanExecutionMode, PlanStatus
-from cortex.core.path_resolver import CortexResourceType, get_cortex_path
-from cortex.core.plan_identity import build_plan_identity_index, is_plan_document
 from cortex.core.plan_metadata import (
     read_plan_status_metadata,
     resolve_plan_status_token,
@@ -34,8 +31,8 @@ from cortex.tools.files.guarded_operation_refusal import (
     GuardedOperationRefusal,
     validate_guarded_path,
 )
+from cortex.tools.plans.active_plan_target import require_active_plan_target
 
-_SLUG = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 _OWNER = re.compile(
     rb"^execution[ \t]*:[ \t]*(?P<quote>['\"]?)(?P<owner>agent|operator)"
     + rb"(?P=quote)[ \t]*(?:#[^\r\n]*)?\r?$",
@@ -52,31 +49,6 @@ class PlanExecutionRequest(BaseModel):
     execution: PlanExecutionMode
     reason: str = Field(min_length=1)
     dry_run: StrictBool
-
-
-def _execution_target(root: Path, slug: str | None) -> Path:
-    if (
-        slug is None
-        or _SLUG.fullmatch(slug) is None
-        or ".." in slug
-        or slug.casefold().endswith(".md")
-    ):
-        raise GuardedOperationRefusal(
-            "An exact root active plan slug without .md is required"
-        )
-    plans = get_cortex_path(root, CortexResourceType.PLANS)
-    target = plans / f"{slug}.md"
-    validate_guarded_path(target, root)
-    if not is_plan_document(target) or not stat.S_ISREG(target.stat().st_mode):
-        raise GuardedOperationRefusal(
-            "Target must be an existing regular active plan, not scaffolding"
-        )
-    row = build_plan_identity_index(plans, include_archive=True).unique.get(slug)
-    if row is None or row.archived or row.path != target:
-        raise GuardedOperationRefusal(
-            "Plan identity is archived, ambiguous, or a draft"
-        )
-    return target
 
 
 def _execution_mapping(frontmatter: bytes) -> MappingNode:
@@ -201,7 +173,7 @@ async def _apply_execution(
     manager = FileSystemManager(root)
     await manager.acquire_lock(lock)
     try:
-        target = _execution_target(root, slug)
+        target = require_active_plan_target(root, slug)
         before = evidence.observe(root, target)
         after, previous = _execution_bytes(before, request)
         changed = before != after
@@ -237,7 +209,7 @@ async def set_plan_execution(
             raise GuardedOperationRefusal("Plan project root cannot traverse symlinks")
         root = root.absolute()
         request = _execution_request(content)
-        target = _execution_target(root, slug)
+        target = require_active_plan_target(root, slug)
         relative = target.relative_to(root).as_posix()
         _ = _execution_bytes(evidence.observe(root, target), request)
         await _apply_execution(root, slug, target, relative, request, result, evidence)

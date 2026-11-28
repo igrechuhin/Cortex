@@ -184,6 +184,23 @@ def _registration_lines(lines: list[str]) -> Iterator[tuple[int, str]]:
             yield index, line
 
 
+_EXPLICIT_BLOCK = re.compile(r"^-\s+\*\*.+?\*\*\s+[—–-]\s+BLOCKED\s+[—–-]\s+\S")
+_DEPENDENCY_BLOCK_SUFFIX = re.compile(r"\s+_\(BLOCKED by: [^)]+\)_\s*$")
+
+
+def has_explicit_plan_block(content: str, plan_path: str) -> bool:
+    """Recognize one canonical operator block, independent of dependency hints."""
+    lines = content.splitlines()
+    index = _find_existing_plan_line(lines, plan_path, "")
+    if index is None:
+        return False
+    line = lines[index]
+    return (
+        _EXPLICIT_BLOCK.match(line) is not None
+        and _DEPENDENCY_BLOCK_SUFFIX.search(line) is None
+    )
+
+
 def _find_existing_plan_line(
     lines: list[str], plan_path: str | None, entry_text: str
 ) -> int | None:

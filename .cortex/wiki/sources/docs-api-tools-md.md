@@ -77,11 +77,12 @@ full-suite and coverage workflow.
 
 Source of truth for behavior and timeouts: `src/cortex/tools/execution/pre_commit_zero_arg_tools.py`.
 
-`force_fresh: true` clears both detached result caches and the persisted Phase A
-fingerprint, so unchanged-input shortcuts cannot skip checks in an explicitly
-fresh run. The client request deadline is separate from `test_timeout`; clients
-must allow the worker timeout plus polling overhead. If a client request expires,
-inspect the existing detached result before starting another worker.
+`force_fresh: true` clears the cached result for the requested job and the
+persisted Phase A fingerprint. A fresh SwiftPM final gate can still verify
+separate run-scoped test evidence. The client request deadline is separate
+from `test_timeout`; clients must allow the worker timeout plus polling
+overhead. If a client request expires, inspect the existing detached result
+before starting another worker.
 
 ### Owned runs and workspace occupancy
 
@@ -235,15 +236,16 @@ best-effort and is not payload-identity evidence.
 
 ### Optional SwiftPM test evidence in the final commit gate
 
-Use only for a macOS SwiftPM project whose test contract establishes that the
-Cortex session/output files and SwiftPM-generated build artifacts are not test
-inputs. Configure `reuse_swiftpm_final_tests: true` in the project's quality
-gate configuration **only after** validating that boundary. A project may
-also explicitly declare `swiftpm_final_test_outputs` from the narrow allowlist
-using their full repository-relative paths: specific Cortex memory-bank files,
-experience database and artifact output, Cortex write logs, the Markdown
-checker cache, and `.venv/`. Do not declare a path if a test consumes it. Partially staged inputs invalidate evidence; wholly unstaged
-files are hashed and must retain identical bytes. Other adapters and checkouts
+Standard macOS SwiftPM commits check for reusable Phase A tests by default.
+Set `reuse_swiftpm_final_tests: false` in the project quality gate configuration
+if tests depend on Cortex session or operation logs, SwiftPM-generated build
+output, or other inputs outside the fingerprint. Projects may explicitly
+declare `swiftpm_final_test_outputs` from the narrow allowlist using full
+repository-relative paths. The allowlist covers specific Cortex memory-bank
+files, experience database and artifact output, Cortex write logs, the
+Markdown checker cache, and `.venv/`. Only declare paths that tests never
+consume. Partially staged inputs invalidate evidence. Wholly unstaged files
+are hashed and must retain identical bytes. Other adapters and checkouts
 with unknown ignored paths run tests normally.
 
 The standard commit workflow records evidence after preflight. Step 12 requests
@@ -260,6 +262,24 @@ gate. When it reuses the tests, its
 `reused_test_evidence` records the original job, time, coverage and zero tests
 executed in the final worker. Input uncertainty runs tests fresh; drift after
 choosing the evidence makes the final gate fail closed.
+
+For a trusted local checkout, set `trust_swiftpm_symlink_metadata: true` to
+include symlinks to regular files. The setting defaults to `false` and takes
+no effect when the `CI` environment variable is set. Cortex stores each
+file target's SHA-256 in the project session directory. It opens a cached
+target without reading its body when the link destination, resolved path,
+size, creation time, and modification time match. Timestamps use the
+precision available from the host. A cold cache, changed metadata, or
+redirection reads and hashes the target again. If only the timestamps
+changed, matching bytes retain the same test fingerprint. Trusting the
+cache accepts the risk of changes that preserve all of those metadata
+values. Use this setting only when you trust the checkout, linked files,
+and Cortex cache.
+
+Directory links, unavailable or unsupported targets, absent timestamps, and
+changes detected while validating a target require a fresh suite. Cortex
+checks target types before reading linked file bodies. All other input
+and evidence checks still apply.
 
 ### Early Markdown failure in full Swift gates
 
@@ -1382,6 +1402,21 @@ smoke checks against a disposable root containing an isolated active plan, never
 against a live project.
 
 ---
+
+### plan(operation="mark_blocked")
+
+Explicitly moves an active plan from `READY` or `PENDING` to `BLOCKED` when
+its one canonical roadmap row already records an explicit `BLOCKED` decision.
+The operation preserves the roadmap, execution owner, and all other plan
+bytes. An existing matching `BLOCKED` plan is a no-op.
+
+Pass the exact active-root `slug` without `.md`. The `content` field is a
+JSON object containing `expected_sha256` of the raw plan bytes, a nonempty
+`reason`, and the boolean `dry_run`. Preview before applying with the same
+digest. Stale, ambiguous, archived, terminal, or noncanonical plans are
+refused. All declared plan dependencies must already be satisfied.
+Dependency-only roadmap hints do not authorize this transition. Dependency
+resync after an unrelated plan completes preserves the operator block.
 
 ### plan(operation="repair_status")
 

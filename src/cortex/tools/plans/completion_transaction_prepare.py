@@ -21,6 +21,7 @@ from cortex.tools.plans.completion_transaction_io import (
     hash_text,
     operation_id,
     persist_payload,
+    read_payload,
     read_required_text,
     request_fingerprint,
     transaction_archive_subdir,
@@ -37,6 +38,7 @@ from cortex.tools.plans.completion_transaction_models import (
     PlanArchiveRequest,
     PreparedCompletionFile,
 )
+from cortex.tools.plans.entries_content import extract_plan_path_from_bullet
 from cortex.tools.plans.register_artifact_graph import replace_plan_frontmatter_status
 
 
@@ -173,6 +175,36 @@ def plan_archive_paths(
     validate_contained_path(source, plans)
     validate_contained_path(destination, archive)
     return source, destination
+
+
+def completion_dependency_slug(
+    project_root: Path, operations_root: Path, record: CompletionOperationRecord
+) -> str | None:
+    """Identify the completed dependency even when no plan file is archived."""
+    if record.request.plan_file_name is not None:
+        return Path(record.request.plan_file_name).stem
+    if record.roadmap_line_removed is None:
+        return None
+
+    # AI: Use the prepared roadmap revision, whose row is removed on commit.
+    roadmap = next(
+        item for item in record.files if item.key == CompletionFileKey.ROADMAP
+    )
+    before = read_payload(operations_root, roadmap.before_payload)
+    lines = before.splitlines()
+    if hash_text(before) != roadmap.before_hash or record.roadmap_line_removed > len(
+        lines
+    ):
+        raise ValueError("Completion roadmap changed since preparation")
+    reference = extract_plan_path_from_bullet(lines[record.roadmap_line_removed - 1])
+    if reference is None:
+        return None
+    path = project_root / reference
+    if path.suffix == ".md" and path.parent == get_cortex_path(
+        project_root, CortexResourceType.PLANS
+    ):
+        return path.stem
+    return None
 
 
 def _append_plan_record(

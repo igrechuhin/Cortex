@@ -13,7 +13,9 @@ from cortex.core.artifact_graph import (
     plan_slug_in_dependency_cycle,
     register_plan_file_status_from_graph,
 )
+from cortex.core.constants import MemoryBankFile
 from cortex.core.context_logging import MCPContext, log_client
+from cortex.core.exceptions import FileLockTimeoutError
 from cortex.core.file_system import FileSystemManager
 from cortex.core.models import PlanStatus
 from cortex.core.path_resolver import CortexResourceType, get_cortex_path
@@ -22,7 +24,10 @@ from cortex.core.plan_metadata import (
     resolve_plan_status_token,
 )
 from cortex.tools.plans.completion_transaction_io import hash_text
-from cortex.tools.plans.register_helpers import create_register_error_result
+from cortex.tools.plans.register_helpers import (
+    create_register_error_result,
+    has_explicit_plan_block,
+)
 
 _FM_STATUS_RE = re.compile(r"^status\s*:\s*.*$", re.MULTILINE | re.IGNORECASE)
 
@@ -123,7 +128,7 @@ def _graph_and_slug_for_plan_file(
     return graph, slug
 
 
-def _target_plan_status_after_completion_resync(
+def _dependency_resync_status(
     slug: str, graph: ArtifactGraph, current: PlanStatus
 ) -> PlanStatus:
     # AI: Match register defaults for never-blocked plans; promote BLOCKED→READY when deps clear.
@@ -146,76 +151,124 @@ def _target_plan_status_after_completion_resync(
 
 
 async def _persist_resynced_plan_status(
+    root: Path,
     path: Path,
     raw: str,
     target: PlanStatus,
     ctx: MCPContext | None,
-    logger_name: str,
 ) -> bool:
-    """Write frontmatter ``target`` when it changes. Return True on successful write."""
+    """Persist a dependency transition only from the observed plan revision."""
     updated = replace_plan_frontmatter_status(raw, target)
-    if updated == raw:
-        return False
     try:
-        _ = path.write_text(updated, encoding="utf-8")
-        return True
-    except OSError as exc:
+        await persist_registered_status(root, path, raw, updated)
+        return updated != raw
+    except (OSError, ValueError, FileLockTimeoutError) as exc:
         await log_client(
-            ctx,
-            "error",
-            f"completion resync: could not write {path}: {exc}",
-            logger_name=logger_name,
+            ctx, "error", f"completion resync: could not write {path}: {exc}"
         )
         return False
+
+
+def _should_preserve_operator_block(
+    completed_slug: str | None,
+    dependencies: list[str],
+    roadmap: str,
+    relative: Path,
+) -> bool:
+    # AI: Legacy dependency-only roadmap rows also used plain BLOCKED.
+    return completed_slug not in dependencies and has_explicit_plan_block(
+        roadmap, relative.as_posix()
+    )
 
 
 async def _apply_one_plan_resync_after_completion(
+    root: Path,
     slug: str,
     path: Path,
     graph: ArtifactGraph,
+    roadmap: str,
+    completed_slug: str | None,
     ctx: MCPContext | None,
-    logger_name: str,
 ) -> bool:
-    """Update one plan file when resync target differs; return True if BLOCKED→READY."""
+    """Resync dependency blocks without clearing an explicit roadmap block."""
     try:
-        raw = path.read_text(encoding="utf-8")
-    except OSError as exc:
+        raw = path.read_bytes().decode("utf-8")
+        metadata = read_plan_status_metadata(raw)
+        if not metadata.recognized:
+            return False
+        target = _dependency_resync_status(slug, graph, metadata.status)
+        if target == metadata.status:
+            return False
+        promoted = metadata.status == PlanStatus.BLOCKED and target == PlanStatus.READY
+        if promoted:
+            dependencies = graph.nodes[slug].depends_on
+            if _should_preserve_operator_block(
+                completed_slug, dependencies, roadmap, path.relative_to(root)
+            ):
+                return False
+    except (OSError, ValueError) as exc:
         await log_client(
-            ctx,
-            "warning",
-            f"completion resync: could not read {path}: {exc}",
-            logger_name=logger_name,
+            ctx, "warning", f"completion resync: could not verify {path}: {exc}"
         )
         return False
-    metadata = read_plan_status_metadata(raw)
-    if not metadata.recognized:
-        return False
-    current = metadata.status
-    target = _target_plan_status_after_completion_resync(slug, graph, current)
-    promoted = current == PlanStatus.BLOCKED and target == PlanStatus.READY
-    if target == current:
-        return False
-    wrote = await _persist_resynced_plan_status(path, raw, target, ctx, logger_name)
+    wrote = await _persist_resynced_plan_status(root, path, raw, target, ctx)
     return promoted and wrote
+
+
+async def _resync_from_roadmap(
+    root: Path,
+    plans_dir: Path,
+    roadmap_path: Path,
+    completed_slug: str | None,
+    ctx: MCPContext | None,
+) -> int:
+    try:
+        roadmap = roadmap_path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        roadmap = ""
+    except (OSError, UnicodeError) as exc:
+        await log_client(
+            ctx, "warning", f"completion resync: unreadable roadmap: {exc}"
+        )
+        return 0
+    graph = compute_artifact_graph(plans_dir, include_archive=True)
+    unblocked = 0
+    for slug, path in list_plan_slug_paths(plans_dir, include_archive=False):
+        if await _apply_one_plan_resync_after_completion(
+            root, slug, path, graph, roadmap, completed_slug, ctx
+        ):
+            unblocked += 1
+    return unblocked
 
 
 async def sync_plan_dependency_statuses_after_completion(
     root: Path,
     ctx: MCPContext | None,
+    *,
+    completed_slug: str | None = None,
 ) -> int:
-    """Recompute graph (including archived DONE nodes) and persist dependency-driven status."""
+    """Recompute dependency-driven statuses, preserving explicit roadmap blocks."""
     plans_dir = get_cortex_path(root, CortexResourceType.PLANS)
     if not plans_dir.is_dir():
         return 0
-    graph = compute_artifact_graph(plans_dir, include_archive=True)
-    unblocked = 0
-    logger_name = "cortex.tools.plans.register_artifact_graph"
-    for slug, path in list_plan_slug_paths(plans_dir, include_archive=False):
-        if await _apply_one_plan_resync_after_completion(
-            slug, path, graph, ctx, logger_name
-        ):
-            unblocked += 1
-    return unblocked
+    roadmap_path = (
+        get_cortex_path(root, CortexResourceType.MEMORY_BANK) / MemoryBankFile.ROADMAP
+    )
+    manager = FileSystemManager(root)
+    lock = roadmap_path.with_suffix(".md.lock")
+    try:
+        await manager.acquire_lock(lock)
+    except (OSError, FileLockTimeoutError) as exc:
+        await log_client(
+            ctx, "warning", f"completion resync: unable to lock roadmap: {exc}"
+        )
+        return 0
+    try:
+        return await _resync_from_roadmap(
+            root, plans_dir, roadmap_path, completed_slug, ctx
+        )
+    finally:
+        await manager.release_lock(lock)
 
 
 def _dependency_registration_status(root: Path, plan_path: Path, requested: str) -> str:

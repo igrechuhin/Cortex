@@ -85,7 +85,7 @@ def _plan_error_invalid_operation(operation: str) -> str:
             "Invalid operation "
             f"'{operation}'. Use create, list, get, complete, register, enrich, "
             "graph, archive_completed, repair_status, continue_step, approve_step, "
-            "finalize_step, set_execution, or archive_cancelled."
+            "finalize_step, set_execution, mark_blocked, or archive_cancelled."
         ),
         error="Invalid operation",
     ).model_dump_json()
@@ -519,6 +519,10 @@ async def _handle_special_plan_operations(
         from cortex.tools.plans.execution import set_plan_execution
 
         return await set_plan_execution(request.slug, request.content, ctx)
+    if op == PlanToolOperation.MARK_BLOCKED:
+        from cortex.tools.plans.mark_blocked import mark_plan_blocked
+
+        return await mark_plan_blocked(request.slug, request.content, ctx)
     if op == PlanToolOperation.ARCHIVE_COMPLETED:
         return await _plan_handle_archive_completed(ctx)
     if op == PlanToolOperation.ARCHIVE_CANCELLED:
@@ -661,6 +665,9 @@ async def plan(
     and dry_run (boolean). It changes only a unique scalar frontmatter owner;
     status, identity and body remain unchanged. This explicit metadata correction
     is neither completion nor implicit authority to perform plan actions.
+    ``mark_blocked`` reconciles an active READY/PENDING plan with its single explicit
+    BLOCKED roadmap row. Use the exact root slug and content JSON with
+    expected_sha256, reason, and dry_run. Archived and terminal plans are excluded.
     ``archive_cancelled`` requires an exact root active slug and content JSON
     with expected_sha256 (raw-byte digest), reason (nonempty), and dry_run
     (boolean). It archives the plan as CANCELLED, retires its live roadmap

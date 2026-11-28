@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from pathlib import Path
 
 from cortex.core.exceptions import (
@@ -39,7 +40,10 @@ from cortex.tools.plans.completion_transaction_models import (
     CompletionPhase,
     PlanArchiveRequest,
 )
-from cortex.tools.plans.completion_transaction_prepare import prepare_record
+from cortex.tools.plans.completion_transaction_prepare import (
+    completion_dependency_slug,
+    prepare_record,
+)
 from cortex.tools.plans.completion_transaction_recovery import (
     completed_state_present,
     rollback_completion,
@@ -280,13 +284,13 @@ async def _run_locked_transaction(
     manager: FileSystemManager,
     operations_root: Path,
     op_id: str,
-) -> CompletePlanResult:
+) -> tuple[CompletePlanResult, str | None]:
     path = record_path(operations_root, op_id)
     existing, record_error = _read_validated_record(
         project_root, operations_root, path, op_id
     )
     if record_error is not None:
-        return record_error
+        return record_error, None
     if existing:
         result = await _handle_existing_record(
             project_root,
@@ -297,9 +301,13 @@ async def _run_locked_transaction(
             request_fingerprint(request),
         )
         if result is not None:
-            return result
+            return result, None
     record = _prepare_new_record(project_root, operations_root, path, request, op_id)
-    return await _execute_prepared(project_root, operations_root, manager, path, record)
+    completed_slug = completion_dependency_slug(project_root, operations_root, record)
+    result = await _execute_prepared(
+        project_root, operations_root, manager, path, record
+    )
+    return result, completed_slug
 
 
 def _read_validated_record(
@@ -349,15 +357,26 @@ def _invalid_record_result(
 
 
 async def run_completion_transaction(
-    project_root: Path, request: PlanArchiveRequest
+    project_root: Path,
+    request: PlanArchiveRequest,
+    *,
+    after_completion: (
+        Callable[[CompletePlanResult, str | None], Awaitable[None]] | None
+    ) = None,
 ) -> CompletePlanResult:
     """Finish a plan archive transaction or recover its interrupted prior attempt."""
     op_id = operation_id(request)
     try:
         async with completion_lock(project_root) as (manager, operations_root):
-            return await _run_locked_transaction(
+            result, completed_slug = await _run_locked_transaction(
                 project_root, request, manager, operations_root, op_id
             )
+            if (
+                after_completion is not None
+                and result.status == OperationStatus.SUCCESS
+            ):
+                await after_completion(result, completed_slug)
+            return result
     except FileLockTimeoutError as exc:
         return _result_error("Completion lock denied", str(exc), op_id)
     except (FileConflictError, GitConflictError) as exc:

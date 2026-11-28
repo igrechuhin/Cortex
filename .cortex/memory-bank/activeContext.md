@@ -3,6 +3,13 @@
 
 **This file records completed work only.** For current status and upcoming work see [roadmap.md](roadmap.md).
 
+## Completed Work (2026-11-28)
+
+- ✅ **Guard the active Cortex plan block transition** - COMPLETE (2026-11-28) - Implemented the guarded active-plan transition to BLOCKED, passed 221 focused tests and corrected four live TradeWing plans through the local source runtime.
+
+- ✅ **Verify guarded plan blocking and dependency resync** - COMPLETE (2026-11-28) - <!-- memory_type: status -->
+Preserved dependency unblocking when completion omits the archive filename. Verified the guarded operator block and existing completion behavior with the full Cortex quality gate and CI parity checks.
+
 ## Completed Work (2026-11-26)
 
 - ✅ **Archive cancelled plans** - COMPLETE (2026-11-26) - <!-- memory_type: status -->

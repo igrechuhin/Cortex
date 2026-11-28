@@ -2,7 +2,7 @@
 title: "MCP Tools API Reference"
 category: concepts
 source_count: 1
-last_updated: "2026-11-26"
+last_updated: "2026-11-28"
 ---
 
 ## MCP Tools API Reference
@@ -31,3 +31,4 @@ Reference for Cortex MCP tools, resources, and related APIs.
 - 2026-11-21: Source content changed (prior snapshot archived as sources/docs-api-tools-md-v15.md).
 - 2026-11-24: Source content changed (prior snapshot archived as sources/docs-api-tools-md-v16.md).
 - 2026-11-26: Source content changed (prior snapshot archived as sources/docs-api-tools-md-v17.md).
+- 2026-11-28: Source content changed (prior snapshot archived as sources/docs-api-tools-md-v18.md).

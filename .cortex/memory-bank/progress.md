@@ -1,6 +1,12 @@
 <!-- memory_type: milestone -->
 # Progress Log
 
+## 2026-11-28
+
+- **Guard the active Cortex plan block transition** - COMPLETE. Quality gate b04fa76797ca passed 221 selected tests. The canonical TradeWing plan graph confirmed all four corrected statuses.
+- <!-- memory_type: status -->
+**Verify guarded plan blocking and dependency resync** - COMPLETE. Restored dependency unblocking when completion omits the archive filename. The full Cortex quality gate passed with 9,142 tests, four skipped, and 92.14% coverage. Applicable CI parity checks passed.
+
 ## 2026-11-26
 
 - <!-- memory_type: status -->

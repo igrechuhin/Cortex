@@ -1403,6 +1403,21 @@ against a live project.
 
 ---
 
+### plan(operation="mark_blocked")
+
+Explicitly moves an active plan from `READY` or `PENDING` to `BLOCKED` when
+its one canonical roadmap row already records an explicit `BLOCKED` decision.
+The operation preserves the roadmap, execution owner, and all other plan
+bytes. An existing matching `BLOCKED` plan is a no-op.
+
+Pass the exact active-root `slug` without `.md`. The `content` field is a
+JSON object containing `expected_sha256` of the raw plan bytes, a nonempty
+`reason`, and the boolean `dry_run`. Preview before applying with the same
+digest. Stale, ambiguous, archived, terminal, or noncanonical plans are
+refused. All declared plan dependencies must already be satisfied.
+Dependency-only roadmap hints do not authorize this transition. Dependency
+resync after an unrelated plan completes preserves the operator block.
+
 ### plan(operation="repair_status")
 
 Repair one archived legacy plan status after the caller has established exact

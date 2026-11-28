@@ -146,3 +146,4 @@ class PlanToolOperation(str, Enum):
     FINALIZE_STEP = "finalize_step"
     REPAIR_STATUS = "repair_status"
     SET_EXECUTION = "set_execution"
+    MARK_BLOCKED = "mark_blocked"

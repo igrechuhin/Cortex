@@ -63,24 +63,28 @@ def _reject_bad_inputs(
 
 
 async def _sync_unblocked_plans(
-    root: Path, result: CompletePlanResult, ctx: MCPContext | None
+    root: Path,
+    result: CompletePlanResult,
+    completed_slug: str | None,
+    ctx: MCPContext | None,
 ) -> None:
     """Update dependent plan statuses after the completion commits."""
-    n = await sync_plan_dependency_statuses_after_completion(root, ctx)
+    n = await sync_plan_dependency_statuses_after_completion(
+        root, ctx, completed_slug=completed_slug
+    )
     result.plans_unblocked = n
     if n:
         result.message = f"{result.message} Unblocked {n} dependent plan(s)."
 
 
 async def _transaction_result_json(
-    root: Path, result: CompletePlanResult, ctx: MCPContext | None
+    result: CompletePlanResult, ctx: MCPContext | None
 ) -> str:
     if result.status != OperationStatus.SUCCESS:
         await log_client(
             ctx, "warning", f"complete_plan: {result.status}", logger_name=__name__
         )
         return result.model_dump_json()
-    await _sync_unblocked_plans(root, result, ctx)
     await log_client(
         ctx, "info", f"complete_plan: {result.status}", logger_name=__name__
     )
@@ -111,8 +115,16 @@ async def _complete_plan_impl(
             message="Invalid completion request",
             error=str(exc),
         ).model_dump_json()
-    result = await run_completion_transaction(root, request)
-    return await _transaction_result_json(root, result, ctx)
+
+    async def sync_result(
+        result: CompletePlanResult, completed_slug: str | None
+    ) -> None:
+        await _sync_unblocked_plans(root, result, completed_slug, ctx)
+
+    result = await run_completion_transaction(
+        root, request, after_completion=sync_result
+    )
+    return await _transaction_result_json(result, ctx)
 
 
 @ensure_usage_context
